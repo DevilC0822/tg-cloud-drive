@@ -1,0 +1,5 @@
+ALTER TABLE system_config
+ADD COLUMN IF NOT EXISTS access_method TEXT NOT NULL DEFAULT 'official_bot_api',
+ADD COLUMN IF NOT EXISTS tg_api_id BIGINT NULL,
+ADD COLUMN IF NOT EXISTS tg_api_hash TEXT NULL;
+

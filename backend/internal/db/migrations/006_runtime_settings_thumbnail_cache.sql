@@ -1,0 +1,4 @@
+ALTER TABLE runtime_settings
+ADD COLUMN IF NOT EXISTS thumbnail_cache_max_bytes BIGINT NOT NULL DEFAULT 536870912,
+ADD COLUMN IF NOT EXISTS thumbnail_cache_ttl_hours INT NOT NULL DEFAULT 720,
+ADD COLUMN IF NOT EXISTS thumbnail_generate_concurrency INT NOT NULL DEFAULT 1;

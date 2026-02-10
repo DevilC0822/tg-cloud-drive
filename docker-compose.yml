@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: tgcd
+      POSTGRES_USER: tgcd
+      POSTGRES_PASSWORD: tgcd
+    ports:
+      - "5432:5432"
+    volumes:
+      - tgcd_pgdata:/var/lib/postgresql/data
+
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:latest
+    restart: unless-stopped
+    environment:
+      TELEGRAM_API_ID_FILE: /var/lib/tgcd-runtime/self-hosted-bot-api/telegram_api_id
+      TELEGRAM_API_HASH_FILE: /var/lib/tgcd-runtime/self-hosted-bot-api/telegram_api_hash
+      TELEGRAM_LOCAL: "1"
+    entrypoint:
+      - /bin/sh
+      - /usr/local/bin/tgcd-self-hosted-bot-api-entrypoint.sh
+    expose:
+      - "8081"
+    volumes:
+      - telegram_bot_api_data:/var/lib/telegram-bot-api
+      - tgcd_runtime:/var/lib/tgcd-runtime
+      - ./deploy/telegram-bot-api/runtime-entrypoint.sh:/usr/local/bin/tgcd-self-hosted-bot-api-entrypoint.sh:ro
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    group_add:
+      - "101"
+    environment:
+      FRONTEND_ORIGIN: http://localhost:3000
+      COOKIE_SECURE: "false"
+      THUMBNAIL_CACHE_DIR: /var/lib/tgcd-thumbnail-cache
+      SELF_HOSTED_BOT_API_SECRET_DIR: /var/lib/tgcd-runtime/self-hosted-bot-api
+      SELF_HOSTED_BOT_API_UPLOAD_DIR: /var/lib/tgcd-runtime/self-hosted-bot-api-upload
+      # 可选：用于生成分享链接的基地址（默认从请求推断）
+      # BASE_URL: https://pan.example.com
+    depends_on:
+      - postgres
+      - telegram-bot-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - tgcd_thumbnail_cache:/var/lib/tgcd-thumbnail-cache
+      - tgcd_runtime:/var/lib/tgcd-runtime
+      - telegram_bot_api_data:/var/lib/telegram-bot-api:ro
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  tgcd_pgdata:
+  tgcd_thumbnail_cache:
+  telegram_bot_api_data:
+  tgcd_runtime:
