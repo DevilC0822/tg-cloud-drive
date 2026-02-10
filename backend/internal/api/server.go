@@ -93,6 +93,7 @@ func (s *Server) Router() http.Handler {
 	r.Use(s.corsMiddleware)
 	r.Use(recoverMiddleware(s.logger))
 	r.Use(requestLogMiddleware(s.logger))
+	r.Use(s.rejectIPHostMiddleware)
 
 	r.Get("/healthz", s.handleHealthz)
 

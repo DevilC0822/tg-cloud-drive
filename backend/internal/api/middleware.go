@@ -3,8 +3,10 @@ package api
 import (
 	"encoding/json"
 	"log/slog"
+	"net"
 	"net/http"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -90,6 +92,63 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) rejectIPHostMiddleware(next http.Handler) http.Handler {
+	if !s.cfg.DisableIPPortAccess {
+		return next
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host := normalizeRequestHost(r.Host)
+		if isIPLiteralHost(host) {
+			writeError(w, http.StatusForbidden, "forbidden", "当前服务禁止通过 IP:PORT 访问，请使用域名访问")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func normalizeRequestHost(raw string) string {
+	host := strings.TrimSpace(raw)
+	if host == "" {
+		return ""
+	}
+
+	// RFC 3986 IPv6: [2001:db8::1]:443 或 [2001:db8::1]
+	if strings.HasPrefix(host, "[") {
+		if idx := strings.Index(host, "]"); idx > 1 {
+			return strings.TrimSpace(host[1:idx])
+		}
+	}
+
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		return strings.TrimSpace(h)
+	}
+
+	// 未带方括号的 IPv6 字面量（例如 ::1）不应再按 host:port 拆分
+	if strings.Count(host, ":") > 1 {
+		return host
+	}
+
+	// 处理 host:port（非 IPv6）
+	if idx := strings.LastIndex(host, ":"); idx > 0 {
+		portPart := strings.TrimSpace(host[idx+1:])
+		if _, err := strconv.Atoi(portPart); err == nil {
+			return strings.TrimSpace(host[:idx])
+		}
+	}
+
+	return host
+}
+
+func isIPLiteralHost(raw string) bool {
+	host := strings.TrimSpace(raw)
+	if host == "" {
+		return false
+	}
+	host = strings.TrimSuffix(host, ".")
+	return net.ParseIP(host) != nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

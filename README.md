@@ -41,6 +41,8 @@ API），并由后端代理下载/预览，避免在浏览器暴露 Bot Token。
 │  └─ src/components/                   # 页面与组件（setup/header/transfer 等）
 ├─ deploy/telegram-bot-api/
 │  └─ runtime-entrypoint.sh             # 自建 Bot API 凭据热更新入口脚本
+├─ deploy/nginx/
+│  └─ setup_https.sh                    # Debian/Ubuntu 一键 Nginx+SSL
 ├─ docker-compose.yml
 └─ .env.example
 ```
@@ -85,6 +87,66 @@ docker compose up --build
   `TELEGRAM_API_ID`/`TELEGRAM_API_HASH`。
 - `telegram-bot-api` 容器会等待后端写入凭据文件后再拉起服务进程。
 - 自建 Bot API 的 `8081` 仅容器网络可访问（`expose`，未映射宿主机端口）。
+
+### 4) Linux 服务器一键 HTTPS（Debian/Ubuntu）
+
+如果你在 Debian/Ubuntu 服务器部署，并且已把域名 `A/AAAA` 解析到服务器公网 IP，
+可直接使用脚本自动完成 Nginx 反代与 Let's Encrypt 证书申请。
+
+前置条件：
+
+- 已执行 `docker compose up --build`，并可通过 `http://127.0.0.1:3000` 访问前端
+- 服务器放通 `80/443` 端口（云防火墙 + 系统防火墙）
+- 以 `root` 或 `sudo` 执行
+
+使用步骤：
+
+```bash
+# 1) 查看参数说明
+sudo bash ./deploy/nginx/setup_https.sh --help
+
+# 2) 先做证书演练（推荐）
+sudo bash ./deploy/nginx/setup_https.sh \
+  --domain pan.example.com \
+  --email ops@example.com \
+  --dry-run
+
+# 3) 申请正式证书并启用 HTTPS
+sudo bash ./deploy/nginx/setup_https.sh \
+  --domain pan.example.com \
+  --email ops@example.com
+```
+
+可选参数：
+
+- `--upstream 127.0.0.1:3000`（默认即此值）
+- `--dry-run`（先走 Let's Encrypt 测试环境演练）
+- `--skip-install`（已安装 nginx/certbot 时跳过 apt 安装）
+
+执行完成后验证：
+
+```bash
+# 证书状态
+sudo certbot certificates
+
+# 续期定时任务
+sudo systemctl list-timers | grep certbot
+```
+
+完成后即可通过 `https://你的域名` 访问，业务入口仍由 Docker 前端服务
+`127.0.0.1:3000` 提供。
+
+如需同时禁用后端的 `IP:PORT` 直接访问，可在 `.env` 中增加：
+
+```bash
+DISABLE_IP_PORT_ACCESS=true
+```
+
+然后重启后端容器使配置生效：
+
+```bash
+docker compose up -d --build backend
+```
 
 ## 接入模式与切换机制
 
@@ -188,6 +250,9 @@ docker compose up --build
   - 生成分享链接的固定基地址
 - `PUBLIC_URL_HEADER`
   - 优先从指定请求头推导对外基地址
+- `DISABLE_IP_PORT_ACCESS`
+  - `true` 时拒绝 `IP:PORT` 访问（返回 403，提示使用域名）
+  - 建议生产环境配合 Nginx/域名启用
 - `SELF_HOSTED_BOT_API_SECRET_DIR`
   - 自建模式 API 凭据目录（默认 `/var/lib/tgcd-runtime/self-hosted-bot-api`）
 - `SELF_HOSTED_BOT_API_UPLOAD_DIR`

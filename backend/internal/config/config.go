@@ -16,6 +16,7 @@ type Config struct {
 	TGStorageChatID               string
 	SelfHostedBotAPICredentialDir string
 	SelfHostedBotAPIUploadDir     string
+	DisableIPPortAccess           bool
 
 	CookieSecret []byte
 	CookieSecure bool
@@ -59,6 +60,7 @@ func Load() (Config, error) {
 	if cfg.SelfHostedBotAPIUploadDir == "" {
 		cfg.SelfHostedBotAPIUploadDir = "/var/lib/tgcd-runtime/self-hosted-bot-api-upload"
 	}
+	cfg.DisableIPPortAccess = boolFromEnv("DISABLE_IP_PORT_ACCESS", false)
 
 	cfg.ListenHost = strings.TrimSpace(os.Getenv("HOST"))
 	if cfg.ListenHost == "" {

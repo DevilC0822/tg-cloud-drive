@@ -39,6 +39,8 @@ services:
       THUMBNAIL_CACHE_DIR: /var/lib/tgcd-thumbnail-cache
       SELF_HOSTED_BOT_API_SECRET_DIR: /var/lib/tgcd-runtime/self-hosted-bot-api
       SELF_HOSTED_BOT_API_UPLOAD_DIR: /var/lib/tgcd-runtime/self-hosted-bot-api-upload
+      # 可选：启用后拒绝通过 IP:PORT 直接访问（请通过域名访问）
+      DISABLE_IP_PORT_ACCESS: ${DISABLE_IP_PORT_ACCESS:-false}
       # 可选：用于生成分享链接的基地址（默认从请求推断）
       # BASE_URL: https://pan.example.com
     depends_on:
