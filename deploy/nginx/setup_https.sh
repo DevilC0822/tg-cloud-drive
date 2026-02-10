@@ -192,29 +192,37 @@ reload_nginx() {
 issue_certificate() {
   require_cmd certbot
 
-  local certbot_args=(
-    --nginx
-    -d "${DOMAIN}"
-    --non-interactive
-    --agree-tos
-    --email "${EMAIL}"
-    --redirect
-  )
   if [[ "${DRY_RUN}" == "true" ]]; then
-    certbot_args+=(--dry-run)
     log "开始证书演练（dry-run）"
+    certbot certonly \
+      --nginx \
+      -d "${DOMAIN}" \
+      --non-interactive \
+      --agree-tos \
+      --email "${EMAIL}" \
+      --dry-run
   else
     log "开始申请正式证书"
+    certbot \
+      --nginx \
+      -d "${DOMAIN}" \
+      --non-interactive \
+      --agree-tos \
+      --email "${EMAIL}" \
+      --redirect
   fi
-
-  certbot "${certbot_args[@]}"
 }
 
 show_result() {
-  local cert_status_cmd="certbot certificates"
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    log "dry-run 演练完成：域名与 Nginx challenge 流程可用"
+    log "请去掉 --dry-run 重新执行，申请正式证书并启用 HTTPS"
+    return
+  fi
+
   log "部署完成"
   log "访问地址: https://${DOMAIN}"
-  log "当前证书信息可执行: ${cert_status_cmd}"
+  log "当前证书信息可执行: certbot certificates"
   log "自动续期状态可执行: systemctl list-timers | grep certbot"
 }
 
@@ -231,4 +239,3 @@ main() {
 }
 
 main "$@"
-
