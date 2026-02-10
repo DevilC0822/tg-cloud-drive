@@ -14,6 +14,10 @@ API），并由后端代理下载/预览，避免在浏览器暴露 Bot Token。
 - 已初始化实例支持在线切换接入模式（带校验与自动回滚）
 - 上传支持断点续传（浏览器到后端固定走会话分片）
 - 传输中心支持任务进度、历史记录、失败重试与高级筛选
+- Torrent 任务链路：
+  - 支持提交 `torrent URL` 或种子文件
+  - 后端校验 bencode / infohash / private / announce 域名
+  - 异步 worker 调用 qBittorrent 下载并可在多文件场景手动选择发送目标
 - 视频增强链路：
   - 上传前做 faststart 预处理（失败自动回退原文件）
   - `sendVideo` 支持 `thumbnail` / `cover` 参数
@@ -24,7 +28,7 @@ API），并由后端代理下载/预览，避免在浏览器暴露 Bot Token。
 
 - 后端：Go、Chi、pgx、PostgreSQL
 - 前端：React、TypeScript、Vite、Tailwind、Jotai
-- 运行：Docker Compose（postgres + backend + frontend + telegram-bot-api）
+- 运行：Docker Compose（postgres + backend + frontend + telegram-bot-api + qbittorrent）
 
 ## 目录结构
 
@@ -35,7 +39,8 @@ API），并由后端代理下载/预览，避免在浏览器暴露 Bot Token。
 │  ├─ internal/api/                     # HTTP API 与核心业务
 │  ├─ internal/config/config.go         # 环境变量与默认值
 │  ├─ internal/db/migrations/           # SQL 迁移
-│  └─ internal/store/                   # 数据访问层
+│  ├─ internal/store/                   # 数据访问层
+│  └─ internal/torrent/                 # Torrent 解析与 qBittorrent 客户端
 ├─ frontend/
 │  ├─ src/App.tsx                       # 初始化/鉴权/主页面路由控制
 │  └─ src/components/                   # 页面与组件（setup/header/transfer 等）
@@ -87,6 +92,18 @@ docker compose up --build
   `TELEGRAM_API_ID`/`TELEGRAM_API_HASH`。
 - `telegram-bot-api` 容器会等待后端写入凭据文件后再拉起服务进程。
 - 自建 Bot API 的 `8081` 仅容器网络可访问（`expose`，未映射宿主机端口）。
+- 默认同时启动 `qbittorrent`（仅容器内可访问），用于 Torrent 异步下载任务。
+
+### 3.1) qBittorrent 说明
+
+- 后端默认通过 `http://qbittorrent:8080` 调用 WebAPI。
+- 默认账户由环境变量控制（`TORRENT_QBT_USERNAME` / `TORRENT_QBT_PASSWORD`）。
+- compose 默认固定镜像 `qbittorrentofficial/qbittorrent-nox:4.5.5-1`，
+  避免新版临时密码机制导致后端无法登录。
+- compose 内已配置下载目录共享卷 `tgcd_torrent_data`，用于：
+  - qBittorrent 下载落盘
+  - 后端读取并发送到 Telegram
+  - 自建 Bot API（local）通过 `file://` 直接读取
 
 ### 4) Linux 服务器一键 HTTPS（Debian/Ubuntu）
 
@@ -171,6 +188,34 @@ docker compose up -d --build backend
 6. 若切换后 `SelfCheck` 失败，自动回滚旧配置与凭据。
 
 结论：切换服务是即时生效，不需要重启后端进程。
+
+## Torrent 下载任务（新增）
+
+### 流程概览
+
+1. Web 端在“上传文件”弹窗切换到 `Torrent 下载`：
+   - 填写 `torrent URL` 或上传 `.torrent` 文件
+   - 选择目标目录（发送完成后入库位置）
+2. 后端创建异步任务并做元信息校验：
+   - bencode 结构合法性
+   - `infohash` / `total size` 解析
+   - `private torrent` 检查（可配置强制）
+   - `announce` 域名白名单（可配置）
+3. 后台 worker 调用 qBittorrent WebAPI 异步下载（不阻塞 HTTP 请求）。
+4. 下载完成后：
+   - 单文件任务：自动进入发送流程
+   - 多文件任务：在传输中心点击“选择文件”并提交
+5. 后端将选中文件发送到 Telegram（复用现有媒体策略与视频增强链路）。
+6. 每个发送文件都会写入 `transfer_history`，可在传输中心追踪结果。
+
+### 任务状态
+
+- `queued`：已入队
+- `downloading`：qBittorrent 下载中
+- `awaiting_selection`：多文件任务等待用户选择
+- `uploading`：发送到 Telegram 中
+- `completed`：任务完成
+- `error`：任务失败
 
 ## 上传策略（当前实现）
 
@@ -277,6 +322,30 @@ docker compose up -d --build backend
   - 缩略图缓存目录
 - `FFMPEG_BINARY`
   - ffmpeg 命令路径（默认 `ffmpeg`）
+- `TORRENT_ENABLED`
+  - 是否启用 Torrent 下载任务（默认 `true`）
+- `TORRENT_WORK_DIR`
+  - Torrent 元文件目录（默认 `/var/lib/tgcd-runtime/torrents`）
+- `TORRENT_DOWNLOAD_DIR`
+  - 下载目录（默认 `/var/lib/tgcd-torrent-data`）
+- `TORRENT_MAX_METADATA_BYTES`
+  - 单个 torrent 元文件大小上限（默认 `4MB`）
+- `TORRENT_REQUIRE_PRIVATE`
+  - 是否只允许 private torrent（默认 `false`）
+- `TORRENT_ALLOWED_ANNOUNCE_DOMAINS`
+  - announce 域名白名单（逗号分隔，留空不限制）
+- `TORRENT_WORKER_POLL_INTERVAL_SECONDS`
+  - worker 轮询周期（默认 `3` 秒）
+- `TORRENT_QBT_BASE_URL`
+  - qBittorrent WebAPI 地址（默认 `http://qbittorrent:8080`）
+- `TORRENT_QBT_USERNAME` / `TORRENT_QBT_PASSWORD`
+  - qBittorrent 登录凭据（默认 `admin` / `adminadmin`）
+- `TORRENT_QBT_TIMEOUT_SECONDS`
+  - qBittorrent API 请求超时（默认 `20` 秒）
+- `TORRENT_QBT_DISABLE_DHT_PEX_LSD`
+  - `true` 时尝试写入 qBittorrent 偏好关闭 DHT/PEX/LSD
+- `TORRENT_QBT_DELETE_ON_COMPLETE`
+  - 任务完成后删除 qBittorrent 任务与下载文件（默认 `true`）
 - `HOST` / `PORT`
   - 后端监听地址（默认 `0.0.0.0:8080`）
 
@@ -338,6 +407,13 @@ npm run dev
 - `GET /api/items/{id}/thumbnail`
 - `GET|HEAD /d/{code}`
 
+### Torrent 任务
+
+- `POST /api/torrents/tasks`（支持 `torrentUrl` 或 `torrentFile`）
+- `GET /api/torrents/tasks`
+- `GET /api/torrents/tasks/{id}`
+- `POST /api/torrents/tasks/{id}/dispatch`（多文件任务选择发送目标）
+
 ### 传输历史
 
 - `GET /api/transfers/history`
@@ -353,6 +429,8 @@ compose 默认卷：
 - `tgcd_thumbnail_cache`：缩略图缓存
 - `telegram_bot_api_data`：Bot API 数据
 - `tgcd_runtime`：自建模式运行时文件（凭据/上传 staging）
+- `qbittorrent_config`：qBittorrent 配置与状态
+- `tgcd_torrent_data`：Torrent 下载目录（qBittorrent / backend / bot-api 共享）
 
 执行 `docker compose down -v` 会清空上述持久化数据。
 
@@ -384,12 +462,23 @@ compose 默认卷：
 - 检查缓存目录可写及磁盘空间
 - 过大的源视频可能在截帧阶段超时或失败
 
+### 5) Torrent 任务一直失败（qBittorrent 认证/连接）
+
+- 检查 `qbittorrent` 容器状态与日志
+- 确认后端环境变量与下载器一致：
+  - `TORRENT_QBT_BASE_URL`
+  - `TORRENT_QBT_USERNAME`
+  - `TORRENT_QBT_PASSWORD`
+- 确认下载目录共享挂载正常（`tgcd_torrent_data`）
+- 若是 PT 私有场景，建议启用 `TORRENT_QBT_DISABLE_DHT_PEX_LSD=true`
+
 ## 迁移版本
 
 数据库迁移位于 `backend/internal/db/migrations`，当前包含：
 
-- `001`~`013`（含 `system_config` 接入方式扩展、`upload_sessions`
-  接入模式字段、`transfer_history` 视频预处理字段等）
+- `001`~`014`（含 `system_config` 接入方式扩展、`upload_sessions`
+  接入模式字段、`transfer_history` 视频预处理字段、`torrent_tasks`
+  异步任务表等）
 
 ---
 

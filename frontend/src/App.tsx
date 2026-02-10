@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAtom, useSetAtom } from 'jotai';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -21,6 +21,7 @@ import { useFiles } from '@/hooks/useFiles';
 import { useToast } from '@/hooks/useToast';
 import { useUpload } from '@/hooks/useUpload';
 import { useTransferCenter } from '@/hooks/useTransferCenter';
+import { useTorrentTasks } from '@/hooks/useTorrentTasks';
 import { useTheme } from '@/hooks/useTheme';
 import {
   previewModalAtom,
@@ -30,7 +31,7 @@ import {
   contextMenuAtom,
 } from '@/stores/uiAtoms';
 import { authCheckedAtom, authenticatedAtom } from '@/stores/authAtoms';
-import type { FileItem, SortBy, BreadcrumbItem } from '@/types';
+import type { FileItem, SortBy, BreadcrumbItem, TorrentTask } from '@/types';
 import { collectDescendantIds } from '@/utils/fileUtils';
 import { formatDateTime, formatFileSize } from '@/utils/formatters';
 import { apiFetchJson, ApiError } from '@/utils/api';
@@ -112,6 +113,7 @@ export default function App() {
     shareItem,
     unshareItem,
   } = useFiles();
+  const torrentTasksEnabled = transferCenterEnabled && activeNav === 'transfers';
 
   const { uploadFiles, retryTask } = useUpload({
     onUploaded: () => {
@@ -139,6 +141,17 @@ export default function App() {
     changeHistoryPageSize,
   } = useTransferCenter({ enabled: transferCenterEnabled });
 
+  const {
+    tasks: torrentTasks,
+    loading: torrentTasksLoading,
+    submitting: torrentTaskSubmitting,
+    createTask: createTorrentTask,
+    getTaskDetail: getTorrentTaskDetail,
+    dispatchTask: dispatchTorrentTask,
+    deleteTask: deleteTorrentTask,
+    retryTask: retryTorrentTask,
+  } = useTorrentTasks({ enabled: torrentTasksEnabled });
+
   // 本地状态
   const [newFolderName, setNewFolderName] = useState('');
   const [renameValue, setRenameValue] = useState('');
@@ -160,7 +173,22 @@ export default function App() {
     visible: false,
     files: [],
   });
+  const [uploadTargetMode, setUploadTargetMode] = useState<'file' | 'torrent'>('file');
   const [uploadTargetFolderId, setUploadTargetFolderId] = useState<string>('root');
+  const [uploadTorrentURL, setUploadTorrentURL] = useState('');
+  const [uploadTorrentFile, setUploadTorrentFile] = useState<File | null>(null);
+  const [torrentSelectionModal, setTorrentSelectionModal] = useState<{
+    visible: boolean;
+    task: TorrentTask | null;
+    selectedFileIndexes: number[];
+    loading: boolean;
+  }>({
+    visible: false,
+    task: null,
+    selectedFileIndexes: [],
+    loading: false,
+  });
+  const uploadTorrentFileInputRef = useRef<HTMLInputElement>(null);
   const [infoFile, setInfoFile] = useState<FileItem | null>(null);
   const [permanentDeleteModal, setPermanentDeleteModal] = useState<{
     visible: boolean;
@@ -498,7 +526,10 @@ export default function App() {
   }, []);
 
   const openUploadModal = useCallback((presetFiles: File[] = []) => {
+    setUploadTargetMode('file');
     setUploadTargetFolderId('root');
+    setUploadTorrentURL('');
+    setUploadTorrentFile(null);
     setUploadTargetModal({
       visible: true,
       files: presetFiles,
@@ -513,6 +544,10 @@ export default function App() {
       }));
     });
   }, [openFilePicker]);
+
+  const handleSelectTorrentSeedFile = useCallback(() => {
+    uploadTorrentFileInputRef.current?.click();
+  }, []);
 
   // 处理上传
   const handleUpload = useCallback(() => {
@@ -676,6 +711,134 @@ export default function App() {
     [pushToast, removeHistoryItem]
   );
 
+  const closeTorrentSelectionModal = useCallback(() => {
+    setTorrentSelectionModal({
+      visible: false,
+      task: null,
+      selectedFileIndexes: [],
+      loading: false,
+    });
+  }, []);
+
+  const handleOpenTorrentSelection = useCallback(
+    async (taskId: string) => {
+      setTorrentSelectionModal({
+        visible: true,
+        task: null,
+        selectedFileIndexes: [],
+        loading: true,
+      });
+
+      const result = await getTorrentTaskDetail(taskId);
+      if (!result.ok) {
+        closeTorrentSelectionModal();
+        pushToast({ type: 'error', message: result.reason });
+        return;
+      }
+      const task = result.task;
+      const defaultIndexes = (task.files || [])
+        .filter((file) => file.selected)
+        .map((file) => file.fileIndex);
+
+      setTorrentSelectionModal({
+        visible: true,
+        task,
+        selectedFileIndexes: defaultIndexes,
+        loading: false,
+      });
+    },
+    [closeTorrentSelectionModal, getTorrentTaskDetail, pushToast]
+  );
+
+  const handleToggleTorrentSelectionFile = useCallback((fileIndex: number) => {
+    setTorrentSelectionModal((prev) => {
+      const selected = new Set(prev.selectedFileIndexes);
+      if (selected.has(fileIndex)) {
+        selected.delete(fileIndex);
+      } else {
+        selected.add(fileIndex);
+      }
+      return {
+        ...prev,
+        selectedFileIndexes: Array.from(selected.values()).sort((a, b) => a - b),
+      };
+    });
+  }, []);
+
+  const handleConfirmTorrentDispatch = useCallback(async () => {
+    const task = torrentSelectionModal.task;
+    if (!task) return;
+    const fileIndexes = torrentSelectionModal.selectedFileIndexes;
+    if (fileIndexes.length === 0) {
+      pushToast({ type: 'error', message: '请至少选择一个文件' });
+      return;
+    }
+
+    setTorrentSelectionModal((prev) => ({ ...prev, loading: true }));
+    const result = await dispatchTorrentTask(task.id, fileIndexes);
+    if (!result.ok) {
+      setTorrentSelectionModal((prev) => ({ ...prev, loading: false }));
+      pushToast({ type: 'error', message: result.reason });
+      return;
+    }
+
+    closeTorrentSelectionModal();
+    pushToast({ type: 'success', message: '文件选择已提交，任务将开始发送到 Telegram' });
+  }, [
+    closeTorrentSelectionModal,
+    dispatchTorrentTask,
+    pushToast,
+    torrentSelectionModal.selectedFileIndexes,
+    torrentSelectionModal.task,
+  ]);
+
+  const handleDeleteTorrentTask = useCallback(
+    async (taskID: string) => {
+      const id = taskID.trim();
+      if (!id) {
+        return;
+      }
+      const confirmed = window.confirm('删除后将尝试清理 qBittorrent 任务和未完成下载文件，是否继续？');
+      if (!confirmed) {
+        return;
+      }
+
+      const result = await deleteTorrentTask(id);
+      if (!result.ok) {
+        pushToast({ type: 'error', message: result.reason });
+        return;
+      }
+      const warnings = result.cleanupWarnings || [];
+      if (warnings.length > 0) {
+        pushToast({ type: 'info', message: `任务已删除，清理告警：${warnings[0]}` });
+        return;
+      }
+      pushToast({ type: 'success', message: 'Torrent 任务已删除' });
+    },
+    [deleteTorrentTask, pushToast]
+  );
+
+  const handleRetryTorrentTask = useCallback(
+    async (taskID: string) => {
+      const id = taskID.trim();
+      if (!id) {
+        return;
+      }
+      const result = await retryTorrentTask(id);
+      if (!result.ok) {
+        pushToast({ type: 'error', message: result.reason });
+        return;
+      }
+      const warnings = result.cleanupWarnings || [];
+      if (warnings.length > 0) {
+        pushToast({ type: 'info', message: `已加入重试队列，清理告警：${warnings[0]}` });
+        return;
+      }
+      pushToast({ type: 'success', message: '已加入重试队列，任务将重新下载' });
+    },
+    [pushToast, retryTorrentTask]
+  );
+
   const copyToClipboard = useCallback(
     async (text: string) => {
       if (navigator.clipboard?.writeText) {
@@ -819,6 +982,9 @@ export default function App() {
   const closeUploadTargetModal = useCallback(() => {
     setUploadTargetModal({ visible: false, files: [] });
     setUploadTargetFolderId('root');
+    setUploadTargetMode('file');
+    setUploadTorrentURL('');
+    setUploadTorrentFile(null);
   }, []);
 
   const uploadTargetFolders = useMemo(
@@ -835,9 +1001,34 @@ export default function App() {
   );
 
   const handleConfirmUploadTarget = useCallback(() => {
+    const destinationFolderId = uploadTargetFolderId === 'root' ? null : uploadTargetFolderId;
+
+    if (uploadTargetMode === 'torrent') {
+      const torrentUrl = uploadTorrentURL.trim();
+      const torrentFile = uploadTorrentFile;
+      if (!torrentUrl && !torrentFile) {
+        pushToast({ type: 'error', message: '请填写 Torrent URL 或选择种子文件' });
+        return;
+      }
+
+      void (async () => {
+        const result = await createTorrentTask({
+          parentId: destinationFolderId,
+          torrentUrl: torrentUrl || undefined,
+          torrentFile,
+        });
+        if (!result.ok) {
+          pushToast({ type: 'error', message: result.reason });
+          return;
+        }
+        closeUploadTargetModal();
+        pushToast({ type: 'success', message: 'Torrent 任务已创建，可在传输中心查看进度' });
+      })();
+      return;
+    }
+
     if (uploadTargetModal.files.length === 0) return;
     const selectedFiles = uploadTargetModal.files.slice();
-    const destinationFolderId = uploadTargetFolderId === 'root' ? null : uploadTargetFolderId;
     setUploadTargetModal({ visible: false, files: [] });
     setUploadTargetFolderId('root');
     pushToast({ type: 'success', message: `已加入上传队列（${selectedFiles.length} 个文件）` });
@@ -857,7 +1048,17 @@ export default function App() {
       }
       pushToast({ type: 'error', message: '本次上传全部失败，请在传输中心重试' });
     })();
-  }, [pushToast, uploadFiles, uploadTargetFolderId, uploadTargetModal.files]);
+  }, [
+    closeUploadTargetModal,
+    createTorrentTask,
+    pushToast,
+    uploadFiles,
+    uploadTargetFolderId,
+    uploadTargetModal.files,
+    uploadTargetMode,
+    uploadTorrentFile,
+    uploadTorrentURL,
+  ]);
 
   const moveTargetFolders = useMemo(() => {
     const targetFile = moveModal.file;
@@ -1078,6 +1279,8 @@ export default function App() {
           <TransferCenterPage
             uploadTasks={uploadTasks}
             downloadTasks={downloadTasks}
+            torrentTasks={torrentTasks}
+            torrentLoading={torrentTasksLoading}
             history={history}
             historyFilter={historyFilter}
             historyLoading={historyLoading}
@@ -1092,6 +1295,9 @@ export default function App() {
             onHistoryFilterChange={changeHistoryFilter}
             onHistoryPageChange={changeHistoryPage}
             onHistoryPageSizeChange={changeHistoryPageSize}
+            onOpenTorrentSelection={handleOpenTorrentSelection}
+            onDeleteTorrentTask={handleDeleteTorrentTask}
+            onRetryTorrentTask={handleRetryTorrentTask}
           />
         ) : activeNav === 'vault' ? (
           <PasswordVaultPage
@@ -1278,7 +1484,7 @@ export default function App() {
         open={uploadTargetModal.visible}
         onClose={closeUploadTargetModal}
         title="上传文件"
-        description="先选择上传路径，再选择文件并确认上传。"
+        description="支持本地文件上传或创建 Torrent 下载任务。"
         size="2xl"
         closeOnOverlayClick={false}
         closeOnEscape={false}
@@ -1290,17 +1496,47 @@ export default function App() {
             <Button
               variant="gold"
               onClick={handleConfirmUploadTarget}
-              disabled={uploadTargetModal.files.length === 0}
+              disabled={
+                uploadTargetMode === 'file'
+                  ? uploadTargetModal.files.length === 0
+                  : ((!uploadTorrentURL.trim() && !uploadTorrentFile) || torrentTaskSubmitting)
+              }
+              loading={uploadTargetMode === 'torrent' ? torrentTaskSubmitting : false}
             >
-              开始上传
+              {uploadTargetMode === 'file' ? '开始上传' : '创建任务'}
             </Button>
           </>
         }
       >
         <div className="space-y-5">
+          <div className="inline-flex rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-100/70 dark:bg-neutral-800/60 p-1">
+            <button
+              type="button"
+              className={`px-3 py-1.5 rounded-lg text-sm transition ${
+                uploadTargetMode === 'file'
+                  ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-300'
+              }`}
+              onClick={() => setUploadTargetMode('file')}
+            >
+              本地文件
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1.5 rounded-lg text-sm transition ${
+                uploadTargetMode === 'torrent'
+                  ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-300'
+              }`}
+              onClick={() => setUploadTargetMode('torrent')}
+            >
+              Torrent 下载
+            </button>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
             <section className="rounded-2xl border border-neutral-200/70 dark:border-neutral-700/70 bg-neutral-50/70 dark:bg-neutral-900/40 p-4 space-y-3">
-              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">上传路径</label>
+              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">目标目录</label>
               <select
                 value={uploadTargetFolderId}
                 onChange={(e) => setUploadTargetFolderId(e.target.value)}
@@ -1313,44 +1549,168 @@ export default function App() {
                   </option>
                 ))}
               </select>
-              <div className="pt-1">
-                <Button variant="secondary" onClick={handleSelectUploadFiles} fullWidth>
-                  选择上传文件
-                </Button>
-              </div>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                支持多选；点击“开始上传”后可在传输中心查看进度。
-              </p>
+
+              {uploadTargetMode === 'file' ? (
+                <>
+                  <div className="pt-1">
+                    <Button variant="secondary" onClick={handleSelectUploadFiles} fullWidth>
+                      选择上传文件
+                    </Button>
+                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    支持多选；点击“开始上传”后可在传输中心查看进度。
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Input
+                    label="Torrent URL"
+                    value={uploadTorrentURL}
+                    onChange={(e) => setUploadTorrentURL(e.target.value)}
+                    placeholder="https://example.com/xxx.torrent"
+                    autoComplete="off"
+                  />
+                  <input
+                    ref={uploadTorrentFileInputRef}
+                    type="file"
+                    accept=".torrent,application/x-bittorrent"
+                    autoComplete="off"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setUploadTorrentFile(file);
+                      e.target.value = '';
+                    }}
+                  />
+                  <Button variant="secondary" onClick={handleSelectTorrentSeedFile} fullWidth>
+                    选择种子文件
+                  </Button>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    可填写 URL 或选择种子文件（二选一即可）。
+                  </p>
+                </>
+              )}
             </section>
 
             <section className="rounded-2xl border border-neutral-200/70 dark:border-neutral-700/70 bg-white dark:bg-neutral-900 p-4">
-              <div className="flex items-center justify-between pb-3 border-b border-neutral-200/70 dark:border-neutral-700/70">
-                <h3 className="text-sm font-medium text-neutral-800 dark:text-neutral-200">文件列表</h3>
-                <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                  {uploadTargetModal.files.length} 个 · {formatFileSize(uploadTargetTotalBytes)}
-                </span>
-              </div>
-              <div className="mt-3 max-h-72 overflow-auto">
-                {uploadTargetModal.files.length === 0 ? (
-                  <div className="h-28 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 flex items-center justify-center text-sm text-neutral-500 dark:text-neutral-400">
-                    还未选择文件
+              {uploadTargetMode === 'file' ? (
+                <>
+                  <div className="flex items-center justify-between pb-3 border-b border-neutral-200/70 dark:border-neutral-700/70">
+                    <h3 className="text-sm font-medium text-neutral-800 dark:text-neutral-200">文件列表</h3>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {uploadTargetModal.files.length} 个 · {formatFileSize(uploadTargetTotalBytes)}
+                    </span>
                   </div>
-                ) : (
-                  <ul className="divide-y divide-neutral-200/70 dark:divide-neutral-700/70">
-                    {uploadTargetModal.files.map((file, index) => (
-                      <li key={`${file.name}-${file.size}-${index}`} className="py-2.5 flex items-center justify-between gap-3">
-                        <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{file.name}</span>
-                        <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">
-                          {formatFileSize(file.size)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+                  <div className="mt-3 max-h-72 overflow-auto">
+                    {uploadTargetModal.files.length === 0 ? (
+                      <div className="h-28 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 flex items-center justify-center text-sm text-neutral-500 dark:text-neutral-400">
+                        还未选择文件
+                      </div>
+                    ) : (
+                      <ul className="divide-y divide-neutral-200/70 dark:divide-neutral-700/70">
+                        {uploadTargetModal.files.map((file, index) => (
+                          <li key={`${file.name}-${file.size}-${index}`} className="py-2.5 flex items-center justify-between gap-3">
+                            <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{file.name}</span>
+                            <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">
+                              {formatFileSize(file.size)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-medium text-neutral-800 dark:text-neutral-200">任务预览</h3>
+                  <div className="rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 p-3 text-sm text-neutral-600 dark:text-neutral-300">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-neutral-500 dark:text-neutral-400">URL</span>
+                      <span className="truncate max-w-[18rem] text-right">
+                        {uploadTorrentURL.trim() || '未填写'}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <span className="text-neutral-500 dark:text-neutral-400">种子文件</span>
+                      <span className="truncate max-w-[18rem] text-right">
+                        {uploadTorrentFile?.name || '未选择'}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <span className="text-neutral-500 dark:text-neutral-400">目标目录</span>
+                      <span className="truncate max-w-[18rem] text-right">
+                        {uploadTargetFolderId === 'root'
+                          ? '/（根目录）'
+                          : uploadTargetFolders.find((folder) => folder.id === uploadTargetFolderId)?.path || '/（根目录）'}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    创建后会进入异步队列处理，多文件下载完成后可在传输中心选择发送文件。
+                  </p>
+                </div>
+              )}
             </section>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        open={torrentSelectionModal.visible}
+        onClose={closeTorrentSelectionModal}
+        title="选择要发送的文件"
+        description="多文件种子下载完成后，请勾选需要发送到 Telegram 的文件。"
+        size="lg"
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={closeTorrentSelectionModal}
+              disabled={torrentSelectionModal.loading}
+            >
+              取消
+            </Button>
+            <Button
+              variant="gold"
+              onClick={handleConfirmTorrentDispatch}
+              disabled={torrentSelectionModal.selectedFileIndexes.length === 0 || torrentSelectionModal.loading}
+              loading={torrentSelectionModal.loading}
+            >
+              确认发送
+            </Button>
+          </>
+        }
+      >
+        {torrentSelectionModal.loading ? (
+          <div className="py-8 text-sm text-neutral-500 dark:text-neutral-400">正在加载任务详情...</div>
+        ) : (
+          <div className="space-y-3">
+            <div className="text-sm text-neutral-600 dark:text-neutral-300">
+              任务：{torrentSelectionModal.task?.torrentName || '-'}
+            </div>
+            <div className="max-h-72 overflow-auto rounded-xl border border-neutral-200/70 dark:border-neutral-700/70 divide-y divide-neutral-200/70 dark:divide-neutral-700/70">
+              {(torrentSelectionModal.task?.files || []).map((file) => {
+                const checked = torrentSelectionModal.selectedFileIndexes.includes(file.fileIndex);
+                return (
+                  <label key={file.fileIndex} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                    <div className="min-w-0 flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => handleToggleTorrentSelectionFile(file.fileIndex)}
+                        className="h-4 w-4 rounded border-neutral-300 dark:border-neutral-600"
+                      />
+                      <span className="truncate text-sm text-neutral-800 dark:text-neutral-200">{file.fileName}</span>
+                    </div>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">
+                      {formatFileSize(file.fileSize)}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </Modal>
 
       <Modal

@@ -25,7 +25,30 @@ services:
     volumes:
       - telegram_bot_api_data:/var/lib/telegram-bot-api
       - tgcd_runtime:/var/lib/tgcd-runtime
+      - tgcd_torrent_data:/var/lib/tgcd-torrent-data:ro
       - ./deploy/telegram-bot-api/runtime-entrypoint.sh:/usr/local/bin/tgcd-self-hosted-bot-api-entrypoint.sh:ro
+
+  qbittorrent:
+    # 4.6.1+ 默认使用临时密码，后端无法自动获知；这里固定 4.5.5 以保持账号密码可控。
+    image: qbittorrentofficial/qbittorrent-nox:4.5.5-1
+    restart: unless-stopped
+    environment:
+      QBT_EULA: accept
+      QBT_WEBUI_PORT: "8080"
+      QBT_LISTEN_PORT: ${TORRENT_QBT_LISTEN_PORT:-45000}
+      QBT_DOWNLOAD_DIR: /var/lib/tgcd-torrent-data
+    entrypoint:
+      - /bin/sh
+      - /usr/local/bin/tgcd-qbittorrent-entrypoint.sh
+    expose:
+      - "8080"
+    ports:
+      - "18080:8080"
+    volumes:
+      - qbittorrent_config:/config
+      - tgcd_torrent_data:/var/lib/tgcd-torrent-data
+      - tgcd_torrent_data:/downloads
+      - ./deploy/qbittorrent/runtime-entrypoint.sh:/usr/local/bin/tgcd-qbittorrent-entrypoint.sh:ro
 
   backend:
     build:
@@ -39,6 +62,14 @@ services:
       THUMBNAIL_CACHE_DIR: /var/lib/tgcd-thumbnail-cache
       SELF_HOSTED_BOT_API_SECRET_DIR: /var/lib/tgcd-runtime/self-hosted-bot-api
       SELF_HOSTED_BOT_API_UPLOAD_DIR: /var/lib/tgcd-runtime/self-hosted-bot-api-upload
+      TORRENT_ENABLED: ${TORRENT_ENABLED:-true}
+      TORRENT_WORK_DIR: /var/lib/tgcd-runtime/torrents
+      TORRENT_DOWNLOAD_DIR: /var/lib/tgcd-torrent-data
+      TORRENT_QBT_BASE_URL: ${TORRENT_QBT_BASE_URL:-http://qbittorrent:8080}
+      TORRENT_QBT_USERNAME: ${TORRENT_QBT_USERNAME:-admin}
+      TORRENT_QBT_PASSWORD: ${TORRENT_QBT_PASSWORD:-adminadmin}
+      TORRENT_QBT_DISABLE_DHT_PEX_LSD: ${TORRENT_QBT_DISABLE_DHT_PEX_LSD:-false}
+      TORRENT_QBT_DELETE_ON_COMPLETE: ${TORRENT_QBT_DELETE_ON_COMPLETE:-true}
       # 可选：启用后拒绝通过 IP:PORT 直接访问（请通过域名访问）
       DISABLE_IP_PORT_ACCESS: ${DISABLE_IP_PORT_ACCESS:-false}
       # 可选：用于生成分享链接的基地址（默认从请求推断）
@@ -46,6 +77,7 @@ services:
     depends_on:
       - postgres
       - telegram-bot-api
+      - qbittorrent
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -53,6 +85,7 @@ services:
       - tgcd_thumbnail_cache:/var/lib/tgcd-thumbnail-cache
       - tgcd_runtime:/var/lib/tgcd-runtime
       - telegram_bot_api_data:/var/lib/telegram-bot-api:ro
+      - tgcd_torrent_data:/var/lib/tgcd-torrent-data
 
   frontend:
     build:
@@ -68,3 +101,5 @@ volumes:
   tgcd_thumbnail_cache:
   telegram_bot_api_data:
   tgcd_runtime:
+  qbittorrent_config:
+  tgcd_torrent_data:

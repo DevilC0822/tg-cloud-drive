@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -19,6 +20,11 @@ type RuntimeSettings struct {
 	ThumbnailGenerateConcurrency     int
 	VaultPasswordHash                string
 	VaultSessionTTLMins              int
+	TorrentQBTPassword               string
+	TorrentSourceDeleteMode          string
+	TorrentSourceDeleteFixedMinutes  int
+	TorrentSourceDeleteRandomMinMins int
+	TorrentSourceDeleteRandomMaxMins int
 	UpdatedAt                        time.Time
 }
 
@@ -33,6 +39,11 @@ type RuntimeSettingsPatch struct {
 	ThumbnailGenerateConcurrency     *int
 	VaultPasswordHash                *string
 	VaultSessionTTLMins              *int
+	TorrentQBTPassword               *string
+	TorrentSourceDeleteMode          *string
+	TorrentSourceDeleteFixedMinutes  *int
+	TorrentSourceDeleteRandomMinMins *int
+	TorrentSourceDeleteRandomMaxMins *int
 }
 
 func (s *Store) ensureRuntimeSettingsRow(ctx context.Context, defaults RuntimeSettings) error {
@@ -63,6 +74,24 @@ func (s *Store) ensureRuntimeSettingsRow(ctx context.Context, defaults RuntimeSe
 	if defaults.VaultSessionTTLMins <= 0 {
 		defaults.VaultSessionTTLMins = 60
 	}
+	defaults.TorrentSourceDeleteMode = strings.ToLower(strings.TrimSpace(defaults.TorrentSourceDeleteMode))
+	if defaults.TorrentSourceDeleteMode == "" {
+		defaults.TorrentSourceDeleteMode = "immediate"
+	}
+	if defaults.TorrentSourceDeleteMode != "immediate" &&
+		defaults.TorrentSourceDeleteMode != "fixed" &&
+		defaults.TorrentSourceDeleteMode != "random" {
+		defaults.TorrentSourceDeleteMode = "immediate"
+	}
+	if defaults.TorrentSourceDeleteFixedMinutes <= 0 {
+		defaults.TorrentSourceDeleteFixedMinutes = 30
+	}
+	if defaults.TorrentSourceDeleteRandomMinMins <= 0 {
+		defaults.TorrentSourceDeleteRandomMinMins = 30
+	}
+	if defaults.TorrentSourceDeleteRandomMaxMins < defaults.TorrentSourceDeleteRandomMinMins {
+		defaults.TorrentSourceDeleteRandomMaxMins = defaults.TorrentSourceDeleteRandomMinMins
+	}
 
 	_, err := s.db.Exec(
 		ctx,
@@ -78,9 +107,14 @@ func (s *Store) ensureRuntimeSettingsRow(ctx context.Context, defaults RuntimeSe
   thumbnail_generate_concurrency,
   vault_password_hash,
   vault_session_ttl_minutes,
+  torrent_qbt_password,
+  torrent_source_delete_mode,
+  torrent_source_delete_fixed_minutes,
+  torrent_source_delete_random_min_minutes,
+  torrent_source_delete_random_max_minutes,
   updated_at
 )
-VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now())
+VALUES (TRUE, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now())
 ON CONFLICT (singleton) DO NOTHING`,
 		defaults.UploadConcurrency,
 		defaults.DownloadConcurrency,
@@ -92,6 +126,11 @@ ON CONFLICT (singleton) DO NOTHING`,
 		defaults.ThumbnailGenerateConcurrency,
 		defaults.VaultPasswordHash,
 		defaults.VaultSessionTTLMins,
+		defaults.TorrentQBTPassword,
+		defaults.TorrentSourceDeleteMode,
+		defaults.TorrentSourceDeleteFixedMinutes,
+		defaults.TorrentSourceDeleteRandomMinMins,
+		defaults.TorrentSourceDeleteRandomMaxMins,
 	)
 	return err
 }
@@ -115,6 +154,11 @@ func (s *Store) GetRuntimeSettings(ctx context.Context, defaults RuntimeSettings
   thumbnail_generate_concurrency,
   vault_password_hash,
   vault_session_ttl_minutes,
+  torrent_qbt_password,
+  torrent_source_delete_mode,
+  torrent_source_delete_fixed_minutes,
+  torrent_source_delete_random_min_minutes,
+  torrent_source_delete_random_max_minutes,
   updated_at
 FROM runtime_settings
 WHERE singleton = TRUE`,
@@ -129,6 +173,11 @@ WHERE singleton = TRUE`,
 		&out.ThumbnailGenerateConcurrency,
 		&out.VaultPasswordHash,
 		&out.VaultSessionTTLMins,
+		&out.TorrentQBTPassword,
+		&out.TorrentSourceDeleteMode,
+		&out.TorrentSourceDeleteFixedMinutes,
+		&out.TorrentSourceDeleteRandomMinMins,
+		&out.TorrentSourceDeleteRandomMaxMins,
 		&out.UpdatedAt,
 	)
 	if err != nil {
@@ -165,6 +214,11 @@ func (s *Store) UpdateRuntimeSettings(ctx context.Context, patch RuntimeSettings
   thumbnail_generate_concurrency,
   vault_password_hash,
   vault_session_ttl_minutes,
+  torrent_qbt_password,
+  torrent_source_delete_mode,
+  torrent_source_delete_fixed_minutes,
+  torrent_source_delete_random_min_minutes,
+  torrent_source_delete_random_max_minutes,
   updated_at
 FROM runtime_settings
 WHERE singleton = TRUE
@@ -180,6 +234,11 @@ FOR UPDATE`,
 		&current.ThumbnailGenerateConcurrency,
 		&current.VaultPasswordHash,
 		&current.VaultSessionTTLMins,
+		&current.TorrentQBTPassword,
+		&current.TorrentSourceDeleteMode,
+		&current.TorrentSourceDeleteFixedMinutes,
+		&current.TorrentSourceDeleteRandomMinMins,
+		&current.TorrentSourceDeleteRandomMaxMins,
 		&current.UpdatedAt,
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -219,6 +278,21 @@ FOR UPDATE`,
 	if patch.VaultSessionTTLMins != nil {
 		next.VaultSessionTTLMins = *patch.VaultSessionTTLMins
 	}
+	if patch.TorrentQBTPassword != nil {
+		next.TorrentQBTPassword = *patch.TorrentQBTPassword
+	}
+	if patch.TorrentSourceDeleteMode != nil {
+		next.TorrentSourceDeleteMode = *patch.TorrentSourceDeleteMode
+	}
+	if patch.TorrentSourceDeleteFixedMinutes != nil {
+		next.TorrentSourceDeleteFixedMinutes = *patch.TorrentSourceDeleteFixedMinutes
+	}
+	if patch.TorrentSourceDeleteRandomMinMins != nil {
+		next.TorrentSourceDeleteRandomMinMins = *patch.TorrentSourceDeleteRandomMinMins
+	}
+	if patch.TorrentSourceDeleteRandomMaxMins != nil {
+		next.TorrentSourceDeleteRandomMaxMins = *patch.TorrentSourceDeleteRandomMaxMins
+	}
 
 	if _, err := tx.Exec(
 		ctx,
@@ -233,6 +307,11 @@ SET upload_concurrency = $1,
     thumbnail_generate_concurrency = $8,
     vault_password_hash = $9,
     vault_session_ttl_minutes = $10,
+    torrent_qbt_password = $11,
+    torrent_source_delete_mode = $12,
+    torrent_source_delete_fixed_minutes = $13,
+    torrent_source_delete_random_min_minutes = $14,
+    torrent_source_delete_random_max_minutes = $15,
     updated_at = now()
 WHERE singleton = TRUE`,
 		next.UploadConcurrency,
@@ -245,6 +324,11 @@ WHERE singleton = TRUE`,
 		next.ThumbnailGenerateConcurrency,
 		next.VaultPasswordHash,
 		next.VaultSessionTTLMins,
+		next.TorrentQBTPassword,
+		next.TorrentSourceDeleteMode,
+		next.TorrentSourceDeleteFixedMinutes,
+		next.TorrentSourceDeleteRandomMinMins,
+		next.TorrentSourceDeleteRandomMaxMins,
 	); err != nil {
 		return RuntimeSettings{}, err
 	}
@@ -262,6 +346,11 @@ WHERE singleton = TRUE`,
   thumbnail_generate_concurrency,
   vault_password_hash,
   vault_session_ttl_minutes,
+  torrent_qbt_password,
+  torrent_source_delete_mode,
+  torrent_source_delete_fixed_minutes,
+  torrent_source_delete_random_min_minutes,
+  torrent_source_delete_random_max_minutes,
   updated_at
 FROM runtime_settings
 WHERE singleton = TRUE`,
@@ -276,6 +365,11 @@ WHERE singleton = TRUE`,
 		&next.ThumbnailGenerateConcurrency,
 		&next.VaultPasswordHash,
 		&next.VaultSessionTTLMins,
+		&next.TorrentQBTPassword,
+		&next.TorrentSourceDeleteMode,
+		&next.TorrentSourceDeleteFixedMinutes,
+		&next.TorrentSourceDeleteRandomMinMins,
+		&next.TorrentSourceDeleteRandomMaxMins,
 		&next.UpdatedAt,
 	); err != nil {
 		return RuntimeSettings{}, err

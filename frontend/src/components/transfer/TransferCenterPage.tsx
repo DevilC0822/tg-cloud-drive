@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -9,8 +9,9 @@ import {
   ShieldAlert,
   SlidersHorizontal,
   Trash2,
+  Send,
 } from 'lucide-react';
-import type { DownloadTask, TransferHistoryItem, UploadTask } from '@/types';
+import type { DownloadTask, TorrentTask, TransferHistoryItem, UploadTask } from '@/types';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
@@ -20,6 +21,8 @@ import type { HistoryFilter, HistoryPagination } from '@/hooks/useTransferCenter
 export interface TransferCenterPageProps {
   uploadTasks: UploadTask[];
   downloadTasks: DownloadTask[];
+  torrentTasks: TorrentTask[];
+  torrentLoading: boolean;
   history: TransferHistoryItem[];
   historyFilter: HistoryFilter;
   historyLoading: boolean;
@@ -34,6 +37,9 @@ export interface TransferCenterPageProps {
   onHistoryFilterChange: (filter: HistoryFilter) => void;
   onHistoryPageChange: (page: number) => void;
   onHistoryPageSizeChange: (pageSize: number) => void;
+  onOpenTorrentSelection: (taskId: string) => void;
+  onDeleteTorrentTask: (taskId: string) => void | Promise<void>;
+  onRetryTorrentTask: (taskId: string) => void | Promise<void>;
 }
 
 function taskStatusLabel(status: UploadTask['status'] | DownloadTask['status']): string {
@@ -85,6 +91,62 @@ function historyFilterLabel(filter: HistoryFilter): string {
   }
 }
 
+function torrentStatusLabel(status: TorrentTask['status']): string {
+  switch (status) {
+    case 'queued':
+      return '排队中';
+    case 'downloading':
+      return '下载中';
+    case 'awaiting_selection':
+      return '待选文件';
+    case 'uploading':
+      return '发送中';
+    case 'completed':
+      return '已完成';
+    default:
+      return '失败';
+  }
+}
+
+function parseDueAt(raw: string | null | undefined): Date | null {
+  if (!raw) {
+    return null;
+  }
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) {
+    return null;
+  }
+  return d;
+}
+
+function formatCleanupCountdown(dueAt: Date, nowMs: number): string {
+  const diffMs = dueAt.getTime() - nowMs;
+  if (diffMs <= 0) {
+    return '即将清理';
+  }
+
+  const totalMinutes = Math.max(1, Math.ceil(diffMs / (60 * 1000)));
+  if (totalMinutes < 60) {
+    return `距清理还剩 ${totalMinutes} 分钟`;
+  }
+
+  const totalHours = Math.floor(totalMinutes / 60);
+  const remainMinutes = totalMinutes % 60;
+  if (totalHours < 24) {
+    if (remainMinutes === 0) {
+      return `距清理还剩 ${totalHours} 小时`;
+    }
+    return `距清理还剩 ${totalHours} 小时 ${remainMinutes} 分钟`;
+  }
+
+  const days = Math.floor(totalHours / 24);
+  const remainHours = totalHours % 24;
+  if (remainHours === 0) {
+    return `距清理还剩 ${days} 天`;
+  }
+  return `距清理还剩 ${days} 天 ${remainHours} 小时`;
+}
+
 function uploadProcessTags(item: TransferHistoryItem): Array<{ key: string; label: string; className: string }> {
   if (item.direction !== 'upload') {
     return [];
@@ -124,6 +186,8 @@ function uploadProcessTags(item: TransferHistoryItem): Array<{ key: string; labe
 export function TransferCenterPage({
   uploadTasks,
   downloadTasks,
+  torrentTasks,
+  torrentLoading,
   history,
   historyFilter,
   historyLoading,
@@ -138,9 +202,22 @@ export function TransferCenterPage({
   onHistoryFilterChange,
   onHistoryPageChange,
   onHistoryPageSizeChange,
+  onOpenTorrentSelection,
+  onDeleteTorrentTask,
+  onRetryTorrentTask,
 }: TransferCenterPageProps) {
   const [cleanupDaysInput, setCleanupDaysInput] = useState('7');
   const [historyAdvancedOpen, setHistoryAdvancedOpen] = useState(false);
+  const [cleanupNowMs, setCleanupNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCleanupNowMs(Date.now());
+    }, 60 * 1000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const activeUploads = useMemo(
     () => uploadTasks.filter((task) => task.status === 'pending' || task.status === 'uploading'),
@@ -161,6 +238,36 @@ export function TransferCenterPage({
     () => downloadTasks.filter((task) => task.status === 'error' || task.status === 'canceled'),
     [downloadTasks]
   );
+  const sortedTorrentTasks = useMemo(() => {
+    const list = [...torrentTasks];
+    list.sort((a, b) => {
+      const aDue = parseDueAt(a.dueAt);
+      const bDue = parseDueAt(b.dueAt);
+      if (aDue && bDue) {
+        return aDue.getTime() - bDue.getTime();
+      }
+      if (aDue) {
+        return -1;
+      }
+      if (bDue) {
+        return 1;
+      }
+
+      const aCreated = new Date(a.createdAt).getTime();
+      const bCreated = new Date(b.createdAt).getTime();
+      if (Number.isNaN(aCreated) && Number.isNaN(bCreated)) {
+        return 0;
+      }
+      if (Number.isNaN(aCreated)) {
+        return 1;
+      }
+      if (Number.isNaN(bCreated)) {
+        return -1;
+      }
+      return bCreated - aCreated;
+    });
+    return list;
+  }, [torrentTasks]);
 
   const activeTaskCount = activeUploads.length + activeDownloads.length;
   const hasIssueTasks = failedUploads.length > 0 || failedDownloads.length > 0;
@@ -266,6 +373,105 @@ export function TransferCenterPage({
           {activeTaskCount === 0 ? (
             <div className="px-4 md:px-5 py-8 text-sm text-neutral-500 dark:text-neutral-400">
               当前没有进行中的传输任务。
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl">
+        <div className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-neutral-200/80 dark:border-neutral-700/80">
+          <div>
+            <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Torrent 任务</div>
+            <div className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              URL/种子下载后转发到 Telegram，按预计清理时间最近优先展示
+            </div>
+          </div>
+          {torrentLoading ? (
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">刷新中...</span>
+          ) : null}
+        </div>
+
+        <div className="divide-y divide-neutral-200/80 dark:divide-neutral-700/80">
+          {sortedTorrentTasks.map((task) => {
+            const progress = Math.min(
+              100,
+              Math.max(0, Math.round(((task.status === 'completed' ? 1 : task.progress) || 0) * 100))
+            );
+            const showSelectAction = task.status === 'awaiting_selection';
+            const showRetryAction = task.status === 'error';
+            const dueAtDate = parseDueAt(task.dueAt);
+            return (
+              <div key={task.id} className="px-4 md:px-5 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {task.torrentName || task.infoHash}
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                      <span>{torrentStatusLabel(task.status)}</span>
+                      <span>{formatFileSize(task.estimatedSize || 0)}</span>
+                      {task.isPrivate ? <span className="text-emerald-600 dark:text-emerald-300">Private</span> : null}
+                    </div>
+                    {task.error ? (
+                      <div className="mt-1 text-xs text-red-600 dark:text-red-300">
+                        {task.error}
+                      </div>
+                    ) : null}
+                    {dueAtDate ? (
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                        <Clock3 className="w-3.5 h-3.5" />
+                        <span>预计清理时间：{formatDateTime(dueAtDate)}</span>
+                        <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 text-[11px] text-neutral-700 dark:text-neutral-300">
+                          {formatCleanupCountdown(dueAtDate, cleanupNowMs)}
+                        </span>
+                      </div>
+                    ) : null}
+                    {!dueAtDate && task.status === 'completed' ? (
+                      <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-300">
+                        源文件已清理
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{progress}%</span>
+                    {showRetryAction ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={<RotateCcw className="w-3.5 h-3.5" />}
+                        onClick={() => void onRetryTorrentTask(task.id)}
+                      >
+                        重新下载
+                      </Button>
+                    ) : null}
+                    {showSelectAction ? (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={<Send className="w-3.5 h-3.5" />}
+                        onClick={() => onOpenTorrentSelection(task.id)}
+                      >
+                        选择文件
+                      </Button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => onDeleteTorrentTask(task.id)}
+                      className="rounded-lg p-1.5 text-neutral-400 dark:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-pointer transition-colors"
+                      title="删除任务并清理临时文件"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <ProgressBar className="mt-2.5" value={progress} size="sm" color="gold" />
+              </div>
+            );
+          })}
+
+          {sortedTorrentTasks.length === 0 ? (
+            <div className="px-4 md:px-5 py-8 text-sm text-neutral-500 dark:text-neutral-400">
+              暂无 Torrent 任务。
             </div>
           ) : null}
         </div>

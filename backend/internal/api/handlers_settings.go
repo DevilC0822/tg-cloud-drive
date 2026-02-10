@@ -13,17 +13,22 @@ import (
 )
 
 type settingsDTO struct {
-	UploadConcurrency                int   `json:"uploadConcurrency"`
-	DownloadConcurrency              int   `json:"downloadConcurrency"`
-	ReservedDiskBytes                int64 `json:"reservedDiskBytes"`
-	UploadSessionTTLHours            int   `json:"uploadSessionTtlHours"`
-	UploadSessionCleanupIntervalMins int   `json:"uploadSessionCleanupIntervalMinutes"`
-	ThumbnailCacheMaxBytes           int64 `json:"thumbnailCacheMaxBytes"`
-	ThumbnailCacheTTLHours           int   `json:"thumbnailCacheTtlHours"`
-	ThumbnailGenerateConcurrency     int   `json:"thumbnailGenerateConcurrency"`
-	VaultSessionTTLMins              int   `json:"vaultSessionTtlMinutes"`
-	VaultPasswordEnabled             bool  `json:"vaultPasswordEnabled"`
-	ChunkSizeBytes                   int64 `json:"chunkSizeBytes"`
+	UploadConcurrency                int    `json:"uploadConcurrency"`
+	DownloadConcurrency              int    `json:"downloadConcurrency"`
+	ReservedDiskBytes                int64  `json:"reservedDiskBytes"`
+	UploadSessionTTLHours            int    `json:"uploadSessionTtlHours"`
+	UploadSessionCleanupIntervalMins int    `json:"uploadSessionCleanupIntervalMinutes"`
+	ThumbnailCacheMaxBytes           int64  `json:"thumbnailCacheMaxBytes"`
+	ThumbnailCacheTTLHours           int    `json:"thumbnailCacheTtlHours"`
+	ThumbnailGenerateConcurrency     int    `json:"thumbnailGenerateConcurrency"`
+	VaultSessionTTLMins              int    `json:"vaultSessionTtlMinutes"`
+	VaultPasswordEnabled             bool   `json:"vaultPasswordEnabled"`
+	TorrentQBTPasswordConfigured     bool   `json:"torrentQbtPasswordConfigured"`
+	TorrentSourceDeleteMode          string `json:"torrentSourceDeleteMode"`
+	TorrentSourceDeleteFixedMinutes  int    `json:"torrentSourceDeleteFixedMinutes"`
+	TorrentSourceDeleteRandomMinMins int    `json:"torrentSourceDeleteRandomMinMinutes"`
+	TorrentSourceDeleteRandomMaxMins int    `json:"torrentSourceDeleteRandomMaxMinutes"`
+	ChunkSizeBytes                   int64  `json:"chunkSizeBytes"`
 }
 
 type serviceAccessDTO struct {
@@ -313,6 +318,11 @@ func (s *Server) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 		VaultSessionTTLMins              *int    `json:"vaultSessionTtlMinutes"`
 		VaultPassword                    *string `json:"vaultPassword"`
 		AdminPassword                    *string `json:"adminPassword"`
+		TorrentQBTPassword               *string `json:"torrentQbtPassword"`
+		TorrentSourceDeleteMode          *string `json:"torrentSourceDeleteMode"`
+		TorrentSourceDeleteFixedMinutes  *int    `json:"torrentSourceDeleteFixedMinutes"`
+		TorrentSourceDeleteRandomMinMins *int    `json:"torrentSourceDeleteRandomMinMinutes"`
+		TorrentSourceDeleteRandomMaxMins *int    `json:"torrentSourceDeleteRandomMaxMinutes"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "bad_request", "请求体不是合法 JSON")
@@ -328,7 +338,12 @@ func (s *Server) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 		req.ThumbnailCacheTTLHours == nil &&
 		req.ThumbnailGenerateConcurrency == nil &&
 		req.VaultSessionTTLMins == nil &&
-		req.VaultPassword == nil {
+		req.VaultPassword == nil &&
+		req.TorrentQBTPassword == nil &&
+		req.TorrentSourceDeleteMode == nil &&
+		req.TorrentSourceDeleteFixedMinutes == nil &&
+		req.TorrentSourceDeleteRandomMinMins == nil &&
+		req.TorrentSourceDeleteRandomMaxMins == nil {
 		writeError(w, http.StatusBadRequest, "bad_request", "至少需要提供一个可更新字段")
 		return
 	}
@@ -373,6 +388,47 @@ func (s *Server) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	current, err := s.getRuntimeSettings(r.Context())
+	if err != nil {
+		s.logger.Error("get runtime settings failed before patch", "error", err.Error())
+		writeError(w, http.StatusInternalServerError, "internal_error", "读取当前设置失败")
+		return
+	}
+
+	nextDeleteMode, err := normalizeTorrentSourceDeleteMode(current.TorrentSourceDeleteMode)
+	if err != nil {
+		nextDeleteMode = torrentSourceDeleteModeImmediate
+	}
+	if req.TorrentSourceDeleteMode != nil {
+		nextDeleteMode, err = normalizeTorrentSourceDeleteMode(*req.TorrentSourceDeleteMode)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+			return
+		}
+	}
+	nextFixedMins := current.TorrentSourceDeleteFixedMinutes
+	if req.TorrentSourceDeleteFixedMinutes != nil {
+		nextFixedMins = *req.TorrentSourceDeleteFixedMinutes
+	}
+	nextRandomMinMins := current.TorrentSourceDeleteRandomMinMins
+	if req.TorrentSourceDeleteRandomMinMins != nil {
+		nextRandomMinMins = *req.TorrentSourceDeleteRandomMinMins
+	}
+	nextRandomMaxMins := current.TorrentSourceDeleteRandomMaxMins
+	if req.TorrentSourceDeleteRandomMaxMins != nil {
+		nextRandomMaxMins = *req.TorrentSourceDeleteRandomMaxMins
+	}
+	if err := validateTorrentSourceDeletePolicy(nextDeleteMode, nextFixedMins, nextRandomMinMins, nextRandomMaxMins); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+
+	var nextQBTPassword *string
+	if req.TorrentQBTPassword != nil {
+		trimmed := strings.TrimSpace(*req.TorrentQBTPassword)
+		nextQBTPassword = &trimmed
+	}
+
 	var vaultPasswordHash *string
 	if req.VaultPassword != nil {
 		nextVaultPassword := strings.TrimSpace(*req.VaultPassword)
@@ -414,6 +470,11 @@ func (s *Server) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 		ThumbnailGenerateConcurrency:     req.ThumbnailGenerateConcurrency,
 		VaultSessionTTLMins:              req.VaultSessionTTLMins,
 		VaultPasswordHash:                vaultPasswordHash,
+		TorrentQBTPassword:               nextQBTPassword,
+		TorrentSourceDeleteMode:          &nextDeleteMode,
+		TorrentSourceDeleteFixedMinutes:  &nextFixedMins,
+		TorrentSourceDeleteRandomMinMins: &nextRandomMinMins,
+		TorrentSourceDeleteRandomMaxMins: &nextRandomMaxMins,
 	}, s.defaultRuntimeSettings())
 	if err != nil {
 		s.logger.Error("update runtime settings failed", "error", err.Error())
@@ -427,6 +488,11 @@ func (s *Server) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func toSettingsDTO(s store.RuntimeSettings, chunkSizeBytes int64) settingsDTO {
+	deleteMode := strings.TrimSpace(s.TorrentSourceDeleteMode)
+	if _, err := normalizeTorrentSourceDeleteMode(deleteMode); err != nil {
+		deleteMode = torrentSourceDeleteModeImmediate
+	}
+
 	return settingsDTO{
 		UploadConcurrency:                s.UploadConcurrency,
 		DownloadConcurrency:              s.DownloadConcurrency,
@@ -438,6 +504,11 @@ func toSettingsDTO(s store.RuntimeSettings, chunkSizeBytes int64) settingsDTO {
 		ThumbnailGenerateConcurrency:     s.ThumbnailGenerateConcurrency,
 		VaultSessionTTLMins:              s.VaultSessionTTLMins,
 		VaultPasswordEnabled:             strings.TrimSpace(s.VaultPasswordHash) != "",
+		TorrentQBTPasswordConfigured:     strings.TrimSpace(s.TorrentQBTPassword) != "",
+		TorrentSourceDeleteMode:          deleteMode,
+		TorrentSourceDeleteFixedMinutes:  s.TorrentSourceDeleteFixedMinutes,
+		TorrentSourceDeleteRandomMinMins: s.TorrentSourceDeleteRandomMinMins,
+		TorrentSourceDeleteRandomMaxMins: s.TorrentSourceDeleteRandomMaxMins,
 		ChunkSizeBytes:                   chunkSizeBytes,
 	}
 }

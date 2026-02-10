@@ -76,6 +76,7 @@ func (s *Server) startBackgroundLoopsIfNeeded() {
 	}
 	s.startUploadSessionCleanupLoop()
 	s.startThumbnailCacheCleanupLoop()
+	s.startTorrentTaskWorkerLoop()
 }
 
 func (s *Server) bootstrapSystemConfig(ctx context.Context) error {

@@ -96,6 +96,49 @@ export interface TransferHistoryItem {
   uploadVideoPreviewFallback?: boolean;
 }
 
+export type TorrentTaskStatus =
+  | 'queued'
+  | 'downloading'
+  | 'awaiting_selection'
+  | 'uploading'
+  | 'completed'
+  | 'error';
+
+export interface TorrentTaskFile {
+  fileIndex: number;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  selected: boolean;
+  uploaded: boolean;
+  uploadedItemId?: string | null;
+  error?: string | null;
+}
+
+export interface TorrentTask {
+  id: string;
+  sourceType: 'url' | 'file';
+  sourceUrl?: string | null;
+  torrentName: string;
+  infoHash: string;
+  targetChatId: string;
+  targetParentId?: string | null;
+  submittedBy: string;
+  estimatedSize: number;
+  downloadedBytes: number;
+  progress: number;
+  isPrivate: boolean;
+  trackerHosts: string[];
+  status: TorrentTaskStatus;
+  error?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  dueAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  files?: TorrentTaskFile[];
+}
+
 /* 视图模式 */
 export type ViewMode = 'grid' | 'list';
 

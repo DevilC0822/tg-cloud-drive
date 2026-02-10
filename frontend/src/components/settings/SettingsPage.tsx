@@ -2,7 +2,7 @@ import { useAtom } from 'jotai';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type KeyboardEvent, type ReactNode } from 'react';
-import { Clock3, Download, HardDrive, KeyRound, Save, SlidersHorizontal, Upload, Video } from 'lucide-react';
+import { Clock3, Download, HardDrive, KeyRound, Magnet, Save, SlidersHorizontal, Upload, Video } from 'lucide-react';
 import {
   downloadConcurrencyAtom,
   reservedDiskBytesAtom,
@@ -26,6 +26,7 @@ const SETTINGS_TABS = [
   { key: 'transfer', label: '传输', icon: Upload },
   { key: 'storage', label: '存储', icon: HardDrive },
   { key: 'sessions', label: '会话', icon: Clock3 },
+  { key: 'torrent', label: '种子', icon: Magnet },
   { key: 'vault', label: '密码箱', icon: KeyRound },
 ] as const;
 
@@ -54,6 +55,11 @@ type RuntimeSettingsDTO = {
   thumbnailGenerateConcurrency: number;
   vaultSessionTtlMinutes: number;
   vaultPasswordEnabled: boolean;
+  torrentQbtPasswordConfigured: boolean;
+  torrentSourceDeleteMode: 'immediate' | 'fixed' | 'random';
+  torrentSourceDeleteFixedMinutes: number;
+  torrentSourceDeleteRandomMinMinutes: number;
+  torrentSourceDeleteRandomMaxMinutes: number;
   chunkSizeBytes: number;
 };
 
@@ -137,6 +143,11 @@ export function SettingsPage() {
   const [thumbnailGenerateConcurrency, setThumbnailGenerateConcurrency] = useState(1);
   const [vaultSessionTtlMinutes, setVaultSessionTtlMinutes] = useState(60);
   const [vaultPasswordEnabled, setVaultPasswordEnabled] = useState(false);
+  const [torrentQbtPasswordConfigured, setTorrentQbtPasswordConfigured] = useState(false);
+  const [torrentSourceDeleteMode, setTorrentSourceDeleteMode] = useState<'immediate' | 'fixed' | 'random'>('immediate');
+  const [torrentSourceDeleteFixedMinutes, setTorrentSourceDeleteFixedMinutes] = useState(30);
+  const [torrentSourceDeleteRandomMinMinutes, setTorrentSourceDeleteRandomMinMinutes] = useState(30);
+  const [torrentSourceDeleteRandomMaxMinutes, setTorrentSourceDeleteRandomMaxMinutes] = useState(120);
   const { pushToast } = useToast();
 
   const [uploadConcurrencyInput, setUploadConcurrencyInput] = useState(String(uploadConcurrency));
@@ -150,6 +161,11 @@ export function SettingsPage() {
   const [vaultSessionTtlMinutesInput, setVaultSessionTtlMinutesInput] = useState('60');
   const [vaultPasswordInput, setVaultPasswordInput] = useState('');
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [torrentQbtPasswordInput, setTorrentQbtPasswordInput] = useState('');
+  const [torrentSourceDeleteModeInput, setTorrentSourceDeleteModeInput] = useState<'immediate' | 'fixed' | 'random'>('immediate');
+  const [torrentSourceDeleteFixedMinutesInput, setTorrentSourceDeleteFixedMinutesInput] = useState('30');
+  const [torrentSourceDeleteRandomMinMinutesInput, setTorrentSourceDeleteRandomMinMinutesInput] = useState('30');
+  const [torrentSourceDeleteRandomMaxMinutesInput, setTorrentSourceDeleteRandomMaxMinutesInput] = useState('120');
   const [chunkLimitMB, setChunkLimitMB] = useState(DEFAULT_CHUNK_LIMIT_MB);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -206,6 +222,11 @@ export function SettingsPage() {
       setThumbnailGenerateConcurrency(next.thumbnailGenerateConcurrency);
       setVaultSessionTtlMinutes(next.vaultSessionTtlMinutes);
       setVaultPasswordEnabled(next.vaultPasswordEnabled);
+      setTorrentQbtPasswordConfigured(next.torrentQbtPasswordConfigured);
+      setTorrentSourceDeleteMode(next.torrentSourceDeleteMode);
+      setTorrentSourceDeleteFixedMinutes(next.torrentSourceDeleteFixedMinutes);
+      setTorrentSourceDeleteRandomMinMinutes(next.torrentSourceDeleteRandomMinMinutes);
+      setTorrentSourceDeleteRandomMaxMinutes(next.torrentSourceDeleteRandomMaxMinutes);
       setChunkLimitMB(Math.max(1, Math.round(next.chunkSizeBytes / (1024 * 1024))));
 
       setUploadConcurrencyInput(String(next.uploadConcurrency));
@@ -219,6 +240,11 @@ export function SettingsPage() {
       setVaultSessionTtlMinutesInput(String(next.vaultSessionTtlMinutes));
       setVaultPasswordInput('');
       setAdminPasswordInput('');
+      setTorrentQbtPasswordInput('');
+      setTorrentSourceDeleteModeInput(next.torrentSourceDeleteMode);
+      setTorrentSourceDeleteFixedMinutesInput(String(next.torrentSourceDeleteFixedMinutes));
+      setTorrentSourceDeleteRandomMinMinutesInput(String(next.torrentSourceDeleteRandomMinMinutes));
+      setTorrentSourceDeleteRandomMaxMinutesInput(String(next.torrentSourceDeleteRandomMaxMinutes));
     } catch (err: unknown) {
       const e = err as ApiError;
       pushToast({ type: 'error', message: e?.message || '读取设置失败' });
@@ -243,6 +269,11 @@ export function SettingsPage() {
     setVaultSessionTtlMinutesInput(String(vaultSessionTtlMinutes));
     setVaultPasswordInput('');
     setAdminPasswordInput('');
+    setTorrentQbtPasswordInput('');
+    setTorrentSourceDeleteModeInput(torrentSourceDeleteMode);
+    setTorrentSourceDeleteFixedMinutesInput(String(torrentSourceDeleteFixedMinutes));
+    setTorrentSourceDeleteRandomMinMinutesInput(String(torrentSourceDeleteRandomMinMinutes));
+    setTorrentSourceDeleteRandomMaxMinutesInput(String(torrentSourceDeleteRandomMaxMinutes));
   }, [
     downloadConcurrency,
     reservedDiskBytes,
@@ -252,6 +283,10 @@ export function SettingsPage() {
     uploadConcurrency,
     uploadSessionCleanupInterval,
     uploadSessionTtlHours,
+    torrentSourceDeleteFixedMinutes,
+    torrentSourceDeleteMode,
+    torrentSourceDeleteRandomMaxMinutes,
+    torrentSourceDeleteRandomMinMinutes,
     vaultSessionTtlMinutes,
   ]);
 
@@ -273,6 +308,11 @@ export function SettingsPage() {
     const nextVaultSessionTtlMinutes = Number.parseInt(vaultSessionTtlMinutesInput.trim(), 10);
     const nextVaultPassword = vaultPasswordInput.trim();
     const nextAdminPassword = adminPasswordInput.trim();
+    const nextTorrentQbtPassword = torrentQbtPasswordInput.trim();
+    const nextTorrentSourceDeleteMode = torrentSourceDeleteModeInput;
+    const nextTorrentSourceDeleteFixedMinutes = Number.parseInt(torrentSourceDeleteFixedMinutesInput.trim(), 10);
+    const nextTorrentSourceDeleteRandomMinMinutes = Number.parseInt(torrentSourceDeleteRandomMinMinutesInput.trim(), 10);
+    const nextTorrentSourceDeleteRandomMaxMinutes = Number.parseInt(torrentSourceDeleteRandomMaxMinutesInput.trim(), 10);
 
     if (!Number.isFinite(nextUploadConcurrency) || nextUploadConcurrency < 1 || nextUploadConcurrency > 16) {
       pushToast({ type: 'error', message: '并发上传范围应为 1~16' });
@@ -338,6 +378,38 @@ export function SettingsPage() {
       pushToast({ type: 'error', message: '更换密码箱密码前，请输入管理员访问密码' });
       return;
     }
+    if (nextTorrentSourceDeleteMode === 'fixed') {
+      if (
+        !Number.isFinite(nextTorrentSourceDeleteFixedMinutes) ||
+        nextTorrentSourceDeleteFixedMinutes < 1 ||
+        nextTorrentSourceDeleteFixedMinutes > 10080
+      ) {
+        pushToast({ type: 'error', message: '固定清理延迟范围应为 1~10080 分钟' });
+        return;
+      }
+    }
+    if (nextTorrentSourceDeleteMode === 'random') {
+      if (
+        !Number.isFinite(nextTorrentSourceDeleteRandomMinMinutes) ||
+        nextTorrentSourceDeleteRandomMinMinutes < 1 ||
+        nextTorrentSourceDeleteRandomMinMinutes > 10080
+      ) {
+        pushToast({ type: 'error', message: '随机清理最小延迟范围应为 1~10080 分钟' });
+        return;
+      }
+      if (
+        !Number.isFinite(nextTorrentSourceDeleteRandomMaxMinutes) ||
+        nextTorrentSourceDeleteRandomMaxMinutes < 1 ||
+        nextTorrentSourceDeleteRandomMaxMinutes > 10080
+      ) {
+        pushToast({ type: 'error', message: '随机清理最大延迟范围应为 1~10080 分钟' });
+        return;
+      }
+      if (nextTorrentSourceDeleteRandomMinMinutes > nextTorrentSourceDeleteRandomMaxMinutes) {
+        pushToast({ type: 'error', message: '随机清理最小延迟不能大于最大延迟' });
+        return;
+      }
+    }
 
     const nextReservedBytes = Math.round(nextReservedGB * BYTES_PER_GB);
     const nextThumbnailCacheMaxBytes = Math.round(nextThumbnailCacheMaxMB * BYTES_PER_MB);
@@ -359,6 +431,11 @@ export function SettingsPage() {
           vaultSessionTtlMinutes: nextVaultSessionTtlMinutes,
           vaultPassword: nextVaultPassword || undefined,
           adminPassword: nextAdminPassword || undefined,
+          torrentQbtPassword: nextTorrentQbtPassword || undefined,
+          torrentSourceDeleteMode: nextTorrentSourceDeleteMode,
+          torrentSourceDeleteFixedMinutes: nextTorrentSourceDeleteFixedMinutes,
+          torrentSourceDeleteRandomMinMinutes: nextTorrentSourceDeleteRandomMinMinutes,
+          torrentSourceDeleteRandomMaxMinutes: nextTorrentSourceDeleteRandomMaxMinutes,
         }),
       });
 
@@ -373,6 +450,11 @@ export function SettingsPage() {
       setThumbnailGenerateConcurrency(next.thumbnailGenerateConcurrency);
       setVaultSessionTtlMinutes(next.vaultSessionTtlMinutes);
       setVaultPasswordEnabled(next.vaultPasswordEnabled);
+      setTorrentQbtPasswordConfigured(next.torrentQbtPasswordConfigured);
+      setTorrentSourceDeleteMode(next.torrentSourceDeleteMode);
+      setTorrentSourceDeleteFixedMinutes(next.torrentSourceDeleteFixedMinutes);
+      setTorrentSourceDeleteRandomMinMinutes(next.torrentSourceDeleteRandomMinMinutes);
+      setTorrentSourceDeleteRandomMaxMinutes(next.torrentSourceDeleteRandomMaxMinutes);
       setChunkLimitMB(Math.max(1, Math.round(next.chunkSizeBytes / (1024 * 1024))));
 
       setUploadConcurrencyInput(String(next.uploadConcurrency));
@@ -386,6 +468,11 @@ export function SettingsPage() {
       setVaultSessionTtlMinutesInput(String(next.vaultSessionTtlMinutes));
       setVaultPasswordInput('');
       setAdminPasswordInput('');
+      setTorrentQbtPasswordInput('');
+      setTorrentSourceDeleteModeInput(next.torrentSourceDeleteMode);
+      setTorrentSourceDeleteFixedMinutesInput(String(next.torrentSourceDeleteFixedMinutes));
+      setTorrentSourceDeleteRandomMinMinutesInput(String(next.torrentSourceDeleteRandomMinMinutes));
+      setTorrentSourceDeleteRandomMaxMinutesInput(String(next.torrentSourceDeleteRandomMaxMinutes));
 
       pushToast({ type: 'success', message: nextVaultPassword ? '设置已保存，密码箱密码已更新' : '设置已保存' });
     } catch (err: unknown) {
@@ -402,6 +489,11 @@ export function SettingsPage() {
     thumbnailCacheMaxMBInput,
     thumbnailCacheTtlHoursInput,
     thumbnailGenerateConcurrencyInput,
+    torrentQbtPasswordInput,
+    torrentSourceDeleteFixedMinutesInput,
+    torrentSourceDeleteModeInput,
+    torrentSourceDeleteRandomMaxMinutesInput,
+    torrentSourceDeleteRandomMinMinutesInput,
     uploadSessionCleanupIntervalInput,
     uploadSessionTtlHoursInput,
     setDownloadConcurrency,
@@ -677,6 +769,89 @@ export function SettingsPage() {
                   placeholder="1 ~ 1440"
                 />
               </SettingsRow>
+            </section>
+          </div>
+
+          <div
+            role="tabpanel"
+            id={getPanelId('torrent')}
+            aria-labelledby={getTabId('torrent')}
+            className={cn(
+              'col-start-1 row-start-1 transition-opacity duration-200',
+              activeTab === 'torrent' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            )}
+          >
+            <section className="space-y-3">
+              <SectionHeader
+                icon={Magnet}
+                title="种子下载器"
+                description="用于配置 qBittorrent 连接凭据与“上传到 Telegram 成功后”的源文件清理策略。"
+              />
+              <SettingsRow title="qBittorrent 密码状态" description="当前仅展示是否已配置密码，不回显明文。">
+                <div className="text-sm text-neutral-700 dark:text-neutral-300">
+                  {torrentQbtPasswordConfigured ? '已配置' : '未配置'}
+                </div>
+              </SettingsRow>
+              <SettingsRow title="qBittorrent 密码" description="留空表示保持不变；填写后会覆盖当前密码并立即用于后续种子任务。">
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={torrentQbtPasswordInput}
+                  onChange={(e) => setTorrentQbtPasswordInput(e.target.value)}
+                  placeholder="输入新的 qBittorrent 密码"
+                />
+              </SettingsRow>
+              <SettingsRow title="源文件清理策略" description="仅在任务“下载完成并成功上传到 Telegram”后生效。">
+                <select
+                  value={torrentSourceDeleteModeInput}
+                  onChange={(e) =>
+                    setTorrentSourceDeleteModeInput(
+                      e.target.value as 'immediate' | 'fixed' | 'random'
+                    )
+                  }
+                  className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                >
+                  <option value="immediate">直接删除</option>
+                  <option value="fixed">固定分钟后删除</option>
+                  <option value="random">随机分钟区间删除</option>
+                </select>
+              </SettingsRow>
+              {torrentSourceDeleteModeInput === 'fixed' && (
+                <SettingsRow title="固定延迟（分钟）" description="范围 1~10080 分钟。到时后自动清理源文件。">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={10080}
+                    value={torrentSourceDeleteFixedMinutesInput}
+                    onChange={(e) => setTorrentSourceDeleteFixedMinutesInput(e.target.value)}
+                    placeholder="例如 60"
+                  />
+                </SettingsRow>
+              )}
+              {torrentSourceDeleteModeInput === 'random' && (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <SettingsRow title="最小延迟（分钟）" description="范围 1~10080 分钟。">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={10080}
+                      value={torrentSourceDeleteRandomMinMinutesInput}
+                      onChange={(e) => setTorrentSourceDeleteRandomMinMinutesInput(e.target.value)}
+                      placeholder="例如 30"
+                    />
+                  </SettingsRow>
+                  <SettingsRow title="最大延迟（分钟）" description="必须大于等于最小延迟。">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={10080}
+                      value={torrentSourceDeleteRandomMaxMinutesInput}
+                      onChange={(e) => setTorrentSourceDeleteRandomMaxMinutesInput(e.target.value)}
+                      placeholder="例如 180"
+                    />
+                  </SettingsRow>
+                </div>
+              )}
             </section>
           </div>
 

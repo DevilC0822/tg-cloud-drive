@@ -17,6 +17,19 @@ type Config struct {
 	SelfHostedBotAPICredentialDir string
 	SelfHostedBotAPIUploadDir     string
 	DisableIPPortAccess           bool
+	TorrentEnabled                bool
+	TorrentWorkDir                string
+	TorrentDownloadDir            string
+	TorrentMaxMetadataBytes       int64
+	TorrentAllowedAnnounceDomains []string
+	TorrentRequirePrivate         bool
+	TorrentWorkerPollInterval     time.Duration
+	TorrentQBTBaseURL             string
+	TorrentQBTUsername            string
+	TorrentQBTPassword            string
+	TorrentQBTTimeout             time.Duration
+	TorrentQBTDisableDHTPexLSD    bool
+	TorrentQBTDeleteOnComplete    bool
 
 	CookieSecret []byte
 	CookieSecure bool
@@ -61,6 +74,43 @@ func Load() (Config, error) {
 		cfg.SelfHostedBotAPIUploadDir = "/var/lib/tgcd-runtime/self-hosted-bot-api-upload"
 	}
 	cfg.DisableIPPortAccess = boolFromEnv("DISABLE_IP_PORT_ACCESS", false)
+	cfg.TorrentEnabled = boolFromEnv("TORRENT_ENABLED", true)
+	cfg.TorrentWorkDir = strings.TrimSpace(os.Getenv("TORRENT_WORK_DIR"))
+	if cfg.TorrentWorkDir == "" {
+		cfg.TorrentWorkDir = "/var/lib/tgcd-runtime/torrents"
+	}
+	cfg.TorrentDownloadDir = strings.TrimSpace(os.Getenv("TORRENT_DOWNLOAD_DIR"))
+	if cfg.TorrentDownloadDir == "" {
+		cfg.TorrentDownloadDir = "/var/lib/tgcd-torrent-data"
+	}
+	cfg.TorrentMaxMetadataBytes = int64FromEnv("TORRENT_MAX_METADATA_BYTES", 4*1024*1024)
+	if cfg.TorrentMaxMetadataBytes <= 0 {
+		cfg.TorrentMaxMetadataBytes = 4 * 1024 * 1024
+	}
+	cfg.TorrentAllowedAnnounceDomains = csvFromEnv("TORRENT_ALLOWED_ANNOUNCE_DOMAINS")
+	cfg.TorrentRequirePrivate = boolFromEnv("TORRENT_REQUIRE_PRIVATE", false)
+	cfg.TorrentWorkerPollInterval = time.Duration(intFromEnv("TORRENT_WORKER_POLL_INTERVAL_SECONDS", 3)) * time.Second
+	if cfg.TorrentWorkerPollInterval < time.Second {
+		cfg.TorrentWorkerPollInterval = time.Second
+	}
+	cfg.TorrentQBTBaseURL = strings.TrimSpace(os.Getenv("TORRENT_QBT_BASE_URL"))
+	if cfg.TorrentQBTBaseURL == "" {
+		cfg.TorrentQBTBaseURL = "http://qbittorrent:8080"
+	}
+	cfg.TorrentQBTUsername = strings.TrimSpace(os.Getenv("TORRENT_QBT_USERNAME"))
+	if cfg.TorrentQBTUsername == "" {
+		cfg.TorrentQBTUsername = "admin"
+	}
+	cfg.TorrentQBTPassword = strings.TrimSpace(os.Getenv("TORRENT_QBT_PASSWORD"))
+	if cfg.TorrentQBTPassword == "" {
+		cfg.TorrentQBTPassword = "adminadmin"
+	}
+	cfg.TorrentQBTTimeout = time.Duration(intFromEnv("TORRENT_QBT_TIMEOUT_SECONDS", 20)) * time.Second
+	if cfg.TorrentQBTTimeout <= 0 {
+		cfg.TorrentQBTTimeout = 20 * time.Second
+	}
+	cfg.TorrentQBTDisableDHTPexLSD = boolFromEnv("TORRENT_QBT_DISABLE_DHT_PEX_LSD", false)
+	cfg.TorrentQBTDeleteOnComplete = boolFromEnv("TORRENT_QBT_DELETE_ON_COMPLETE", true)
 
 	cfg.ListenHost = strings.TrimSpace(os.Getenv("HOST"))
 	if cfg.ListenHost == "" {
@@ -175,4 +225,21 @@ func boolFromEnv(key string, def bool) bool {
 	default:
 		return def
 	}
+}
+
+func csvFromEnv(key string) []string {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.ToLower(strings.TrimSpace(part))
+		if trimmed == "" {
+			continue
+		}
+		out = append(out, trimmed)
+	}
+	return out
 }

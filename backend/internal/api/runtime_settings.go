@@ -33,6 +33,11 @@ func (s *Server) defaultRuntimeSettings() store.RuntimeSettings {
 		ThumbnailGenerateConcurrency:     s.cfg.ThumbnailGenerateConcurrency,
 		VaultPasswordHash:                "",
 		VaultSessionTTLMins:              60,
+		TorrentQBTPassword:               s.cfg.TorrentQBTPassword,
+		TorrentSourceDeleteMode:          torrentSourceDeleteModeImmediate,
+		TorrentSourceDeleteFixedMinutes:  30,
+		TorrentSourceDeleteRandomMinMins: 30,
+		TorrentSourceDeleteRandomMaxMins: 120,
 	}
 }
 

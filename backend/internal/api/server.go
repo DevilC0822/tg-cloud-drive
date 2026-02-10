@@ -125,6 +125,12 @@ func (s *Server) Router() http.Handler {
 			pr.Post("/transfers/history", s.handleUpsertTransferHistory)
 			pr.Delete("/transfers/history", s.handleDeleteTransferHistory)
 			pr.Delete("/transfers/history/{id}", s.handleDeleteTransferHistoryItem)
+			pr.Post("/torrents/tasks", s.handleCreateTorrentTask)
+			pr.Get("/torrents/tasks", s.handleListTorrentTasks)
+			pr.Get("/torrents/tasks/{id}", s.handleGetTorrentTask)
+			pr.Delete("/torrents/tasks/{id}", s.handleDeleteTorrentTask)
+			pr.Post("/torrents/tasks/{id}/dispatch", s.handleDispatchTorrentTask)
+			pr.Post("/torrents/tasks/{id}/retry", s.handleRetryTorrentTask)
 
 			pr.Patch("/items/{id}", s.handlePatchItem)
 			pr.Post("/items/{id}/vault", s.handleSetItemVault)

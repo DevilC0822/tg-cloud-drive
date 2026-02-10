@@ -120,6 +120,64 @@ type TransferHistory struct {
 	UpdatedAt                    time.Time
 }
 
+type TorrentSourceType string
+
+const (
+	TorrentSourceTypeURL  TorrentSourceType = "url"
+	TorrentSourceTypeFile TorrentSourceType = "file"
+)
+
+type TorrentTaskStatus string
+
+const (
+	TorrentTaskStatusQueued            TorrentTaskStatus = "queued"
+	TorrentTaskStatusDownloading       TorrentTaskStatus = "downloading"
+	TorrentTaskStatusAwaitingSelection TorrentTaskStatus = "awaiting_selection"
+	TorrentTaskStatusUploading         TorrentTaskStatus = "uploading"
+	TorrentTaskStatusCompleted         TorrentTaskStatus = "completed"
+	TorrentTaskStatusError             TorrentTaskStatus = "error"
+)
+
+type TorrentTask struct {
+	ID                 uuid.UUID
+	SourceType         TorrentSourceType
+	SourceURL          *string
+	TorrentName        string
+	InfoHash           string
+	TorrentFilePath    string
+	QBTorrentHash      *string
+	TargetChatID       string
+	TargetParentID     *uuid.UUID
+	SubmittedBy        string
+	EstimatedSize      int64
+	DownloadedBytes    int64
+	Progress           float64
+	IsPrivate          bool
+	TrackerHosts       []string
+	Status             TorrentTaskStatus
+	Error              *string
+	StartedAt          *time.Time
+	FinishedAt         *time.Time
+	SourceCleanupDueAt *time.Time
+	SourceCleanupDone  bool
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+type TorrentTaskFile struct {
+	TaskID         uuid.UUID
+	FileIndex      int
+	FilePath       string
+	FileName       string
+	FileSize       int64
+	Selected       bool
+	Uploaded       bool
+	UploadedItemID *uuid.UUID
+	Error          *string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
 type TelegramDeleteFailure struct {
 	ID          uuid.UUID
 	ItemID      *uuid.UUID
