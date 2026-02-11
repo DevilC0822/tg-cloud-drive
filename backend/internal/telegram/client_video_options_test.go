@@ -42,6 +42,9 @@ func TestSendVideoByLocalPathWithOptions(t *testing.T) {
 		"cap",
 		&SendVideoOptions{
 			SupportsStreaming: true,
+			DurationSeconds:   87,
+			Width:             1080,
+			Height:            1920,
 			ThumbnailPath:     "/tmp/thumb.jpg",
 			CoverPath:         "/tmp/cover.jpg",
 		},
@@ -55,6 +58,15 @@ func TestSendVideoByLocalPathWithOptions(t *testing.T) {
 	}
 	if !strings.Contains(gotBody, "supports_streaming=true") {
 		t.Fatalf("expected supports_streaming in request body, got: %s", gotBody)
+	}
+	if !strings.Contains(gotBody, "duration=87") {
+		t.Fatalf("expected duration in request body, got: %s", gotBody)
+	}
+	if !strings.Contains(gotBody, "width=1080") {
+		t.Fatalf("expected width in request body, got: %s", gotBody)
+	}
+	if !strings.Contains(gotBody, "height=1920") {
+		t.Fatalf("expected height in request body, got: %s", gotBody)
 	}
 	if !strings.Contains(gotBody, "thumbnail=file%3A%2F%2F%2Ftmp%2Fthumb.jpg") {
 		t.Fatalf("expected thumbnail local file URI in request body, got: %s", gotBody)
@@ -107,6 +119,9 @@ func TestSendVideoFileWithOptions_MultipartContainsThumbnailAndCover(t *testing.
 		"cap",
 		&SendVideoOptions{
 			SupportsStreaming: true,
+			DurationSeconds:   123,
+			Width:             1920,
+			Height:            1080,
 			ThumbnailPath:     thumbPath,
 			CoverPath:         coverPath,
 		},
@@ -120,6 +135,15 @@ func TestSendVideoFileWithOptions_MultipartContainsThumbnailAndCover(t *testing.
 	}
 	if !strings.Contains(gotBody, `name="supports_streaming"`) || !strings.Contains(gotBody, "true") {
 		t.Fatalf("expected supports_streaming field in multipart body")
+	}
+	if !strings.Contains(gotBody, `name="duration"`) || !strings.Contains(gotBody, "123") {
+		t.Fatalf("expected duration field in multipart body")
+	}
+	if !strings.Contains(gotBody, `name="width"`) || !strings.Contains(gotBody, "1920") {
+		t.Fatalf("expected width field in multipart body")
+	}
+	if !strings.Contains(gotBody, `name="height"`) || !strings.Contains(gotBody, "1080") {
+		t.Fatalf("expected height field in multipart body")
 	}
 	if !strings.Contains(gotBody, `name="thumbnail"; filename="thumb.jpg"`) {
 		t.Fatalf("expected thumbnail multipart file field, got: %s", gotBody)

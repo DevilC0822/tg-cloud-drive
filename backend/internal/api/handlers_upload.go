@@ -828,7 +828,16 @@ func (s *Server) sendFromPathWithKindWithRetry(
 		if _, seekErr := f.Seek(0, io.SeekStart); seekErr != nil {
 			return telegram.Message{}, sendErr
 		}
-		return sendTelegramFileByKind(ctx, tgClient, chatID, fileName, f, caption, kind, nil)
+		return sendTelegramFileByKind(
+			ctx,
+			tgClient,
+			chatID,
+			fileName,
+			f,
+			caption,
+			kind,
+			stripVideoPreviewOptions(videoOptions),
+		)
 	})
 }
 
@@ -854,7 +863,15 @@ func (s *Server) sendFromLocalPathWithKindWithRetry(
 		if previewFallback != nil {
 			*previewFallback = true
 		}
-		return sendTelegramLocalFileByKind(ctx, tgClient, chatID, filePath, caption, kind, nil)
+		return sendTelegramLocalFileByKind(
+			ctx,
+			tgClient,
+			chatID,
+			filePath,
+			caption,
+			kind,
+			stripVideoPreviewOptions(videoOptions),
+		)
 	})
 }
 
@@ -910,6 +927,16 @@ func hasVideoPreviewOptions(options *telegram.SendVideoOptions) bool {
 		return false
 	}
 	return strings.TrimSpace(options.ThumbnailPath) != "" || strings.TrimSpace(options.CoverPath) != ""
+}
+
+func stripVideoPreviewOptions(options *telegram.SendVideoOptions) *telegram.SendVideoOptions {
+	if options == nil {
+		return nil
+	}
+	next := *options
+	next.ThumbnailPath = ""
+	next.CoverPath = ""
+	return &next
 }
 
 func retryTelegramMessageSend(ctx context.Context, fn func() (telegram.Message, error)) (telegram.Message, error) {

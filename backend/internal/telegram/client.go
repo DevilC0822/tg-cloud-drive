@@ -228,6 +228,9 @@ func normalizeMessageDocument(msg *Message) {
 
 type SendVideoOptions struct {
 	SupportsStreaming bool
+	DurationSeconds   int
+	Width             int
+	Height            int
 	ThumbnailPath     string
 	CoverPath         string
 }
@@ -242,6 +245,15 @@ func normalizeSendVideoOptions(options *SendVideoOptions) SendVideoOptions {
 	out.SupportsStreaming = options.SupportsStreaming
 	if !out.SupportsStreaming {
 		out.SupportsStreaming = true
+	}
+	if options.DurationSeconds > 0 {
+		out.DurationSeconds = options.DurationSeconds
+	}
+	if options.Width > 0 {
+		out.Width = options.Width
+	}
+	if options.Height > 0 {
+		out.Height = options.Height
 	}
 	out.ThumbnailPath = strings.TrimSpace(options.ThumbnailPath)
 	out.CoverPath = strings.TrimSpace(options.CoverPath)
@@ -271,6 +283,15 @@ func (c *Client) SendVideoFileWithOptions(
 	normalized := normalizeSendVideoOptions(options)
 	extra := map[string]string{
 		"supports_streaming": strconv.FormatBool(normalized.SupportsStreaming),
+	}
+	if normalized.DurationSeconds > 0 {
+		extra["duration"] = strconv.Itoa(normalized.DurationSeconds)
+	}
+	if normalized.Width > 0 {
+		extra["width"] = strconv.Itoa(normalized.Width)
+	}
+	if normalized.Height > 0 {
+		extra["height"] = strconv.Itoa(normalized.Height)
 	}
 	extraFiles := map[string]string{}
 	if normalized.ThumbnailPath != "" {
@@ -428,6 +449,15 @@ func (c *Client) SendVideoByLocalPathWithOptions(
 	normalized := normalizeSendVideoOptions(options)
 	extra := map[string]string{
 		"supports_streaming": strconv.FormatBool(normalized.SupportsStreaming),
+	}
+	if normalized.DurationSeconds > 0 {
+		extra["duration"] = strconv.Itoa(normalized.DurationSeconds)
+	}
+	if normalized.Width > 0 {
+		extra["width"] = strconv.Itoa(normalized.Width)
+	}
+	if normalized.Height > 0 {
+		extra["height"] = strconv.Itoa(normalized.Height)
 	}
 	extraLocalFiles := map[string]string{}
 	if normalized.ThumbnailPath != "" {
