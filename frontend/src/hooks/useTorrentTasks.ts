@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, apiFetchJson } from '@/utils/api';
-import type { TorrentTask } from '@/types';
+import type { TorrentMetaPreview, TorrentTask } from '@/types';
 
 type TorrentTaskListResponse = {
   items: TorrentTask[];
@@ -27,6 +27,10 @@ type RetryTorrentTaskResponse = {
   cleanupWarnings?: string[];
 };
 
+type PreviewTorrentResponse = {
+  preview: TorrentMetaPreview;
+};
+
 type UseTorrentTasksOptions = {
   enabled?: boolean;
   pollIntervalMs?: number;
@@ -36,7 +40,13 @@ type CreateTorrentTaskInput = {
   parentId?: string | null;
   torrentUrl?: string;
   torrentFile?: File | null;
+  selectedFileIndexes?: number[];
   submittedBy?: string;
+};
+
+type PreviewTorrentInput = {
+  torrentUrl?: string;
+  torrentFile?: File | null;
 };
 
 function normalizeTask(task: TorrentTask): TorrentTask {
@@ -114,8 +124,14 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
   const createTask = useCallback(async (input: CreateTorrentTaskInput) => {
     const torrentUrl = input.torrentUrl?.trim() || '';
     const torrentFile = input.torrentFile || null;
+    const selectedFileIndexes = Array.from(
+      new Set((input.selectedFileIndexes || []).filter((idx) => Number.isInteger(idx) && idx >= 0))
+    ).sort((a, b) => a - b);
     if (!torrentUrl && !torrentFile) {
       return { ok: false as const, reason: '请填写 Torrent URL 或选择种子文件' };
+    }
+    if (input.selectedFileIndexes && selectedFileIndexes.length === 0) {
+      return { ok: false as const, reason: '请至少选择一个种子文件' };
     }
 
     const form = new FormData();
@@ -130,6 +146,9 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
     }
     if (input.submittedBy?.trim()) {
       form.append('submittedBy', input.submittedBy.trim());
+    }
+    if (selectedFileIndexes.length > 0) {
+      form.append('selectedFileIndexes', JSON.stringify(selectedFileIndexes));
     }
 
     setSubmitting(true);
@@ -146,6 +165,33 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
       return { ok: false as const, reason: e?.message || '创建 Torrent 任务失败' };
     } finally {
       setSubmitting(false);
+    }
+  }, []);
+
+  const previewTorrent = useCallback(async (input: PreviewTorrentInput) => {
+    const torrentUrl = input.torrentUrl?.trim() || '';
+    const torrentFile = input.torrentFile || null;
+    if (!torrentUrl && !torrentFile) {
+      return { ok: false as const, reason: '请填写 Torrent URL 或选择种子文件' };
+    }
+
+    const form = new FormData();
+    if (torrentUrl) {
+      form.append('torrentUrl', torrentUrl);
+    }
+    if (torrentFile) {
+      form.append('torrentFile', torrentFile, torrentFile.name);
+    }
+
+    try {
+      const res = await apiFetchJson<PreviewTorrentResponse>('/api/torrents/preview', {
+        method: 'POST',
+        body: form,
+      });
+      return { ok: true as const, preview: res.preview };
+    } catch (err: unknown) {
+      const e = err as ApiError;
+      return { ok: false as const, reason: e?.message || '解析 Torrent 文件失败' };
     }
   }, []);
 
@@ -238,7 +284,7 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
     tasks,
     loading,
     submitting,
-    reload: loadTasks,
+    previewTorrent,
     createTask,
     getTaskDetail,
     dispatchTask,

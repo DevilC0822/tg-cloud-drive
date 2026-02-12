@@ -65,24 +65,6 @@ export function formatDateTime(date: Date | string): string {
 }
 
 /**
- * 格式化存储百分比
- */
-export function formatStoragePercent(used: number, total: number): number {
-  if (total === 0) return 0;
-  return Math.round((used / total) * 100);
-}
-
-/**
- * 格式化数量
- */
-export function formatCount(count: number): string {
-  if (count < 1000) return count.toString();
-  if (count < 10000) return `${(count / 1000).toFixed(1)}K`;
-  if (count < 1000000) return `${Math.floor(count / 1000)}K`;
-  return `${(count / 1000000).toFixed(1)}M`;
-}
-
-/**
  * 截断文件名（保留扩展名）
  */
 export function truncateFilename(filename: string, maxLength: number = 20): string {

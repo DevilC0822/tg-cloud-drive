@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { KeyRound, Lock, ShieldCheck, Unlock } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 import { Input } from '@/components/ui/Input';
 import { ApiError, apiFetchJson } from '@/utils/api';
 import { useToast } from '@/hooks/useToast';
@@ -90,9 +90,9 @@ export function PasswordVaultPage({ children, onUnlocked, onLocked }: PasswordVa
 
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 md:px-6 py-8">
-        <div className="rounded-3xl border border-neutral-200/80 dark:border-neutral-700/80 bg-white/80 dark:bg-neutral-900/70 p-6 text-sm text-neutral-500 dark:text-neutral-400">
-          正在加载密码箱状态...
+      <div className="mx-auto w-full max-w-4xl px-4 py-8 md:px-6">
+        <div className="rounded-3xl border border-neutral-200/80 bg-white/86 p-6 text-sm text-neutral-500 dark:border-neutral-700/80 dark:bg-neutral-900/70 dark:text-neutral-400">
+          正在读取密码箱状态...
         </div>
       </div>
     );
@@ -100,14 +100,14 @@ export function PasswordVaultPage({ children, onUnlocked, onLocked }: PasswordVa
 
   if (!status.enabled) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 md:px-6 py-8">
-        <div className="rounded-3xl border border-neutral-200/80 dark:border-neutral-700/80 bg-white/90 dark:bg-neutral-900/70 p-6 md:p-8">
+      <div className="mx-auto w-full max-w-4xl px-4 py-8 md:px-6">
+        <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] dark:border-neutral-700/80 dark:bg-neutral-900/70 md:p-8">
           <div className="flex items-start gap-3">
-            <KeyRound className="mt-0.5 h-5 w-5 text-[#D4AF37]" />
+            <KeyRound className="mt-0.5 h-5 w-5 text-[var(--theme-primary)]" />
             <div>
               <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">密码箱未启用</h1>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                请先到设置页面配置“密码箱密码”，配置后即可访问密码箱路由。
+                请先在设置页配置密码箱密码，配置后即可访问本页面。
               </p>
             </div>
           </div>
@@ -118,14 +118,14 @@ export function PasswordVaultPage({ children, onUnlocked, onLocked }: PasswordVa
 
   if (!status.unlocked) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 md:px-6 py-8">
-        <div className="rounded-3xl border border-neutral-200/80 dark:border-neutral-700/80 bg-white/90 dark:bg-neutral-900/70 p-6 md:p-8">
+      <div className="mx-auto w-full max-w-4xl px-4 py-8 md:px-6">
+        <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] dark:border-neutral-700/80 dark:bg-neutral-900/70 md:p-8">
           <div className="flex items-start gap-3">
-            <Lock className="mt-0.5 h-5 w-5 text-[#D4AF37]" />
+            <Lock className="mt-0.5 h-5 w-5 text-[var(--theme-primary)]" />
             <div className="min-w-0">
               <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">密码箱已锁定</h1>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                请输入密码箱访问密码进行解锁。
+                请输入访问密码后继续查看受保护文件。
               </p>
             </div>
           </div>
@@ -143,9 +143,15 @@ export function PasswordVaultPage({ children, onUnlocked, onLocked }: PasswordVa
               }}
             />
             <div className="mt-4">
-              <Button variant="gold" onClick={() => void handleUnlock()} loading={unlocking} disabled={unlocking}>
-                解锁密码箱
-              </Button>
+              <ActionTextButton
+                tone="brand"
+                density="cozy"
+                className="min-w-[136px] justify-center"
+                onPress={() => void handleUnlock()}
+                isDisabled={unlocking}
+              >
+                {unlocking ? '解锁中...' : '解锁并继续'}
+              </ActionTextButton>
             </div>
           </div>
         </div>
@@ -155,22 +161,26 @@ export function PasswordVaultPage({ children, onUnlocked, onLocked }: PasswordVa
 
   return (
     <div className="h-full flex flex-col">
-      <div className="mx-auto w-full max-w-5xl px-4 md:px-6 py-6 md:py-8">
-        <div className="rounded-3xl border border-neutral-200/80 dark:border-neutral-700/80 bg-white/90 dark:bg-neutral-900/70 p-6 md:p-8">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6 md:py-8">
+        <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] dark:border-neutral-700/80 dark:bg-neutral-900/70 md:p-8">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-[#D4AF37]" />
+                <ShieldCheck className="h-5 w-5 text-[var(--theme-primary)]" />
                 <h1 className="text-xl md:text-2xl font-semibold text-neutral-900 dark:text-neutral-100">密码箱</h1>
               </div>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                已解锁。此视图仅展示已移入密码箱的文件，移出后将回到普通文件视图。
+                当前为已解锁状态，仅展示已移入密码箱的文件。
               </p>
-              <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">本次会话有效至：{expireText}</p>
+              <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">会话有效期至：{expireText}</p>
             </div>
-            <Button variant="secondary" onClick={() => void handleLock()} icon={<Unlock className="w-4 h-4" />}>
-              重新锁定
-            </Button>
+            <ActionTextButton
+              density="cozy"
+              leadingIcon={<Unlock className="h-4 w-4" />}
+              onPress={() => void handleLock()}
+            >
+              立即锁定
+            </ActionTextButton>
           </div>
         </div>
       </div>

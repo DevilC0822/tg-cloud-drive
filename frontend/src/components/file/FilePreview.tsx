@@ -5,18 +5,26 @@ import {
   ChevronRight,
   Download,
   Share2,
+  MoreVertical,
   ZoomIn,
   ZoomOut,
   RotateCw,
+  Image as ImageIcon,
+  Music2,
+  File,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Dropdown as HeroDropdown, Label as HeroLabel } from '@heroui/react';
 import type { FileItem } from '@/types';
 import { formatFileSize, formatDateTime } from '@/utils/formatters';
+import { ActionIconButton } from '@/components/ui/HeroActionPrimitives';
 
 function cn(...inputs: (string | undefined | null | boolean)[]) {
   return twMerge(clsx(inputs));
 }
+
+const PREVIEW_MODAL_EXIT_MS = 180;
 
 export interface FilePreviewProps {
   open: boolean;
@@ -31,7 +39,7 @@ export interface FilePreviewProps {
 
 export function FilePreview({
   open,
-  file,
+  file: incomingFile,
   files = [],
   onClose,
   onNavigate,
@@ -43,16 +51,41 @@ export function FilePreview({
   const [rotation, setRotation] = useState(0);
   const [documentText, setDocumentText] = useState<string | null>(null);
   const [documentLoading, setDocumentLoading] = useState(false);
+  const [activeFile, setActiveFile] = useState<FileItem | null>(incomingFile);
+  const [isMounted, setIsMounted] = useState(open && Boolean(incomingFile));
+  const [isClosing, setIsClosing] = useState(false);
+
+  const file = incomingFile ?? activeFile;
+
+  useEffect(() => {
+    if (open && incomingFile) {
+      setActiveFile(incomingFile);
+      setIsMounted(true);
+      setIsClosing(false);
+      return;
+    }
+
+    if (!isMounted) return;
+
+    setIsClosing(true);
+    const timer = window.setTimeout(() => {
+      setIsMounted(false);
+      setIsClosing(false);
+      setActiveFile(null);
+    }, PREVIEW_MODAL_EXIT_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [incomingFile, isMounted, open]);
 
   // 重置状态
   useEffect(() => {
-    if (open) {
+    if (open && incomingFile) {
       setZoom(1);
       setRotation(0);
       setDocumentText(null);
       setDocumentLoading(false);
     }
-  }, [open, file]);
+  }, [incomingFile, open]);
 
   const previewUrl = useMemo(() => {
     if (!file) return undefined;
@@ -149,15 +182,15 @@ export function FilePreview({
 
   // 禁止背景滚动
   useEffect(() => {
-    if (open) {
+    if (open || isMounted) {
       document.body.style.overflow = 'hidden';
     }
     return () => {
       document.body.style.overflow = '';
     };
-  }, [open]);
+  }, [isMounted, open]);
 
-  if (!open || !file) return null;
+  if (!isMounted || !file) return null;
 
   // 渲染预览内容
   const renderPreview = () => {
@@ -166,8 +199,8 @@ export function FilePreview({
         if (!previewUrl && !file.thumbnail) {
           return (
             <div className="text-center">
-              <div className="w-24 h-24 rounded-2xl bg-neutral-100/10 flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl">🖼️</span>
+              <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-2xl border border-white/20 bg-white/10">
+                <ImageIcon className="h-10 w-10 text-white/70" />
               </div>
               <p className="text-neutral-400">暂无可用预览数据</p>
             </div>
@@ -204,8 +237,8 @@ export function FilePreview({
         }
         return (
           <div className="flex flex-col items-center gap-6">
-            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#D4AF37] to-[#B8962E] flex items-center justify-center">
-              <span className="text-4xl">🎵</span>
+            <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)]">
+              <Music2 className="h-11 w-11 text-neutral-900" />
             </div>
             <audio src={previewUrl} controls className="w-80">
               您的浏览器不支持音频播放
@@ -249,10 +282,10 @@ export function FilePreview({
       default:
         return (
           <div className="text-center">
-            <div className="w-24 h-24 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">📄</span>
+            <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-2xl border border-white/20 bg-white/10">
+              <File className="h-10 w-10 text-white/70" />
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">{file.name}</h3>
+            <h3 className="mb-2 text-lg font-medium text-white">{file.name}</h3>
             <p className="text-neutral-400">此文件类型暂不支持预览</p>
           </div>
         );
@@ -260,114 +293,152 @@ export function FilePreview({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex flex-col animate-fadeIn">
-      {/* 顶部工具栏 */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black/50">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-          <div>
-            <h2 className="text-white font-medium">{file.name}</h2>
-            <p className="text-sm text-neutral-400">
-              {formatFileSize(file.size)} · {formatDateTime(file.updatedAt)}
-            </p>
+    <div
+      className={cn(
+        'fixed inset-0 z-50 bg-slate-950/96',
+        isClosing ? 'animate-modalOverlayOut' : 'animate-modalOverlayIn'
+      )}
+    >
+      <div
+        className={cn(
+          'relative flex h-full flex-col',
+          isClosing ? 'animate-modalPanelOut' : 'animate-modalPanelIn'
+        )}
+      >
+        {/* 顶部工具栏 */}
+        <div className="flex items-center justify-between border-b border-white/10 bg-slate-900/65 px-4 py-3 backdrop-blur">
+          <div className="flex items-center gap-4">
+            <ActionIconButton
+              icon={<X className="w-5 h-5" />}
+              label="关闭预览"
+              surface="dark"
+              onPress={onClose}
+              className="rounded-lg"
+            />
+            <div>
+              <h2 className="font-medium text-white">{file.name}</h2>
+              <p className="text-sm text-neutral-400">
+                {formatFileSize(file.size)} · {formatDateTime(file.updatedAt)}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {file.type === 'image' && (
+              <>
+                <ActionIconButton
+                  icon={<ZoomOut className="w-5 h-5" />}
+                  label="缩小"
+                  surface="dark"
+                  onPress={() => setZoom((z) => Math.max(z - 0.25, 0.5))}
+                />
+                <span className="min-w-[3rem] text-center text-sm text-white">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <ActionIconButton
+                  icon={<ZoomIn className="w-5 h-5" />}
+                  label="放大"
+                  surface="dark"
+                  onPress={() => setZoom((z) => Math.min(z + 0.25, 3))}
+                />
+                <ActionIconButton
+                  icon={<RotateCw className="w-5 h-5" />}
+                  label="旋转"
+                  surface="dark"
+                  onPress={() => setRotation((r) => r + 90)}
+                />
+                <div className="mx-2 h-6 w-px bg-white/20" />
+              </>
+            )}
+
+            <HeroDropdown>
+              <HeroDropdown.Trigger>
+                <ActionIconButton
+                  icon={<MoreVertical className="w-5 h-5" />}
+                  label="更多操作"
+                  surface="dark"
+                />
+              </HeroDropdown.Trigger>
+              <HeroDropdown.Popover className="w-44">
+                <HeroDropdown.Menu
+                  aria-label="文件预览操作"
+                  onAction={(key) => {
+                    if (key === 'download') {
+                      onDownload?.(file);
+                    }
+                    if (key === 'share') {
+                      onShare?.(file);
+                    }
+                  }}
+                >
+                  <HeroDropdown.Item
+                    id="download"
+                    textValue="下载文件"
+                    isDisabled={!onDownload}
+                  >
+                    <Download className="h-4 w-4 text-current" />
+                    <HeroLabel>下载文件</HeroLabel>
+                  </HeroDropdown.Item>
+                  <HeroDropdown.Item
+                    id="share"
+                    textValue="分享文件"
+                    isDisabled={!onShare}
+                  >
+                    <Share2 className="h-4 w-4 text-current" />
+                    <HeroLabel>分享文件</HeroLabel>
+                  </HeroDropdown.Item>
+                </HeroDropdown.Menu>
+              </HeroDropdown.Popover>
+            </HeroDropdown>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* 图片专用工具 */}
-          {file.type === 'image' && (
-            <>
-              <button
-                onClick={() => setZoom((z) => Math.max(z - 0.25, 0.5))}
-                className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
-                title="缩小"
-              >
-                <ZoomOut className="w-5 h-5" />
-              </button>
-              <span className="text-white text-sm min-w-[3rem] text-center">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                onClick={() => setZoom((z) => Math.min(z + 0.25, 3))}
-                className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
-                title="放大"
-              >
-                <ZoomIn className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setRotation((r) => r + 90)}
-                className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
-                title="旋转"
-              >
-                <RotateCw className="w-5 h-5" />
-              </button>
-              <div className="w-px h-6 bg-white/20 mx-2" />
-            </>
-          )}
-
-          <button
-            className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
-            title="下载"
-            onClick={() => onDownload?.(file)}
-          >
-            <Download className="w-5 h-5" />
-          </button>
-          <button
-            className="p-2 rounded-lg hover:bg-white/10 text-white transition-colors"
-            title="分享"
-            onClick={() => onShare?.(file)}
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
+        {/* 预览内容 */}
+        <div className="flex flex-1 items-center justify-center overflow-hidden p-4">
+          {renderPreview()}
         </div>
+
+        {/* 导航按钮 */}
+        {files.length > 1 && (
+          <>
+            <div className="absolute left-4 top-1/2 -translate-y-1/2">
+              <ActionIconButton
+                icon={<ChevronLeft className="w-6 h-6" />}
+                label="上一个文件"
+                surface="dark"
+                density="cozy"
+                onPress={navigatePrev}
+                isDisabled={!hasPrev}
+                className={cn(
+                  'rounded-full bg-slate-900/65 backdrop-blur',
+                  !hasPrev && 'opacity-40'
+                )}
+              />
+            </div>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+              <ActionIconButton
+                icon={<ChevronRight className="w-6 h-6" />}
+                label="下一个文件"
+                surface="dark"
+                density="cozy"
+                onPress={navigateNext}
+                isDisabled={!hasNext}
+                className={cn(
+                  'rounded-full bg-slate-900/65 backdrop-blur',
+                  !hasNext && 'opacity-40'
+                )}
+              />
+            </div>
+          </>
+        )}
+
+        {/* 底部信息 */}
+        {files.length > 1 && (
+          <div className="border-t border-white/10 py-3 text-center text-sm text-neutral-400">
+            {currentIndex + 1} / {files.length}
+          </div>
+        )}
       </div>
-
-      {/* 预览内容 */}
-      <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-        {renderPreview()}
-      </div>
-
-      {/* 导航按钮 */}
-      {files.length > 1 && (
-        <>
-          <button
-            onClick={navigatePrev}
-            disabled={!hasPrev}
-            className={cn(
-              'absolute left-4 top-1/2 -translate-y-1/2',
-              'p-3 rounded-full bg-black/50 text-white',
-              'transition-all duration-200',
-              hasPrev ? 'hover:bg-black/70' : 'opacity-30 cursor-not-allowed'
-            )}
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <button
-            onClick={navigateNext}
-            disabled={!hasNext}
-            className={cn(
-              'absolute right-4 top-1/2 -translate-y-1/2',
-              'p-3 rounded-full bg-black/50 text-white',
-              'transition-all duration-200',
-              hasNext ? 'hover:bg-black/70' : 'opacity-30 cursor-not-allowed'
-            )}
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
-        </>
-      )}
-
-      {/* 底部信息 */}
-      {files.length > 1 && (
-        <div className="text-center py-3 text-neutral-400 text-sm">
-          {currentIndex + 1} / {files.length}
-        </div>
-      )}
     </div>
   );
 }

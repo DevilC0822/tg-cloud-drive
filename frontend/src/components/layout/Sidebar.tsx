@@ -8,16 +8,18 @@ import {
   Settings,
   KeyRound,
   ArrowLeftRight,
-  Plus,
-  Upload,
   X,
   Cloud,
+  ArrowUpRight,
   type LucideIcon,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { activeNavAtom, mobileSidebarOpenAtom, sidebarOpenAtom } from '@/stores/uiAtoms';
-import { Button } from '@/components/ui/Button';
+import {
+  ActionIconButton,
+  ActionTextButton,
+} from '@/components/ui/HeroActionPrimitives';
 
 function cn(...inputs: (string | undefined | null | boolean)[]) {
   return twMerge(clsx(inputs));
@@ -41,26 +43,26 @@ type SidebarNavSection = {
 const navSections: SidebarNavSection[] = [
   {
     id: 'explore',
-    label: '浏览',
+    label: '文件',
     items: [
-      { id: 'files', label: '我的文件', subtitle: '目录与文件总览', icon: FolderClosed },
-      { id: 'recent', label: '最近访问', subtitle: '最近打开的项目', icon: Clock },
-      { id: 'favorites', label: '收藏夹', subtitle: '重点文件快捷访问', icon: Star },
+      { id: 'files', label: '全部文件', subtitle: '按目录浏览文件', icon: FolderClosed },
+      { id: 'recent', label: '最近访问', subtitle: '最近打开的内容', icon: Clock },
+      { id: 'favorites', label: '收藏', subtitle: '常用文件快捷入口', icon: Star },
     ],
   },
   {
     id: 'manage',
-    label: '管理',
+    label: '任务',
     items: [
-      { id: 'transfers', label: '传输中心', subtitle: '上传下载任务与历史', icon: ArrowLeftRight },
-      { id: 'trash', label: '回收站', subtitle: '待恢复或彻底删除', icon: Trash2 },
+      { id: 'transfers', label: '传输中心', subtitle: '实时任务与历史记录', icon: ArrowLeftRight },
+      { id: 'trash', label: '回收站', subtitle: '恢复或彻底删除', icon: Trash2 },
     ],
   },
   {
     id: 'system',
     label: '系统',
     items: [
-      { id: 'vault', label: '密码箱', subtitle: '受保护文件空间', icon: KeyRound },
+      { id: 'vault', label: '密码箱', subtitle: '受保护文件区', icon: KeyRound },
       { id: 'settings', label: '设置', subtitle: '运行参数与策略', icon: Settings },
     ],
   },
@@ -78,19 +80,19 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
   const isActive = activeNav === item.id;
 
   return (
-    <button
-      onClick={() => onClick(item.id)}
+    <ActionTextButton
+      onPress={() => onClick(item.id)}
       aria-current={isActive ? 'page' : undefined}
+      tone="neutral"
       className={cn(
         'group relative w-full overflow-hidden text-left',
-        'rounded-2xl px-3 py-2.5',
-        'transition-[background-color,color,box-shadow,transform,filter] duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
+        'h-auto min-h-0 justify-start rounded-2xl px-3 py-3',
+        'transition-[background-color,color,border-color,box-shadow,transform] duration-[520ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
         'motion-reduce:transition-none',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37]/60',
         'active:scale-[0.99]',
         isActive
-          ? 'bg-gradient-to-r from-[#D4AF37]/18 to-[#D4AF37]/8 dark:from-[#D4AF37]/22 dark:to-[#D4AF37]/10 text-neutral-900 dark:text-neutral-100 ring-1 ring-[#D4AF37]/30 dark:ring-[#D4AF37]/40 shadow-sm'
-          : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100'
+          ? 'border border-[var(--theme-primary-a35)] bg-[linear-gradient(132deg,var(--theme-primary-a24),var(--theme-primary-a08))] text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800/86 dark:text-neutral-100 shadow-[0_14px_28px_-20px_rgba(30,41,59,0.45)]'
+          : 'border border-transparent text-neutral-600 dark:text-neutral-300 hover:border-neutral-200/85 dark:hover:border-neutral-700/85 hover:bg-white/70 dark:hover:bg-neutral-800/74 hover:text-neutral-900 dark:hover:text-neutral-100'
       )}
     >
       {pulseToken !== null ? (
@@ -101,19 +103,26 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
         />
       ) : null}
       <span
+        aria-hidden="true"
         className={cn(
-          'absolute left-1.5 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full origin-center',
+          'absolute inset-x-3 top-0 h-px transition-colors duration-300',
+          isActive ? 'bg-[var(--theme-primary-a55)]' : 'bg-transparent group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700'
+        )}
+      />
+      <span
+        className={cn(
+          'absolute left-1.5 top-1/2 h-7 w-1 -translate-y-1/2 rounded-full origin-center',
           'transition-[opacity,transform,background-color] duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
           'motion-reduce:transition-none',
           'z-10',
           isActive
-            ? 'bg-[#D4AF37] opacity-100 scale-y-100'
+            ? 'bg-[var(--theme-primary)] opacity-100 scale-y-100'
             : 'bg-neutral-300 dark:bg-neutral-600 opacity-0 scale-y-60 group-hover:opacity-40 group-hover:scale-y-80'
         )}
       />
       <span
         className={cn(
-          'flex items-center gap-3',
+          'flex items-center gap-3.5',
           'relative z-10',
           'transition-transform duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
           'motion-reduce:transition-none',
@@ -122,12 +131,12 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
       >
         <span
           className={cn(
-            'flex h-9 w-9 items-center justify-center rounded-xl',
+            'flex h-10 w-10 items-center justify-center rounded-xl border',
             'transition-[background-color,transform] duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
             'motion-reduce:transition-none',
             isActive
-              ? 'bg-[#D4AF37]/15 scale-100'
-              : 'bg-neutral-100 dark:bg-neutral-800 scale-95 group-hover:scale-100'
+              ? 'border-[var(--theme-primary-a35)] bg-[var(--theme-primary-a20)] scale-100'
+              : 'border-neutral-200/85 bg-neutral-100 dark:border-neutral-700/80 dark:bg-neutral-800 scale-95 group-hover:scale-100'
           )}
         >
           <Icon
@@ -136,7 +145,7 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
               'transition-colors duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
               'motion-reduce:transition-none',
               isActive
-                ? 'text-[#D4AF37]'
+                ? 'text-[var(--theme-primary-ink)]'
                 : 'text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-200'
             )}
           />
@@ -146,7 +155,8 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
             className={cn(
               'block truncate text-sm font-semibold leading-tight',
               'transition-colors duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
-              'motion-reduce:transition-none'
+              'motion-reduce:transition-none',
+              isActive ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-700 dark:text-neutral-200'
             )}
           >
             {item.label}
@@ -162,17 +172,20 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
             {item.subtitle}
           </span>
         </span>
+        <ArrowUpRight
+          className={cn(
+            'ml-auto h-3.5 w-3.5 shrink-0 transition-all duration-300',
+            isActive
+              ? 'opacity-100 text-[var(--theme-primary-ink)]'
+              : 'opacity-0 -translate-x-1 text-neutral-400 group-hover:translate-x-0 group-hover:opacity-90 dark:text-neutral-500'
+          )}
+        />
       </span>
-    </button>
+    </ActionTextButton>
   );
 }
 
-export interface SidebarProps {
-  onNewFolder?: () => void;
-  onUpload?: () => void;
-}
-
-export function Sidebar({ onNewFolder, onUpload }: SidebarProps) {
+export function Sidebar() {
   const [activeNav, setActiveNav] = useAtom(activeNavAtom);
   const sidebarOpen = useAtomValue(sidebarOpenAtom);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useAtom(mobileSidebarOpenAtom);
@@ -207,50 +220,41 @@ export function Sidebar({ onNewFolder, onUpload }: SidebarProps) {
 
   const sidebarContent = (
     <>
-      <div className="px-4 pt-5 pb-4">
-        <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/70 dark:border-neutral-700/70 bg-white/70 dark:bg-neutral-900/40 px-3 py-3">
-          <div className="h-10 w-10 rounded-xl bg-[#D4AF37] flex items-center justify-center">
-            <Cloud className="h-5 w-5 text-neutral-900" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="truncate font-semibold text-neutral-900 dark:text-neutral-100">
-              TG Cloud
-            </h1>
-            <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">个人网盘</p>
+      <div className="px-4 pt-5 pb-3">
+        <div className="relative overflow-hidden rounded-2xl border border-[var(--theme-primary-a24)] bg-[linear-gradient(138deg,var(--theme-primary-a24),var(--theme-primary-a08))] px-3 py-3 shadow-[0_12px_28px_-20px_rgba(30,41,59,0.42)]">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--theme-primary-a24)] blur-xl"
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-white/30 dark:bg-neutral-800/30 blur-2xl"
+          />
+
+          <div className="relative flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--theme-primary-a35)] bg-gradient-to-br from-[var(--theme-primary-soft)] to-[var(--theme-primary-strong)] shadow-[0_10px_20px_-16px_rgba(30,41,59,0.55)]">
+              <Cloud className="h-5 w-5 text-neutral-900" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-sm font-semibold tracking-[0.02em] text-neutral-900 dark:text-neutral-100">
+                Telegram 云盘
+              </h1>
+              <p className="truncate text-[11px] text-neutral-600 dark:text-neutral-300">
+                TG Cloud Drive
+              </p>
+            </div>
           </div>
         </div>
-        <div className="mt-3 rounded-xl border border-[#D4AF37]/25 bg-[#D4AF37]/10 px-3 py-2 text-xs text-neutral-700 dark:text-neutral-200">
-          频道存储已连接，菜单支持多视图快速切换。
+        <div className="px-1 pt-3">
+          <div className="h-px bg-gradient-to-r from-[var(--theme-primary-a35)] via-[var(--theme-primary-a08)] to-transparent" />
         </div>
       </div>
 
-      <div className="px-4">
-        <div className="space-y-2 rounded-2xl border border-neutral-200/70 dark:border-neutral-700/70 bg-white/60 dark:bg-neutral-900/35 p-2">
-          <Button
-            variant="gold"
-            fullWidth
-            icon={<Upload className="w-4 h-4" />}
-            onClick={onUpload}
-          >
-            上传文件
-          </Button>
-          <Button
-            variant="secondary"
-            fullWidth
-            icon={<Plus className="w-4 h-4" />}
-            onClick={onNewFolder}
-            className="dark:bg-neutral-800/90"
-          >
-            新建文件夹
-          </Button>
-        </div>
-      </div>
-
-      <nav className="mt-4 flex-1 overflow-y-auto px-3 pb-4" aria-label="侧边导航">
-        <div className="space-y-5">
+      <nav className="mt-2 flex-1 overflow-y-auto px-3 pb-4" aria-label="侧边导航">
+        <div className="space-y-4">
           {navSections.map((section) => (
             <section key={section.id} aria-label={section.label}>
-              <h2 className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-400 dark:text-neutral-500">
+              <h2 className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500/90 dark:text-neutral-400/90">
                 {section.label}
               </h2>
               <div className="space-y-1">
@@ -289,7 +293,7 @@ export function Sidebar({ onNewFolder, onUpload }: SidebarProps) {
       {/* 移动端侧边栏遮罩 */}
       {mobileSidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          className="lg:hidden fixed inset-0 bg-neutral-950/50 backdrop-blur-sm z-40"
           onClick={() => setMobileSidebarOpen(false)}
         />
       )}
@@ -306,13 +310,12 @@ export function Sidebar({ onNewFolder, onUpload }: SidebarProps) {
         )}
       >
         {/* 关闭按钮 */}
-        <button
-          onClick={() => setMobileSidebarOpen(false)}
-          aria-label="关闭侧栏"
-          className="absolute top-4 right-4 p-2 rounded-lg bg-white/70 dark:bg-neutral-900/70 hover:bg-neutral-100 dark:hover:bg-neutral-800 border border-neutral-200/60 dark:border-neutral-700/70"
-        >
-          <X className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
-        </button>
+        <ActionIconButton
+          icon={<X className="w-5 h-5" />}
+          label="关闭侧栏"
+          onPress={() => setMobileSidebarOpen(false)}
+          className="absolute right-4 top-4 border border-neutral-200/75 bg-white/62 dark:border-neutral-700/80 dark:bg-neutral-900/72"
+        />
         {sidebarContent}
       </aside>
     </>

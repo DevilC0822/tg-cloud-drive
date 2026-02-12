@@ -1,15 +1,33 @@
 import { useAtom } from 'jotai';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type KeyboardEvent, type ReactNode } from 'react';
-import { Clock3, Download, HardDrive, KeyRound, Magnet, Save, SlidersHorizontal, Upload, Video } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react';
+import {
+  Clock3,
+  Download,
+  HardDrive,
+  KeyRound,
+  Loader2,
+  Magnet,
+  Save,
+  SlidersHorizontal,
+  Upload,
+  Video,
+} from 'lucide-react';
+import {
+  Checkbox as HeroCheckbox,
+  Label as HeroLabel,
+  ListBox as HeroListBox,
+  Select as HeroSelect,
+} from '@heroui/react';
 import {
   downloadConcurrencyAtom,
   reservedDiskBytesAtom,
   uploadConcurrencyAtom,
 } from '@/stores/uiAtoms';
 import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+import { NumberFieldInput } from '@/components/ui/NumberFieldInput';
+import { ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 import { useToast } from '@/hooks/useToast';
 import { ApiError, apiFetchJson } from '@/utils/api';
 
@@ -34,14 +52,6 @@ type SettingsTabKey = (typeof SETTINGS_TABS)[number]['key'];
 
 function isSettingsTabKey(value: string | null): value is SettingsTabKey {
   return SETTINGS_TABS.some((tab) => tab.key === value);
-}
-
-function getTabId(key: SettingsTabKey) {
-  return `settings-tab-${key}`;
-}
-
-function getPanelId(key: SettingsTabKey) {
-  return `settings-panel-${key}`;
 }
 
 type RuntimeSettingsDTO = {
@@ -74,8 +84,8 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 w-9 h-9 rounded-xl bg-[#D4AF37]/10 dark:bg-[#D4AF37]/15 flex items-center justify-center">
-        <Icon className="w-4 h-4 text-[#D4AF37]" />
+      <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--theme-primary-a12)]">
+        <Icon className="w-4 h-4 text-[var(--theme-primary)]" />
       </div>
       <div className="min-w-0">
         <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{title}</h2>
@@ -95,7 +105,7 @@ function SettingsRow({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white/90 dark:bg-neutral-900/70 p-4">
+    <div className="rounded-2xl border border-neutral-200/80 bg-white/92 p-4 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.6)] dark:border-neutral-700/80 dark:bg-neutral-900/72">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
         <div className="min-w-0">
           <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</div>
@@ -169,42 +179,6 @@ export function SettingsPage() {
   const [chunkLimitMB, setChunkLimitMB] = useState(DEFAULT_CHUNK_LIMIT_MB);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const tablistRef = useRef<HTMLDivElement | null>(null);
-  const [indicatorStyle, setIndicatorStyle] = useState<{ left: number; width: number } | null>(null);
-
-  const handleTabKeyDown = useCallback((e: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    // Tabs 键盘可达：左右切换、Home/End 跳转（符合常见 tablist 交互习惯）
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
-    e.preventDefault();
-
-    const lastIndex = SETTINGS_TABS.length - 1;
-    let nextIndex = index;
-    if (e.key === 'ArrowRight') nextIndex = index >= lastIndex ? 0 : index + 1;
-    if (e.key === 'ArrowLeft') nextIndex = index <= 0 ? lastIndex : index - 1;
-    if (e.key === 'Home') nextIndex = 0;
-    if (e.key === 'End') nextIndex = lastIndex;
-
-    const next = SETTINGS_TABS[nextIndex];
-    setActiveTab(next.key);
-    tabRefs.current[nextIndex]?.focus();
-  }, []);
-
-  // 计算激活 tab 的指示器位置
-  useLayoutEffect(() => {
-    const activeIndex = SETTINGS_TABS.findIndex((t) => t.key === activeTab);
-    const activeEl = tabRefs.current[activeIndex];
-    const container = tablistRef.current;
-    if (!activeEl || !container) return;
-
-    const containerRect = container.getBoundingClientRect();
-    const tabRect = activeEl.getBoundingClientRect();
-    setIndicatorStyle({
-      left: tabRect.left - containerRect.left + container.scrollLeft,
-      width: tabRect.width,
-    });
-  }, [activeTab]);
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
@@ -505,15 +479,15 @@ export function SettingsPage() {
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 md:px-6 py-6 md:py-8">
-      <div className="rounded-3xl border border-neutral-200/80 dark:border-neutral-700/80 bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-900 dark:to-neutral-950 p-5 md:p-6">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6 md:py-8">
+      <div className="rounded-3xl border border-neutral-200/80 bg-gradient-to-br from-white to-neutral-50 p-5 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] dark:border-neutral-700/80 dark:from-neutral-900 dark:to-neutral-950 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
               设置
             </h1>
             <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-              按分类调整上传、下载、磁盘保护、会话清理与密码箱等运行时设置。
+              统一管理上传下载、缓存清理、种子策略与密码箱安全配置。
             </p>
           </div>
           <div
@@ -521,67 +495,31 @@ export function SettingsPage() {
             aria-live="polite"
           >
             <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
-            {loading ? '正在读取配置' : '配置已加载'}
+            <ActionStatusPill tone={loading ? 'warning' : 'success'}>
+              {loading ? '正在读取配置' : '配置已加载'}
+            </ActionStatusPill>
           </div>
         </div>
       </div>
 
       <div className="mt-6 space-y-8">
         {/* 横向 Tabs：分类切换 */}
-        <div className="rounded-2xl border border-neutral-200/80 dark:border-neutral-700/80 bg-white/70 dark:bg-neutral-900/50 backdrop-blur-xl p-1">
-          <div
-            ref={tablistRef}
-            className="relative flex items-center gap-1 overflow-x-auto"
-            role="tablist"
-            aria-label="设置分类"
-          >
-            {/* 滑动背景块指示器 */}
-            {indicatorStyle && (
-              <span
-                aria-hidden="true"
-                className="absolute top-0 bottom-0 rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200/80 dark:border-neutral-700/70 shadow-sm transition-all duration-300 ease-out pointer-events-none"
-                style={{
-                  left: indicatorStyle.left,
-                  width: indicatorStyle.width,
-                }}
-              />
-            )}
-            {SETTINGS_TABS.map((tab, index) => {
-              const isActive = tab.key === activeTab;
+        <div className="rounded-2xl border border-neutral-200/80 bg-white/80 p-1 backdrop-blur-xl dark:border-neutral-700/80 dark:bg-neutral-900/55">
+          <div className="flex w-full gap-1 overflow-x-auto" aria-label="设置分类">
+            {SETTINGS_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
-                <button
+                <ActionTextButton
                   key={tab.key}
-                  ref={(node) => {
-                    tabRefs.current[index] = node;
-                  }}
-                  type="button"
-                  role="tab"
-                  id={getTabId(tab.key)}
-                  aria-selected={isActive}
-                  aria-controls={getPanelId(tab.key)}
-                  tabIndex={isActive ? 0 : -1}
-                  onClick={() => setActiveTab(tab.key)}
-                  onKeyDown={(e) => handleTabKeyDown(e, index)}
-                  className={cn(
-                    'relative z-10 inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap',
-                    'transition-colors duration-200 outline-none',
-                    isActive
-                      ? 'text-neutral-900 dark:text-neutral-100'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                  )}
+                  tone="brand"
+                  active={activeTab === tab.key}
+                  onPress={() => setActiveTab(tab.key)}
+                  leadingIcon={<Icon className="h-4 w-4 text-current" />}
+                  className="whitespace-nowrap"
+                  aria-pressed={activeTab === tab.key}
                 >
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      'flex items-center justify-center w-5 h-5',
-                      isActive ? 'text-[#D4AF37]' : 'text-neutral-400 dark:text-neutral-500'
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </span>
-                  <span>{tab.label}</span>
-                </button>
+                  {tab.label}
+                </ActionTextButton>
               );
             })}
           </div>
@@ -590,9 +528,6 @@ export function SettingsPage() {
         {/* Tab Panels - 使用网格堆叠避免切换抖动 */}
         <div className="grid grid-cols-1 grid-rows-1">
           <div
-            role="tabpanel"
-            id={getPanelId('transfer')}
-            aria-labelledby={getTabId('transfer')}
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
               activeTab === 'transfer' ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -603,35 +538,27 @@ export function SettingsPage() {
                 <SectionHeader
                   icon={Upload}
                   title="上传策略"
-                  description="当前接入策略固定为浏览器分片上传；官方模式会继续分片写入 Telegram，自建模式会在服务端合并后单文件写入 Telegram。"
+                  description="上传采用浏览器分片模式，可在这里控制并发与排队行为。"
                 />
                 <SettingsRow
                   title="分片上传"
-                  description={`已固定开启。浏览器会按 ${chunkLimitMB}MB 分片上传到后端，以支持断点续传与大文件稳定传输。`}
+                  description={`固定开启。浏览器按 ${chunkLimitMB}MB 切片上传，保障大文件稳定传输与断点续传。`}
                 >
-                  <label className="inline-flex select-none items-center gap-2">
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                  <HeroCheckbox isSelected isDisabled>
+                    <HeroCheckbox.Content className="text-xs text-neutral-500 dark:text-neutral-400">
                       已固定开启
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked
-                      disabled
-                      autoComplete="off"
-                      className="h-5 w-5 rounded border-neutral-300 dark:border-neutral-600 text-[#D4AF37] focus:ring-[#D4AF37]"
-                    />
-                  </label>
+                    </HeroCheckbox.Content>
+                  </HeroCheckbox>
                 </SettingsRow>
                 <SettingsRow
                   title="并发上传"
-                  description="后端会限制同时进行的上传请求；超过阈值的上传会进入排队等待，前端队列也按该值并行。"
+                  description="限制同时上传数量，超出后自动排队。"
                 >
-                  <Input
-                    type="number"
+                  <NumberFieldInput
                     min={1}
                     max={16}
                     value={uploadConcurrencyInput}
-                    onChange={(e) => setUploadConcurrencyInput(e.target.value)}
+                    onValueChange={setUploadConcurrencyInput}
                     placeholder="1 ~ 16"
                   />
                 </SettingsRow>
@@ -641,18 +568,17 @@ export function SettingsPage() {
                 <SectionHeader
                   icon={Download}
                   title="下载策略"
-                  description="限制同时进行的下载/预览流，防止小内存机器被大量并发占满连接。"
+                  description="控制下载与预览并发，避免连接被瞬时占满。"
                 />
                 <SettingsRow
                   title="并发下载"
-                  description="超过阈值的新下载请求会进入排队等待，直到有空闲下载槽位。"
+                  description="超过并发上限时，后续下载任务进入等待队列。"
                 >
-                  <Input
-                    type="number"
+                  <NumberFieldInput
                     min={1}
                     max={32}
                     value={downloadConcurrencyInput}
-                    onChange={(e) => setDownloadConcurrencyInput(e.target.value)}
+                    onValueChange={setDownloadConcurrencyInput}
                     placeholder="1 ~ 32"
                   />
                 </SettingsRow>
@@ -661,9 +587,6 @@ export function SettingsPage() {
           </div>
 
           <div
-            role="tabpanel"
-            id={getPanelId('storage')}
-            aria-labelledby={getTabId('storage')}
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
               activeTab === 'storage' ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -671,17 +594,16 @@ export function SettingsPage() {
           >
             <div className="space-y-8">
               <section className="space-y-3">
-                <SectionHeader icon={HardDrive} title="磁盘保护" description="用于分片临时文件写入前检查，避免服务器磁盘被占满。" />
+                <SectionHeader icon={HardDrive} title="磁盘保护" description="上传前预留磁盘空间，防止服务盘被写满。" />
                 <SettingsRow
                   title="预留硬盘空间（GB）"
-                  description="上传时会为系统保留该容量；可用空间低于阈值时拒绝新上传。"
+                  description="可用空间低于此阈值时，拒绝新的上传请求。"
                 >
-                  <Input
-                    type="number"
+                  <NumberFieldInput
                     min={0}
                     step={0.1}
                     value={reservedDiskGBInput}
-                    onChange={(e) => setReservedDiskGBInput(e.target.value)}
+                    onValueChange={setReservedDiskGBInput}
                     hint={reservedDiskHint}
                     placeholder="例如 2"
                   />
@@ -692,35 +614,32 @@ export function SettingsPage() {
                 <SectionHeader
                   icon={Video}
                   title="视频缩略图缓存"
-                  description="后端使用 ffmpeg 生成首帧缩略图并缓存，减少视频列表重复预览带宽与延迟。"
+                  description="缓存视频首帧缩略图，减少重复预览的带宽与延迟。"
                 />
-                <SettingsRow title="缓存上限（MB）" description="缩略图缓存目录的最大占用，超过后按最久未访问优先清理。">
-                  <Input
-                    type="number"
+                <SettingsRow title="缓存上限（MB）" description="超过上限后按最久未访问优先清理。">
+                  <NumberFieldInput
                     min={64}
                     max={10240}
                     value={thumbnailCacheMaxMBInput}
-                    onChange={(e) => setThumbnailCacheMaxMBInput(e.target.value)}
+                    onValueChange={setThumbnailCacheMaxMBInput}
                     placeholder="64 ~ 10240"
                   />
                 </SettingsRow>
-                <SettingsRow title="缓存 TTL（小时）" description="超过该时长未被访问的缩略图会被后台清理。">
-                  <Input
-                    type="number"
+                <SettingsRow title="缓存 TTL（小时）" description="超过时长未访问的缩略图将被后台清理。">
+                  <NumberFieldInput
                     min={1}
                     max={8760}
                     value={thumbnailCacheTtlHoursInput}
-                    onChange={(e) => setThumbnailCacheTtlHoursInput(e.target.value)}
+                    onValueChange={setThumbnailCacheTtlHoursInput}
                     placeholder="1 ~ 8760"
                   />
                 </SettingsRow>
-                <SettingsRow title="生成并发" description="同一时刻允许并行生成视频缩略图的任务数，建议小机器保持 1。">
-                  <Input
-                    type="number"
+                <SettingsRow title="生成并发" description="同一时刻允许并行生成缩略图的任务数。">
+                  <NumberFieldInput
                     min={1}
                     max={4}
                     value={thumbnailGenerateConcurrencyInput}
-                    onChange={(e) => setThumbnailGenerateConcurrencyInput(e.target.value)}
+                    onValueChange={setThumbnailGenerateConcurrencyInput}
                     placeholder="1 ~ 4"
                   />
                 </SettingsRow>
@@ -729,9 +648,6 @@ export function SettingsPage() {
           </div>
 
           <div
-            role="tabpanel"
-            id={getPanelId('sessions')}
-            aria-labelledby={getTabId('sessions')}
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
               activeTab === 'sessions' ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -741,31 +657,29 @@ export function SettingsPage() {
               <SectionHeader
                 icon={Clock3}
                 title="会话清理"
-                description="用于控制续传会话的过期时间和后台清理频率，避免长期残留无效分片。"
+                description="控制续传会话过期时间与后台清理频率。"
               />
               <SettingsRow
                 title="会话 TTL（小时）"
-                description="超过该时间仍未完成的续传会话会被判定为过期并参与清理。"
+                description="会话超时后会被标记过期并参与清理。"
               >
-                <Input
-                  type="number"
+                <NumberFieldInput
                   min={1}
                   max={720}
                   value={uploadSessionTtlHoursInput}
-                  onChange={(e) => setUploadSessionTtlHoursInput(e.target.value)}
+                  onValueChange={setUploadSessionTtlHoursInput}
                   placeholder="1 ~ 720"
                 />
               </SettingsRow>
               <SettingsRow
                 title="清理周期（分钟）"
-                description="后台按该周期扫描并清理过期会话与对应残留分片。"
+                description="后台按该周期扫描并清理过期会话与残留分片。"
               >
-                <Input
-                  type="number"
+                <NumberFieldInput
                   min={1}
                   max={1440}
                   value={uploadSessionCleanupIntervalInput}
-                  onChange={(e) => setUploadSessionCleanupIntervalInput(e.target.value)}
+                  onValueChange={setUploadSessionCleanupIntervalInput}
                   placeholder="1 ~ 1440"
                 />
               </SettingsRow>
@@ -773,9 +687,6 @@ export function SettingsPage() {
           </div>
 
           <div
-            role="tabpanel"
-            id={getPanelId('torrent')}
-            aria-labelledby={getTabId('torrent')}
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
               activeTab === 'torrent' ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -785,14 +696,14 @@ export function SettingsPage() {
               <SectionHeader
                 icon={Magnet}
                 title="种子下载器"
-                description="用于配置 qBittorrent 连接凭据与“上传到 Telegram 成功后”的源文件清理策略。"
+                description="配置 qBittorrent 凭据与上传成功后的源文件清理策略。"
               />
-              <SettingsRow title="qBittorrent 密码状态" description="当前仅展示是否已配置密码，不回显明文。">
+              <SettingsRow title="qBittorrent 密码状态" description="仅显示是否已配置，不回显明文。">
                 <div className="text-sm text-neutral-700 dark:text-neutral-300">
                   {torrentQbtPasswordConfigured ? '已配置' : '未配置'}
                 </div>
               </SettingsRow>
-              <SettingsRow title="qBittorrent 密码" description="留空表示保持不变；填写后会覆盖当前密码并立即用于后续种子任务。">
+              <SettingsRow title="qBittorrent 密码" description="留空表示保持不变；填写后立即生效。">
                 <Input
                   type="password"
                   autoComplete="new-password"
@@ -801,29 +712,45 @@ export function SettingsPage() {
                   placeholder="输入新的 qBittorrent 密码"
                 />
               </SettingsRow>
-              <SettingsRow title="源文件清理策略" description="仅在任务“下载完成并成功上传到 Telegram”后生效。">
-                <select
+              <SettingsRow title="源文件清理策略" description="仅在“下载完成且上传成功”后执行。">
+                <HeroSelect
+                  aria-label="源文件清理策略"
                   value={torrentSourceDeleteModeInput}
-                  onChange={(e) =>
-                    setTorrentSourceDeleteModeInput(
-                      e.target.value as 'immediate' | 'fixed' | 'random'
-                    )
+                  onChange={(value) =>
+                    setTorrentSourceDeleteModeInput(value as 'immediate' | 'fixed' | 'random')
                   }
-                  className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-2.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                  variant="secondary"
+                  className="w-full"
                 >
-                  <option value="immediate">直接删除</option>
-                  <option value="fixed">固定分钟后删除</option>
-                  <option value="random">随机分钟区间删除</option>
-                </select>
+                  <HeroSelect.Trigger className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100">
+                    <HeroSelect.Value />
+                    <HeroSelect.Indicator />
+                  </HeroSelect.Trigger>
+                  <HeroSelect.Popover className="min-w-[var(--trigger-width)]">
+                    <HeroListBox>
+                      <HeroListBox.Item id="immediate" textValue="直接删除">
+                        <HeroLabel>直接删除</HeroLabel>
+                        <HeroListBox.ItemIndicator />
+                      </HeroListBox.Item>
+                      <HeroListBox.Item id="fixed" textValue="固定分钟后删除">
+                        <HeroLabel>固定分钟后删除</HeroLabel>
+                        <HeroListBox.ItemIndicator />
+                      </HeroListBox.Item>
+                      <HeroListBox.Item id="random" textValue="随机分钟区间删除">
+                        <HeroLabel>随机分钟区间删除</HeroLabel>
+                        <HeroListBox.ItemIndicator />
+                      </HeroListBox.Item>
+                    </HeroListBox>
+                  </HeroSelect.Popover>
+                </HeroSelect>
               </SettingsRow>
               {torrentSourceDeleteModeInput === 'fixed' && (
-                <SettingsRow title="固定延迟（分钟）" description="范围 1~10080 分钟。到时后自动清理源文件。">
-                  <Input
-                    type="number"
+                <SettingsRow title="固定延迟（分钟）" description="范围 1~10080 分钟，到时自动清理。">
+                  <NumberFieldInput
                     min={1}
                     max={10080}
                     value={torrentSourceDeleteFixedMinutesInput}
-                    onChange={(e) => setTorrentSourceDeleteFixedMinutesInput(e.target.value)}
+                    onValueChange={setTorrentSourceDeleteFixedMinutesInput}
                     placeholder="例如 60"
                   />
                 </SettingsRow>
@@ -831,22 +758,20 @@ export function SettingsPage() {
               {torrentSourceDeleteModeInput === 'random' && (
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <SettingsRow title="最小延迟（分钟）" description="范围 1~10080 分钟。">
-                    <Input
-                      type="number"
+                    <NumberFieldInput
                       min={1}
                       max={10080}
                       value={torrentSourceDeleteRandomMinMinutesInput}
-                      onChange={(e) => setTorrentSourceDeleteRandomMinMinutesInput(e.target.value)}
+                      onValueChange={setTorrentSourceDeleteRandomMinMinutesInput}
                       placeholder="例如 30"
                     />
                   </SettingsRow>
                   <SettingsRow title="最大延迟（分钟）" description="必须大于等于最小延迟。">
-                    <Input
-                      type="number"
+                    <NumberFieldInput
                       min={1}
                       max={10080}
                       value={torrentSourceDeleteRandomMaxMinutesInput}
-                      onChange={(e) => setTorrentSourceDeleteRandomMaxMinutesInput(e.target.value)}
+                      onValueChange={setTorrentSourceDeleteRandomMaxMinutesInput}
                       placeholder="例如 180"
                     />
                   </SettingsRow>
@@ -856,9 +781,6 @@ export function SettingsPage() {
           </div>
 
           <div
-            role="tabpanel"
-            id={getPanelId('vault')}
-            aria-labelledby={getTabId('vault')}
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
               activeTab === 'vault' ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -868,24 +790,23 @@ export function SettingsPage() {
               <SectionHeader
                 icon={KeyRound}
                 title="密码箱"
-                description="密码箱路由需要二次访问密码。更换密码时必须校验管理员访问密码。"
+                description="密码箱访问需要二次密码；更换密码需管理员校验。"
               />
-              <SettingsRow title="密码箱状态" description="未配置密码时，密码箱无法启用。">
+              <SettingsRow title="密码箱状态" description="未配置密码时无法启用。">
                 <div className="text-sm text-neutral-700 dark:text-neutral-300">
                   {vaultPasswordEnabled ? '已启用' : '未启用'}
                 </div>
               </SettingsRow>
-              <SettingsRow title="密码箱密码有效期（分钟）" description="解锁密码箱后会话保持时长，默认 60 分钟。">
-                <Input
-                  type="number"
+              <SettingsRow title="密码箱密码有效期（分钟）" description="解锁后会话保持时长，默认 60 分钟。">
+                <NumberFieldInput
                   min={1}
                   max={1440}
                   value={vaultSessionTtlMinutesInput}
-                  onChange={(e) => setVaultSessionTtlMinutesInput(e.target.value)}
+                  onValueChange={setVaultSessionTtlMinutesInput}
                   placeholder="1 ~ 1440"
                 />
               </SettingsRow>
-              <SettingsRow title="更换密码箱密码" description="留空表示不修改；输入新密码后，需同时填写管理员访问密码。">
+              <SettingsRow title="更换密码箱密码" description="留空表示不修改；输入新密码需同时填写管理员访问密码。">
                 <Input
                   type="password"
                   autoComplete="off"
@@ -894,7 +815,7 @@ export function SettingsPage() {
                   placeholder="输入新的密码箱密码"
                 />
               </SettingsRow>
-              <SettingsRow title="管理员访问密码" description="仅用于验证更换密码箱密码，校验通过后不会持久保存。">
+              <SettingsRow title="管理员访问密码" description="仅用于本次校验，不会持久保存。">
                 <Input
                   type="password"
                   autoComplete="off"
@@ -908,19 +829,31 @@ export function SettingsPage() {
 
         </div>
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <Button variant="secondary" onClick={handleReset} disabled={saving || loading}>
-            重置编辑
-          </Button>
-          <Button
-            variant="gold"
-            icon={<Save className="w-4 h-4" aria-hidden="true" />}
-            onClick={handleSave}
-            loading={saving}
-            disabled={loading}
+        <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end">
+          <ActionTextButton
+            onPress={handleReset}
+            isDisabled={saving || loading}
+            className="justify-center"
           >
-            保存设置
-          </Button>
+            重置编辑
+          </ActionTextButton>
+          <ActionTextButton
+            tone="brand"
+            leadingIcon={
+              saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Save className="w-4 h-4" aria-hidden="true" />
+              )
+            }
+            onPress={() => {
+              void handleSave();
+            }}
+            isDisabled={loading || saving}
+            className="justify-center"
+          >
+            {saving ? '保存中...' : '保存设置'}
+          </ActionTextButton>
         </div>
       </div>
     </div>

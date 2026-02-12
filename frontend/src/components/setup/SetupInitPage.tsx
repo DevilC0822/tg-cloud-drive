@@ -1,6 +1,6 @@
 import { AlertTriangle, Bot, CheckCircle2, CloudOff, Eye, EyeOff, LockKeyhole, ServerCog, ShieldCheck } from 'lucide-react';
 import { useState, type ComponentType } from 'react';
-import { Button } from '@/components/ui/Button';
+import { ActionIconButton, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 import { Input } from '@/components/ui/Input';
 import { ToastContainer } from '@/components/ui/ToastContainer';
 import { clsx } from 'clsx';
@@ -75,14 +75,14 @@ const ACCESS_OPTIONS: AccessOption[] = [
   {
     key: 'official_bot_api',
     title: '官方 Bot API',
-    desc: '通过 Telegram 官方 Bot API 访问，配置最简单。',
+    desc: '官方接入，配置简单，适合大多数场景。',
     badge: '推荐',
     Icon: ShieldCheck,
   },
   {
     key: 'self_hosted_bot_api',
     title: '自建 Bot API',
-    desc: '使用自建 Bot API 网关，需额外提供 API ID / API Hash。',
+    desc: '使用自建网关，需额外提供 API ID / API Hash。',
     badge: '高级',
     Icon: ServerCog,
   },
@@ -124,20 +124,20 @@ export function SetupInitPage({
   const [showAdminPasswordConfirm, setShowAdminPasswordConfirm] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-cyan-50 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 px-4 py-8 md:px-6 md:py-12">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--color-brand-50)] via-white to-stone-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 px-4 py-8 md:px-6 md:py-12">
       <div className="mx-auto w-full max-w-4xl">
-        <div className="rounded-3xl border border-sky-200/70 dark:border-neutral-700 bg-white/90 dark:bg-neutral-900/85 backdrop-blur-xl shadow-xl shadow-sky-100/60 dark:shadow-black/30 p-6 md:p-8">
+        <div className="rounded-3xl border border-[var(--theme-primary-a35)] dark:border-neutral-700 bg-white/92 dark:bg-neutral-900/85 backdrop-blur-xl shadow-[0_24px_48px_-34px_var(--theme-primary-a24)] dark:shadow-black/30 p-6 md:p-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 dark:border-sky-900/60 bg-sky-50 dark:bg-sky-900/20 px-3 py-1 text-xs text-sky-700 dark:text-sky-300">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--theme-primary-a35)] bg-[var(--theme-primary-a12)] px-3 py-1 text-xs text-[var(--theme-primary-ink)]">
                 <Bot className="h-3.5 w-3.5" />
-                初始化步骤 1/2
+                初始化步骤 1 / 2
               </div>
-              <h1 className="mt-3 text-2xl md:text-3xl font-semibold tracking-tight text-sky-900 dark:text-sky-100">
-                配置 Telegram 接入方式
+              <h1 className="mt-3 text-2xl md:text-3xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+                配置接入方式
               </h1>
               <p className="mt-2 text-sm md:text-base text-slate-600 dark:text-slate-300">
-                请选择接入模式并填写对应参数，提交后系统会自动校验连接可用性。
+                选择一种接入模式并填写参数，保存前可以先测试连接。
               </p>
             </div>
           </div>
@@ -148,29 +148,30 @@ export function SetupInitPage({
               const disabled = !!option.disabled;
               const Icon = option.Icon;
               return (
-                <button
+                <ActionTextButton
                   key={option.key}
-                  type="button"
-                  disabled={disabled}
+                  tone="brand"
+                  active={active}
+                  isDisabled={disabled}
                   aria-pressed={active}
-                  onClick={() => {
+                  onPress={() => {
                     if (disabled) return;
                     onAccessMethodChange(option.key as Exclude<SetupAccessMethod, 'mtproto'>);
                   }}
                   className={cn(
-                    'rounded-2xl border p-4 text-left transition-colors duration-200',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/80',
+                    'h-auto min-h-0 w-full items-stretch justify-start rounded-2xl border p-4 text-left',
+                    'flex-col gap-0 whitespace-normal transition-colors duration-200',
                     disabled
                       ? 'opacity-55 cursor-not-allowed border-neutral-200 bg-neutral-100/70 dark:border-neutral-700 dark:bg-neutral-800/40'
                       : 'cursor-pointer',
-                    !disabled && active && 'border-sky-400 bg-sky-50 dark:border-sky-500 dark:bg-sky-950/35',
+                    !disabled && active && 'border-[var(--theme-primary)] bg-[var(--theme-primary-a08)]',
                     !disabled &&
                       !active &&
-                      'border-neutral-200 bg-white hover:border-sky-300 hover:bg-sky-50/70 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-sky-700 dark:hover:bg-sky-950/20'
+                      'border-neutral-200 bg-white hover:border-[var(--theme-primary-a55)] hover:bg-[var(--theme-primary-a08)] dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600 dark:hover:bg-neutral-800'
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="inline-flex items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300 p-2">
+                    <span className="inline-flex items-center justify-center rounded-xl bg-[var(--theme-primary-a12)] text-[var(--theme-primary-ink)] p-2">
                       <Icon className="h-4 w-4" />
                     </span>
                     <span
@@ -179,8 +180,8 @@ export function SetupInitPage({
                         disabled
                           ? 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
                           : active
-                          ? 'bg-sky-200 text-sky-800 dark:bg-sky-800/60 dark:text-sky-100'
-                          : 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+                          ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink-strong)]'
+                          : 'bg-[var(--theme-primary-a12)] text-[var(--theme-primary-ink)]'
                       )}
                     >
                       {option.badge}
@@ -188,14 +189,14 @@ export function SetupInitPage({
                   </div>
                   <h3 className="mt-3 text-sm font-semibold text-neutral-900 dark:text-neutral-100">{option.title}</h3>
                   <p className="mt-1 text-xs leading-5 text-neutral-600 dark:text-neutral-300">{option.desc}</p>
-                </button>
+                </ActionTextButton>
               );
             })}
           </div>
 
           <div className="mt-6 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4 md:p-5">
             <div className="flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
-              <LockKeyhole className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+              <LockKeyhole className="h-4 w-4 text-[var(--theme-primary)]" />
               初始化参数
             </div>
             <div className="mt-4 grid gap-4">
@@ -207,14 +208,13 @@ export function SetupInitPage({
                 placeholder="123456789:AA..."
                 autoFocus
                 rightIcon={
-                  <button
-                    type="button"
-                    className="cursor-pointer text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                    onClick={() => setShowBotToken((prev) => !prev)}
+                  <ActionIconButton
+                    icon={showBotToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    label={showBotToken ? '隐藏 Bot Token' : '查看 Bot Token'}
                     aria-label={showBotToken ? '隐藏 Bot Token' : '查看 Bot Token'}
-                  >
-                    {showBotToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                    onPress={() => setShowBotToken((prev) => !prev)}
+                    className="h-6 w-6 min-h-6 min-w-6"
+                  />
                 }
               />
 
@@ -228,7 +228,7 @@ export function SetupInitPage({
               {isSelfHosted && (
                 <div className="grid gap-4">
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    自建 Bot API 地址默认使用容器服务 `http://telegram-bot-api:8081`。
+                    自建模式默认使用容器地址 `http://telegram-bot-api:8081`。
                   </p>
 
                   <div className="grid gap-4 md:grid-cols-2">
@@ -245,14 +245,13 @@ export function SetupInitPage({
                       onChange={(e) => onApiHashChange(e.target.value)}
                       placeholder="32 位哈希值"
                       rightIcon={
-                        <button
-                          type="button"
-                          className="cursor-pointer text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                          onClick={() => setShowApiHash((prev) => !prev)}
+                        <ActionIconButton
+                          icon={showApiHash ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          label={showApiHash ? '隐藏 API Hash' : '查看 API Hash'}
                           aria-label={showApiHash ? '隐藏 API Hash' : '查看 API Hash'}
-                        >
-                          {showApiHash ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
+                          onPress={() => setShowApiHash((prev) => !prev)}
+                          className="h-6 w-6 min-h-6 min-w-6"
+                        />
                       }
                     />
                   </div>
@@ -267,14 +266,13 @@ export function SetupInitPage({
                   onChange={(e) => onAdminPasswordChange(e.target.value)}
                   placeholder="请输入管理员密码"
                   rightIcon={
-                    <button
-                      type="button"
-                      className="cursor-pointer text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                      onClick={() => setShowAdminPassword((prev) => !prev)}
+                    <ActionIconButton
+                      icon={showAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      label={showAdminPassword ? '隐藏管理员密码' : '查看管理员密码'}
                       aria-label={showAdminPassword ? '隐藏管理员密码' : '查看管理员密码'}
-                    >
-                      {showAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                      onPress={() => setShowAdminPassword((prev) => !prev)}
+                      className="h-6 w-6 min-h-6 min-w-6"
+                    />
                   }
                 />
                 <Input
@@ -287,14 +285,13 @@ export function SetupInitPage({
                     if (e.key === 'Enter') onSubmit();
                   }}
                   rightIcon={
-                    <button
-                      type="button"
-                      className="cursor-pointer text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                      onClick={() => setShowAdminPasswordConfirm((prev) => !prev)}
+                    <ActionIconButton
+                      icon={showAdminPasswordConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      label={showAdminPasswordConfirm ? '隐藏确认密码' : '查看确认密码'}
                       aria-label={showAdminPasswordConfirm ? '隐藏确认密码' : '查看确认密码'}
-                    >
-                      {showAdminPasswordConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                      onPress={() => setShowAdminPasswordConfirm((prev) => !prev)}
+                      className="h-6 w-6 min-h-6 min-w-6"
+                    />
                   }
                 />
               </div>
@@ -303,15 +300,26 @@ export function SetupInitPage({
 
           <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <p className="text-xs md:text-sm text-neutral-500 dark:text-neutral-400">
-              当前配置仅用于初始化，保存后可在设置页调整运行时参数。
+              当前配置仅用于初始化，后续可在“设置”页面修改。
             </p>
             <div className="w-full md:w-auto flex flex-col md:flex-row gap-2 md:min-w-[360px]">
-              <Button variant="secondary" onClick={onTestConnection} disabled={loading || testLoading} fullWidth>
-                {testLoading ? '测试中...' : '测试连接'}
-              </Button>
-              <Button variant="gold" onClick={onSubmit} disabled={loading} fullWidth>
-                {loading ? '初始化中...' : '完成初始化'}
-              </Button>
+              <ActionTextButton
+                onPress={onTestConnection}
+                isDisabled={loading || testLoading}
+                density="cozy"
+                className="w-full justify-center"
+              >
+                {testLoading ? '测试中...' : '先测试连接'}
+              </ActionTextButton>
+              <ActionTextButton
+                tone="brand"
+                onPress={onSubmit}
+                isDisabled={loading}
+                density="cozy"
+                className="w-full justify-center"
+              >
+                {loading ? '初始化中...' : '保存并完成初始化'}
+              </ActionTextButton>
             </div>
           </div>
 
@@ -322,7 +330,7 @@ export function SetupInitPage({
                   {testDetails.overallOk ? (
                     <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
                   ) : (
-                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   )}
                   <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">连接测试详情</h3>
                 </div>
@@ -340,7 +348,7 @@ export function SetupInitPage({
                 <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-neutral-600 dark:text-neutral-300">Bot Token 校验</span>
-                    <span className={cn(testDetails.bot.ok ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400')}>
+                    <span className={cn(testDetails.bot.ok ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400')}>
                       {testDetails.bot.ok ? '通过' : '失败'}
                     </span>
                   </div>
@@ -354,7 +362,7 @@ export function SetupInitPage({
                 <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-neutral-600 dark:text-neutral-300">Chat ID 校验</span>
-                    <span className={cn(testDetails.chat.ok ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400')}>
+                    <span className={cn(testDetails.chat.ok ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400')}>
                       {testDetails.chat.ok ? '通过' : '失败'}
                     </span>
                   </div>
@@ -368,7 +376,7 @@ export function SetupInitPage({
                 <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-neutral-600 dark:text-neutral-300">管理员权限校验</span>
-                    <span className={cn(testDetails.admin.ok ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400')}>
+                    <span className={cn(testDetails.admin.ok ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400')}>
                       {testDetails.admin.ok ? '通过' : '失败'}
                     </span>
                   </div>

@@ -1,7 +1,8 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Button } from './Button';
+import { Label as HeroLabel, ListBox as HeroListBox, Select as HeroSelect } from '@heroui/react';
+import { ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 
 function cn(...inputs: (string | undefined | null | boolean)[]) {
   return twMerge(clsx(inputs));
@@ -33,59 +34,67 @@ export function Pagination({
 }: PaginationProps) {
   const canPrev = page > 1;
   const canNext = page < totalPages;
+  const start = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(totalCount, page * pageSize);
 
   return (
-    <div className={cn('flex items-center justify-between gap-4', className)}>
+    <div className={cn('flex flex-col gap-3 md:flex-row md:items-center md:justify-between', className)}>
       <div className="text-xs text-neutral-500 dark:text-neutral-400">
-        共 {totalCount} 项
+        显示 {start}-{end} / 共 {totalCount} 项
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={!canPrev}
-          onClick={() => onPageChange(page - 1)}
-          icon={<ChevronLeft className="w-4 h-4" />}
+        <ActionTextButton
+          density="compact"
+          isDisabled={!canPrev}
+          onPress={() => onPageChange(page - 1)}
+          leadingIcon={<ChevronLeft className="h-4 w-4" />}
         >
           上一页
-        </Button>
-        <div className="text-xs text-neutral-600 dark:text-neutral-300 min-w-[5.5rem] text-center">
-          {page} / {totalPages}
+        </ActionTextButton>
+        <div className="min-w-[5.5rem] text-center text-xs text-neutral-600 dark:text-neutral-300">
+          第 {page} / {totalPages} 页
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={!canNext}
-          onClick={() => onPageChange(page + 1)}
-          iconPosition="right"
-          icon={<ChevronRight className="w-4 h-4" />}
+        <ActionTextButton
+          density="compact"
+          isDisabled={!canNext}
+          onPress={() => onPageChange(page + 1)}
+          trailingIcon={<ChevronRight className="h-4 w-4" />}
         >
           下一页
-        </Button>
+        </ActionTextButton>
       </div>
 
       <div className="flex items-center gap-2">
         <span className="text-xs text-neutral-500 dark:text-neutral-400">每页</span>
-        <select
-          value={pageSize}
-          onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
-          className={cn(
-            'text-xs rounded-lg px-2 py-1',
-            'bg-white dark:bg-neutral-900',
-            'border border-neutral-200 dark:border-neutral-700',
-            'text-neutral-700 dark:text-neutral-200',
-            'focus:outline-none focus:ring-2 focus:ring-[#D4AF37]'
-          )}
+        <HeroSelect
+          aria-label="每页数量"
+          value={String(pageSize)}
+          onChange={(value) => onPageSizeChange?.(Number(value))}
+          variant="secondary"
+          className="min-w-[90px]"
         >
-          {pageSizeOptions.map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
+          <HeroSelect.Trigger
+            className={cn(
+              'w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-700',
+              'dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200'
+            )}
+          >
+            <HeroSelect.Value />
+            <HeroSelect.Indicator />
+          </HeroSelect.Trigger>
+          <HeroSelect.Popover className="min-w-[var(--trigger-width)]">
+            <HeroListBox>
+              {pageSizeOptions.map((size) => (
+                <HeroListBox.Item key={size} id={String(size)} textValue={String(size)}>
+                  <HeroLabel>{size}</HeroLabel>
+                  <HeroListBox.ItemIndicator />
+                </HeroListBox.Item>
+              ))}
+            </HeroListBox>
+          </HeroSelect.Popover>
+        </HeroSelect>
       </div>
     </div>
   );
 }
-

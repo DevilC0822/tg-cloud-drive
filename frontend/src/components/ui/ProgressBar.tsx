@@ -5,7 +5,6 @@ export interface ProgressBarProps {
   value: number; // 0-100
   size?: 'sm' | 'md' | 'lg';
   color?: 'default' | 'gold' | 'success' | 'warning' | 'danger';
-  showLabel?: boolean;
   className?: string;
 }
 
@@ -17,7 +16,6 @@ export function ProgressBar({
   value,
   size = 'md',
   color = 'default',
-  showLabel = false,
   className,
 }: ProgressBarProps) {
   const clampedValue = Math.min(100, Math.max(0, value));
@@ -29,97 +27,29 @@ export function ProgressBar({
   };
 
   const colors = {
-    default: 'bg-neutral-900 dark:bg-white',
-    gold: 'bg-[#D4AF37]',
-    success: 'bg-green-500',
-    warning: 'bg-amber-500',
-    danger: 'bg-red-500',
+    default: 'bg-neutral-900 dark:bg-neutral-100',
+    gold: 'bg-gradient-to-r from-[var(--theme-primary)] to-[var(--theme-primary-strong)]',
+    success: 'bg-gradient-to-r from-emerald-500 to-emerald-400',
+    warning: 'bg-gradient-to-r from-orange-500 to-orange-500',
+    danger: 'bg-gradient-to-r from-red-600 to-red-500',
   };
 
   return (
     <div className={cn('w-full', className)}>
       <div
         className={cn(
-          'w-full bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden',
+          'w-full overflow-hidden rounded-full bg-neutral-200/90 dark:bg-neutral-700/85',
           sizes[size]
         )}
       >
         <div
           className={cn(
-            'h-full rounded-full transition-all duration-300 ease-out',
+            'h-full rounded-full shadow-[0_4px_12px_-8px_rgba(15,23,42,0.7)] transition-all duration-300 ease-out',
             colors[color]
           )}
           style={{ width: `${clampedValue}%` }}
         />
       </div>
-      {showLabel && (
-        <div className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 text-right">
-          {clampedValue}%
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* 环形进度条 */
-export interface CircularProgressProps {
-  value: number; // 0-100
-  size?: number;
-  strokeWidth?: number;
-  color?: string;
-  trackColor?: string;
-  showLabel?: boolean;
-  className?: string;
-}
-
-export function CircularProgress({
-  value,
-  size = 80,
-  strokeWidth = 8,
-  color = '#D4AF37',
-  trackColor,
-  showLabel = true,
-  className,
-}: CircularProgressProps) {
-  const clampedValue = Math.min(100, Math.max(0, value));
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (clampedValue / 100) * circumference;
-
-  return (
-    <div className={cn('relative inline-flex items-center justify-center', className)}>
-      <svg width={size} height={size} className="-rotate-90">
-        {/* 背景轨道 */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={trackColor || 'currentColor'}
-          strokeWidth={strokeWidth}
-          className={cn(!trackColor && 'text-neutral-200 dark:text-neutral-700')}
-        />
-        {/* 进度条 */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-all duration-500 ease-out"
-        />
-      </svg>
-      {showLabel && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-            {clampedValue}%
-          </span>
-        </div>
-      )}
     </div>
   );
 }

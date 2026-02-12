@@ -4,7 +4,6 @@ import {
   foldersAtom,
   selectedFileIdsAtom,
   currentFolderIdAtom,
-  currentPathAtom,
   sortConfigAtom,
   searchQueryAtom,
   isLoadingAtom,
@@ -112,10 +111,9 @@ export function useFiles() {
   const [folders, setFolders] = useAtom(foldersAtom);
   const [selectedIds, setSelectedIds] = useAtom(selectedFileIdsAtom);
   const [currentFolderId, setCurrentFolderId] = useAtom(currentFolderIdAtom);
-  const currentPath = useAtomValue(currentPathAtom);
   const [sortConfig, setSortConfig] = useAtom(sortConfigAtom);
-  const [searchQuery, setSearchQuery] = useAtom(searchQueryAtom);
-  const [isLoading, setIsLoading] = useAtom(isLoadingAtom);
+  const searchQuery = useAtomValue(searchQueryAtom);
+  const setIsLoading = useSetAtom(isLoadingAtom);
   const activeNav = useAtomValue(activeNavAtom);
   const setActiveNav = useSetAtom(activeNavAtom);
   const [currentPage, setCurrentPage] = useAtom(currentPageAtom);
@@ -390,10 +388,6 @@ export function useFiles() {
     [setSelectedIds]
   );
 
-  const selectAll = useCallback(() => {
-    setSelectedIds(new Set(items.map((f) => f.id)));
-  }, [items, setSelectedIds]);
-
   const clearSelection = useCallback(() => {
     setSelectedIds(new Set<string>());
   }, [setSelectedIds]);
@@ -656,21 +650,13 @@ export function useFiles() {
   );
 
   return {
-    files: items,
     folders,
     selectedIds,
-    currentPath,
-    sortConfig,
-    searchQuery,
-    isLoading,
     activeNav,
-    currentFolderId,
     allVisibleFiles: items,
     displayFiles: items,
     pagination,
     selectFile,
-    selectAll,
-    clearSelection,
     openFile,
     navigateTo,
     createFolder,
@@ -685,8 +671,6 @@ export function useFiles() {
     toggleSort,
     changePage,
     changePageSize,
-    setSearchQuery,
-    setIsLoading,
     openPreview,
     getPreviewUrl,
     downloadFile,

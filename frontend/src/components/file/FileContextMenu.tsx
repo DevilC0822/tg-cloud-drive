@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import {
   Eye,
   Download,
@@ -13,12 +13,28 @@ import {
   Lock,
   LockOpen,
 } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { Dropdown as HeroDropdown, Label as HeroLabel, Separator as HeroSeparator } from '@heroui/react';
 import type { FileItem, ContextMenuItem } from '@/types';
 
-function cn(...inputs: (string | undefined | null | boolean)[]) {
-  return twMerge(clsx(inputs));
+const VIEWPORT_PADDING = 12;
+
+type MenuDivider = { divider: true };
+type FileMenuItem = ContextMenuItem | MenuDivider;
+
+function isMenuDivider(item: FileMenuItem): item is MenuDivider {
+  return 'divider' in item && Boolean(item.divider);
+}
+
+function clampMenuPosition(position: { x: number; y: number }) {
+  if (typeof window === 'undefined') return position;
+
+  const maxX = Math.max(VIEWPORT_PADDING, window.innerWidth - VIEWPORT_PADDING);
+  const maxY = Math.max(VIEWPORT_PADDING, window.innerHeight - VIEWPORT_PADDING);
+
+  return {
+    x: Math.min(Math.max(position.x, VIEWPORT_PADDING), maxX),
+    y: Math.min(Math.max(position.y, VIEWPORT_PADDING), maxY),
+  };
 }
 
 export interface FileContextMenuProps {
@@ -62,59 +78,13 @@ export function FileContextMenu({
   onVaultIn,
   onVaultOut,
 }: FileContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
+  const safePosition = useMemo(() => clampMenuPosition(position), [position]);
 
-  // 调整位置确保在视口内
-  useEffect(() => {
-    if (visible && menuRef.current) {
-      const menu = menuRef.current;
-      const rect = menu.getBoundingClientRect();
-      const { innerWidth, innerHeight } = window;
+  const menuItems: FileMenuItem[] = useMemo(() => {
+    if (!file) return [];
 
-      let x = position.x;
-      let y = position.y;
-
-      if (x + rect.width > innerWidth) {
-        x = innerWidth - rect.width - 10;
-      }
-      if (y + rect.height > innerHeight) {
-        y = innerHeight - rect.height - 10;
-      }
-
-      menu.style.left = `${x}px`;
-      menu.style.top = `${y}px`;
-    }
-  }, [visible, position]);
-
-  // 点击外部关闭
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    if (visible) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [visible, onClose]);
-
-  if (!visible || !file) return null;
-
-  const menuItems: (ContextMenuItem | { divider: true })[] = file.trashedAt
-    ? [
+    if (file.trashedAt) {
+      return [
         {
           id: 'restore',
           label: '还原',
@@ -166,189 +136,220 @@ export function FileContextMenu({
             onClose();
           },
         },
-      ]
-    : [
-        {
-          id: 'preview',
-          label: file.type === 'folder' ? '打开' : '预览',
-          icon: Eye,
-          onClick: () => {
-            onPreview?.(file);
-            onClose();
-          },
-        },
-        {
-          id: 'download',
-          label: '下载',
-          icon: Download,
-          disabled: file.type === 'folder',
-          onClick: () => {
-            onDownload?.(file);
-            onClose();
-          },
-        },
-        {
-          id: 'share',
-          label: file.isShared ? '复制分享链接' : '创建分享链接',
-          icon: Share2,
-          disabled: file.type === 'folder',
-          onClick: () => {
-            onShare?.(file);
-            onClose();
-          },
-        },
-        ...(file.isShared
-          ? ([
-              {
-                id: 'unshare',
-                label: '取消分享',
-                icon: Share2,
-                danger: true,
-                disabled: file.type === 'folder',
-                onClick: () => {
-                  onUnshare?.(file);
-                  onClose();
-                },
-              },
-            ] as const)
-          : []),
-        { divider: true },
-        {
-          id: 'rename',
-          label: '重命名',
-          icon: Pencil,
-          shortcut: 'F2',
-          onClick: () => {
-            onRename?.(file);
-            onClose();
-          },
-        },
-        {
-          id: 'move',
-          label: '移动到',
-          icon: FolderInput,
-          onClick: () => {
-            onMove?.(file);
-            onClose();
-          },
-        },
-        {
-          id: 'copy',
-          label: '复制',
-          icon: Copy,
-          shortcut: '⌘C',
-          onClick: () => {
-            onCopy?.(file);
-            onClose();
-          },
-        },
-        { divider: true },
-        {
-          id: 'favorite',
-          label: file.isFavorite ? '取消收藏' : '添加收藏',
-          icon: Star,
-          onClick: () => {
-            onToggleFavorite?.(file);
-            onClose();
-          },
-        },
-        {
-          id: file.isVaulted ? 'vault-out' : 'vault-in',
-          label: file.isVaulted ? '移出密码箱' : '移入密码箱',
-          icon: file.isVaulted ? LockOpen : Lock,
-          disabled: file.type === 'folder',
-          onClick: () => {
-            if (file.isVaulted) {
-              onVaultOut?.(file);
-            } else {
-              onVaultIn?.(file);
-            }
-            onClose();
-          },
-        },
-        { divider: true },
-        {
-          id: 'info',
-          label: '详细信息',
-          icon: Info,
-          onClick: () => {
-            onInfo?.(file);
-            onClose();
-          },
-        },
-        { divider: true },
-        {
-          id: 'delete',
-          label: '删除',
-          icon: Trash2,
-          danger: true,
-          shortcut: 'Del',
-          onClick: () => {
-            onDelete?.(file);
-            onClose();
-          },
-        },
-        {
-          id: 'delete-permanent-direct',
-          label: '彻底删除',
-          icon: Trash2,
-          danger: true,
-          shortcut: 'Shift+Del',
-          onClick: () => {
-            onDeletePermanently?.(file);
-            onClose();
-          },
-        },
       ];
+    }
+
+    return [
+      {
+        id: 'preview',
+        label: file.type === 'folder' ? '打开' : '预览',
+        icon: Eye,
+        onClick: () => {
+          onPreview?.(file);
+          onClose();
+        },
+      },
+      {
+        id: 'download',
+        label: '下载',
+        icon: Download,
+        disabled: file.type === 'folder',
+        onClick: () => {
+          onDownload?.(file);
+          onClose();
+        },
+      },
+      {
+        id: 'share',
+        label: file.isShared ? '复制分享链接' : '创建分享链接',
+        icon: Share2,
+        disabled: file.type === 'folder',
+        onClick: () => {
+          onShare?.(file);
+          onClose();
+        },
+      },
+      ...(file.isShared
+        ? [
+            {
+              id: 'unshare',
+              label: '取消分享',
+              icon: Share2,
+              danger: true,
+              disabled: file.type === 'folder',
+              onClick: () => {
+                onUnshare?.(file);
+                onClose();
+              },
+            } as ContextMenuItem,
+          ]
+        : []),
+      { divider: true },
+      {
+        id: 'rename',
+        label: '重命名',
+        icon: Pencil,
+        shortcut: 'F2',
+        onClick: () => {
+          onRename?.(file);
+          onClose();
+        },
+      },
+      {
+        id: 'move',
+        label: '移动到',
+        icon: FolderInput,
+        onClick: () => {
+          onMove?.(file);
+          onClose();
+        },
+      },
+      {
+        id: 'copy',
+        label: '复制',
+        icon: Copy,
+        shortcut: '⌘C',
+        onClick: () => {
+          onCopy?.(file);
+          onClose();
+        },
+      },
+      { divider: true },
+      {
+        id: 'favorite',
+        label: file.isFavorite ? '取消收藏' : '添加收藏',
+        icon: Star,
+        onClick: () => {
+          onToggleFavorite?.(file);
+          onClose();
+        },
+      },
+      {
+        id: file.isVaulted ? 'vault-out' : 'vault-in',
+        label: file.isVaulted ? '移出密码箱' : '移入密码箱',
+        icon: file.isVaulted ? LockOpen : Lock,
+        disabled: file.type === 'folder',
+        onClick: () => {
+          if (file.isVaulted) {
+            onVaultOut?.(file);
+          } else {
+            onVaultIn?.(file);
+          }
+          onClose();
+        },
+      },
+      { divider: true },
+      {
+        id: 'info',
+        label: '详细信息',
+        icon: Info,
+        onClick: () => {
+          onInfo?.(file);
+          onClose();
+        },
+      },
+      { divider: true },
+      {
+        id: 'delete',
+        label: '删除',
+        icon: Trash2,
+        danger: true,
+        shortcut: 'Del',
+        onClick: () => {
+          onDelete?.(file);
+          onClose();
+        },
+      },
+      {
+        id: 'delete-permanent-direct',
+        label: '彻底删除',
+        icon: Trash2,
+        danger: true,
+        shortcut: 'Shift+Del',
+        onClick: () => {
+          onDeletePermanently?.(file);
+          onClose();
+        },
+      },
+    ];
+  }, [
+    file,
+    onClose,
+    onCopy,
+    onDelete,
+    onDeletePermanently,
+    onDownload,
+    onInfo,
+    onMove,
+    onPreview,
+    onRename,
+    onRestore,
+    onShare,
+    onToggleFavorite,
+    onUnshare,
+    onVaultIn,
+    onVaultOut,
+  ]);
+
+  if (!visible || !file) return null;
 
   return (
-    <div
-      ref={menuRef}
-      className={cn(
-        'fixed z-50 min-w-[200px] py-1',
-        'bg-white dark:bg-neutral-800',
-        'rounded-xl shadow-xl',
-        'border border-neutral-200 dark:border-neutral-700',
-        'animate-scaleIn origin-top-left'
-      )}
-      style={{ left: position.x, top: position.y }}
+    <HeroDropdown
+      key={`${file.id}-${safePosition.x}-${safePosition.y}`}
+      isOpen={visible}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
     >
-      {menuItems.map((item, index) => {
-        if ('divider' in item && item.divider) {
-          return (
-            <div
-              key={`divider-${index}`}
-              className="my-1 border-t border-neutral-200 dark:border-neutral-700"
-            />
-          );
-        }
+      <HeroDropdown.Trigger
+        aria-label="右键菜单锚点"
+        className="pointer-events-none fixed h-px w-px min-h-px min-w-px opacity-0"
+        style={{ left: safePosition.x, top: safePosition.y }}
+      >
+        <span className="sr-only">右键菜单锚点</span>
+      </HeroDropdown.Trigger>
+      <HeroDropdown.Popover placement="bottom start" className="min-w-[220px]">
+        <HeroDropdown.Menu
+          aria-label="文件右键菜单"
+          className="max-h-[70vh] overflow-y-auto"
+          onAction={(key) => {
+            const id = String(key);
+            const target = menuItems.find(
+              (item): item is ContextMenuItem => !isMenuDivider(item) && item.id === id
+            );
+            target?.onClick?.();
+          }}
+        >
+          {menuItems.map((item, index) => {
+            if (isMenuDivider(item)) {
+              return <HeroSeparator key={`divider-${index}`} />;
+            }
 
-        const menuItem = item as ContextMenuItem;
-        const Icon = menuItem.icon;
+            const Icon = item.icon;
 
-        return (
-          <button
-            key={menuItem.id}
-            onClick={menuItem.onClick}
-            disabled={menuItem.disabled}
-            className={cn(
-              'w-full flex items-center gap-3 px-3 py-2 text-sm',
-              'transition-colors duration-150',
-              menuItem.disabled
-                ? 'opacity-50 cursor-not-allowed'
-                : menuItem.danger
-                ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-            )}
-          >
-            {Icon && <Icon className="w-4 h-4" />}
-            <span className="flex-1 text-left">{menuItem.label}</span>
-            {menuItem.shortcut && (
-              <span className="text-xs text-neutral-400 dark:text-neutral-500">{menuItem.shortcut}</span>
-            )}
-          </button>
-        );
-      })}
-    </div>
+            return (
+              <HeroDropdown.Item
+                key={item.id}
+                id={item.id}
+                textValue={item.label}
+                isDisabled={item.disabled}
+                variant={item.danger ? 'danger' : undefined}
+              >
+                {Icon ? <Icon className="h-4 w-4 text-current" /> : null}
+                <HeroLabel>{item.label}</HeroLabel>
+                {item.shortcut ? (
+                  <span
+                    slot="keyboard"
+                    className="ms-auto text-[11px] text-neutral-400 dark:text-neutral-500"
+                  >
+                    {item.shortcut}
+                  </span>
+                ) : null}
+              </HeroDropdown.Item>
+            );
+          })}
+        </HeroDropdown.Menu>
+      </HeroDropdown.Popover>
+    </HeroDropdown>
   );
 }

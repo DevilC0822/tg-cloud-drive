@@ -1,12 +1,12 @@
-import { Search, X } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { SearchField as HeroSearchField } from '@heroui/react';
 
 export interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  className?: string;
 }
 
 function cn(...inputs: (string | undefined | null | boolean)[]) {
@@ -16,46 +16,49 @@ function cn(...inputs: (string | undefined | null | boolean)[]) {
 export function SearchBar({
   value,
   onChange,
-  placeholder = '搜索文件...',
-  className,
+  placeholder = '搜索文件或文件夹',
 }: SearchBarProps) {
   return (
-    <div className={cn('relative', className)}>
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 dark:text-neutral-500" />
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        autoComplete="off"
-        data-form-type="other"
-        placeholder={placeholder}
+    <HeroSearchField
+      value={value}
+      onChange={onChange}
+      aria-label={placeholder}
+      variant="secondary"
+      fullWidth
+      className="w-full"
+    >
+      <HeroSearchField.Group
         className={cn(
-          'w-full pl-10 pr-10 py-2.5 text-sm',
-          'bg-neutral-100 dark:bg-neutral-800',
-          'text-neutral-900 dark:text-neutral-100',
-          'border border-transparent',
-          'rounded-xl',
-          'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
-          'focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent',
-          'focus:bg-white dark:focus:bg-neutral-900',
-          'transition-all duration-200'
+          'w-full rounded-xl border border-neutral-200 bg-white/95 dark:border-neutral-700 dark:bg-neutral-900/80',
+          'shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)]',
+          'focus-within:border-[var(--theme-primary)] focus-within:ring-2 focus-within:ring-[var(--theme-primary)]',
+          'transition-[background-color,border-color,box-shadow] duration-200'
         )}
-      />
-      {value && (
-        <button
-          onClick={() => onChange('')}
-          className={cn(
-            'absolute right-3 top-1/2 -translate-y-1/2',
-            'p-0.5 rounded-full',
-            'text-neutral-400 hover:text-neutral-600',
-            'dark:text-neutral-500 dark:hover:text-neutral-300',
-            'hover:bg-neutral-200 dark:hover:bg-neutral-700',
-            'transition-colors duration-200'
-          )}
+      >
+        <HeroSearchField.SearchIcon
+          className="h-4 w-4 text-neutral-400 dark:text-neutral-500"
         >
-          <X className="w-4 h-4" />
-        </button>
-      )}
-    </div>
+          <Search className="h-4 w-4" />
+        </HeroSearchField.SearchIcon>
+        <HeroSearchField.Input
+          autoComplete="off"
+          placeholder={placeholder}
+          className={cn(
+            'w-full bg-transparent py-2.5 text-sm text-neutral-900 dark:text-neutral-100',
+            'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
+            'focus-visible:outline-none'
+          )}
+        />
+        <HeroSearchField.ClearButton
+          aria-label="清空搜索"
+          className={cn(
+            'h-7 w-7 min-h-7 min-w-7 rounded-full',
+            'text-neutral-400 dark:text-neutral-500',
+            'data-[hovered=true]:bg-neutral-200 data-[hovered=true]:text-neutral-600',
+            'dark:data-[hovered=true]:bg-neutral-700 dark:data-[hovered=true]:text-neutral-300'
+          )}
+        />
+      </HeroSearchField.Group>
+    </HeroSearchField>
   );
 }

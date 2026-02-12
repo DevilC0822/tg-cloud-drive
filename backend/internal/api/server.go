@@ -125,6 +125,7 @@ func (s *Server) Router() http.Handler {
 			pr.Post("/transfers/history", s.handleUpsertTransferHistory)
 			pr.Delete("/transfers/history", s.handleDeleteTransferHistory)
 			pr.Delete("/transfers/history/{id}", s.handleDeleteTransferHistoryItem)
+			pr.Post("/torrents/preview", s.handlePreviewTorrent)
 			pr.Post("/torrents/tasks", s.handleCreateTorrentTask)
 			pr.Get("/torrents/tasks", s.handleListTorrentTasks)
 			pr.Get("/torrents/tasks/{id}", s.handleGetTorrentTask)

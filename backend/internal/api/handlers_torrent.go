@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -55,14 +56,31 @@ type torrentTaskFileDTO struct {
 	Error          *string `json:"error"`
 }
 
+type torrentPreviewDTO struct {
+	TorrentName  string                  `json:"torrentName"`
+	InfoHash     string                  `json:"infoHash"`
+	TotalSize    int64                   `json:"totalSize"`
+	IsPrivate    bool                    `json:"isPrivate"`
+	TrackerHosts []string                `json:"trackerHosts"`
+	Files        []torrentPreviewFileDTO `json:"files"`
+}
+
+type torrentPreviewFileDTO struct {
+	FileIndex int    `json:"fileIndex"`
+	FilePath  string `json:"filePath"`
+	FileName  string `json:"fileName"`
+	FileSize  int64  `json:"fileSize"`
+}
+
 type createTorrentTaskPayload struct {
-	ParentID     *uuid.UUID
-	TorrentURL   string
-	TorrentName  string
-	TorrentBytes []byte
-	SourceType   store.TorrentSourceType
-	SourceURL    *string
-	SubmittedBy  string
+	ParentID            *uuid.UUID
+	TorrentURL          string
+	TorrentName         string
+	TorrentBytes        []byte
+	SelectedFileIndexes []int
+	SourceType          store.TorrentSourceType
+	SourceURL           *string
+	SubmittedBy         string
 }
 
 func toTorrentTaskDTO(task store.TorrentTask, files []store.TorrentTaskFile) torrentTaskDTO {
@@ -117,6 +135,58 @@ func toTorrentTaskDTO(task store.TorrentTask, files []store.TorrentTaskFile) tor
 	return dto
 }
 
+func toTorrentPreviewDTO(meta itorrent.MetaInfo) torrentPreviewDTO {
+	files := make([]torrentPreviewFileDTO, 0, len(meta.Files))
+	for _, file := range meta.Files {
+		files = append(files, torrentPreviewFileDTO{
+			FileIndex: file.Index,
+			FilePath:  file.Path,
+			FileName:  file.Name,
+			FileSize:  file.Size,
+		})
+	}
+
+	return torrentPreviewDTO{
+		TorrentName:  meta.Name,
+		InfoHash:     meta.InfoHash,
+		TotalSize:    meta.TotalSize,
+		IsPrivate:    meta.IsPrivate,
+		TrackerHosts: meta.AnnounceHosts,
+		Files:        files,
+	}
+}
+
+func (s *Server) handlePreviewTorrent(w http.ResponseWriter, r *http.Request) {
+	if !s.cfg.TorrentEnabled {
+		writeError(w, http.StatusServiceUnavailable, "service_unavailable", "当前实例未启用 Torrent 功能")
+		return
+	}
+
+	payload, err := s.parseCreateTorrentTaskPayload(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+
+	meta, err := itorrent.ParseMetaInfo(payload.TorrentBytes)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "torrent 文件解析失败："+err.Error())
+		return
+	}
+	if s.cfg.TorrentRequirePrivate && !meta.IsPrivate {
+		writeError(w, http.StatusBadRequest, "bad_request", "当前实例仅允许 private torrent")
+		return
+	}
+	if err := itorrent.ValidateAnnounceHosts(meta.AnnounceHosts, s.cfg.TorrentAllowedAnnounceDomains); err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"preview": toTorrentPreviewDTO(meta),
+	})
+}
+
 func (s *Server) handleCreateTorrentTask(w http.ResponseWriter, r *http.Request) {
 	if !s.cfg.TorrentEnabled {
 		writeError(w, http.StatusServiceUnavailable, "service_unavailable", "当前实例未启用 Torrent 功能")
@@ -146,9 +216,15 @@ func (s *Server) handleCreateTorrentTask(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
 		return
 	}
+	selectedIndexSet, err := resolveTorrentTaskSelectedIndexes(meta.Files, payload.SelectedFileIndexes)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	st := store.New(s.db)
 
 	if payload.ParentID != nil {
-		if _, err := store.New(s.db).GetItem(r.Context(), *payload.ParentID); err != nil {
+		if _, err := st.GetItem(r.Context(), *payload.ParentID); err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				writeError(w, http.StatusBadRequest, "bad_request", "目标目录不存在")
 				return
@@ -173,7 +249,7 @@ func (s *Server) handleCreateTorrentTask(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	created, err := store.New(s.db).CreateTorrentTask(r.Context(), store.TorrentTask{
+	created, err := st.CreateTorrentTask(r.Context(), store.TorrentTask{
 		ID:              taskID,
 		SourceType:      payload.SourceType,
 		SourceURL:       payload.SourceURL,
@@ -202,9 +278,17 @@ func (s *Server) handleCreateTorrentTask(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "internal_error", "创建 Torrent 任务失败")
 		return
 	}
+	taskFiles := buildTorrentTaskInitialFiles(taskID, meta.Files, selectedIndexSet)
+	if err := st.ReplaceTorrentTaskFiles(r.Context(), taskID, taskFiles, now); err != nil {
+		_ = st.DeleteTorrentTask(context.Background(), taskID)
+		_ = os.Remove(torrentPath)
+		s.logger.Error("init torrent task files failed", "error", err.Error())
+		writeError(w, http.StatusInternalServerError, "internal_error", "初始化 Torrent 文件列表失败")
+		return
+	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"task": toTorrentTaskDTO(created, nil),
+		"task": toTorrentTaskDTO(created, taskFiles),
 	})
 }
 
@@ -615,12 +699,17 @@ func (s *Server) cleanupTorrentTaskRetryResources(
 
 func (s *Server) parseCreateTorrentTaskPayloadJSON(r *http.Request) (createTorrentTaskPayload, error) {
 	var req struct {
-		ParentID    *string `json:"parentId"`
-		TorrentURL  string  `json:"torrentUrl"`
-		SubmittedBy string  `json:"submittedBy"`
+		ParentID            *string `json:"parentId"`
+		TorrentURL          string  `json:"torrentUrl"`
+		SelectedFileIndexes []int   `json:"selectedFileIndexes"`
+		SubmittedBy         string  `json:"submittedBy"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return createTorrentTaskPayload{}, errors.New("请求体不是合法 JSON")
+	}
+	selectedFileIndexes, err := normalizeTorrentFileIndexes(req.SelectedFileIndexes)
+	if err != nil {
+		return createTorrentTaskPayload{}, err
 	}
 	parentID, err := parseOptionalParentID(req.ParentID)
 	if err != nil {
@@ -640,12 +729,13 @@ func (s *Server) parseCreateTorrentTaskPayloadJSON(r *http.Request) (createTorre
 		submittedBy = "admin"
 	}
 	return createTorrentTaskPayload{
-		ParentID:     parentID,
-		TorrentURL:   rawURL,
-		TorrentBytes: torrentBytes,
-		SourceType:   store.TorrentSourceTypeURL,
-		SourceURL:    &sourceURL,
-		SubmittedBy:  submittedBy,
+		ParentID:            parentID,
+		TorrentURL:          rawURL,
+		TorrentBytes:        torrentBytes,
+		SelectedFileIndexes: selectedFileIndexes,
+		SourceType:          store.TorrentSourceTypeURL,
+		SourceURL:           &sourceURL,
+		SubmittedBy:         submittedBy,
 	}, nil
 }
 
@@ -656,11 +746,12 @@ func (s *Server) parseCreateTorrentTaskPayloadMultipart(r *http.Request) (create
 	}
 
 	var (
-		parentRaw   *string
-		torrentURL  string
-		submittedBy string
-		fileBytes   []byte
-		fileName    string
+		parentRaw           *string
+		torrentURL          string
+		submittedBy         string
+		fileBytes           []byte
+		fileName            string
+		selectedFileIndexes []int
 	)
 
 	for {
@@ -697,6 +788,17 @@ func (s *Server) parseCreateTorrentTaskPayloadMultipart(r *http.Request) (create
 				return createTorrentTaskPayload{}, errors.New("读取 submittedBy 失败")
 			}
 			submittedBy = strings.TrimSpace(value)
+		case "selectedFileIndexes":
+			value, readErr := readSmallPartValue(part, 64<<10)
+			_ = part.Close()
+			if readErr != nil {
+				return createTorrentTaskPayload{}, errors.New("读取 selectedFileIndexes 失败")
+			}
+			normalized, parseErr := parseTorrentFileIndexesValue(value)
+			if parseErr != nil {
+				return createTorrentTaskPayload{}, parseErr
+			}
+			selectedFileIndexes = normalized
 		case "torrentFile":
 			name := strings.TrimSpace(part.FileName())
 			data, readErr := readLimitedPartBytes(part, s.cfg.TorrentMaxMetadataBytes)
@@ -724,12 +826,13 @@ func (s *Server) parseCreateTorrentTaskPayloadMultipart(r *http.Request) (create
 
 	if len(fileBytes) > 0 {
 		return createTorrentTaskPayload{
-			ParentID:     parentID,
-			TorrentName:  fileName,
-			TorrentBytes: fileBytes,
-			SourceType:   store.TorrentSourceTypeFile,
-			SourceURL:    nil,
-			SubmittedBy:  submittedBy,
+			ParentID:            parentID,
+			TorrentName:         fileName,
+			TorrentBytes:        fileBytes,
+			SelectedFileIndexes: selectedFileIndexes,
+			SourceType:          store.TorrentSourceTypeFile,
+			SourceURL:           nil,
+			SubmittedBy:         submittedBy,
 		}, nil
 	}
 	if torrentURL == "" {
@@ -741,13 +844,108 @@ func (s *Server) parseCreateTorrentTaskPayloadMultipart(r *http.Request) (create
 	}
 	sourceURL := torrentURL
 	return createTorrentTaskPayload{
-		ParentID:     parentID,
-		TorrentURL:   torrentURL,
-		TorrentBytes: torrentBytes,
-		SourceType:   store.TorrentSourceTypeURL,
-		SourceURL:    &sourceURL,
-		SubmittedBy:  submittedBy,
+		ParentID:            parentID,
+		TorrentURL:          torrentURL,
+		TorrentBytes:        torrentBytes,
+		SelectedFileIndexes: selectedFileIndexes,
+		SourceType:          store.TorrentSourceTypeURL,
+		SourceURL:           &sourceURL,
+		SubmittedBy:         submittedBy,
 	}, nil
+}
+
+func parseTorrentFileIndexesValue(raw string) ([]int, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return nil, nil
+	}
+	var indexes []int
+	if err := json.Unmarshal([]byte(trimmed), &indexes); err != nil {
+		return nil, errors.New("selectedFileIndexes 不是合法 JSON 数组")
+	}
+	return normalizeTorrentFileIndexes(indexes)
+}
+
+func normalizeTorrentFileIndexes(indexes []int) ([]int, error) {
+	if len(indexes) == 0 {
+		return nil, nil
+	}
+	seen := make(map[int]struct{}, len(indexes))
+	out := make([]int, 0, len(indexes))
+	for _, idx := range indexes {
+		if idx < 0 {
+			return nil, errors.New("selectedFileIndexes 仅允许非负整数")
+		}
+		if _, ok := seen[idx]; ok {
+			continue
+		}
+		seen[idx] = struct{}{}
+		out = append(out, idx)
+	}
+	sort.Ints(out)
+	return out, nil
+}
+
+func resolveTorrentTaskSelectedIndexes(
+	metaFiles []itorrent.FileEntry,
+	requested []int,
+) (map[int]struct{}, error) {
+	if len(metaFiles) == 0 {
+		return nil, errors.New("torrent 未包含可下载文件")
+	}
+	valid := make(map[int]struct{}, len(metaFiles))
+	for _, file := range metaFiles {
+		valid[file.Index] = struct{}{}
+	}
+
+	indexes := requested
+	if len(indexes) == 0 {
+		indexes = make([]int, 0, len(metaFiles))
+		for _, file := range metaFiles {
+			indexes = append(indexes, file.Index)
+		}
+	}
+	if len(indexes) == 0 {
+		return nil, errors.New("请至少选择一个种子文件")
+	}
+
+	selected := make(map[int]struct{}, len(indexes))
+	for _, idx := range indexes {
+		if _, ok := valid[idx]; !ok {
+			return nil, errors.New("selectedFileIndexes 包含不存在的文件索引")
+		}
+		selected[idx] = struct{}{}
+	}
+	if len(selected) == 0 {
+		return nil, errors.New("请至少选择一个种子文件")
+	}
+	return selected, nil
+}
+
+func buildTorrentTaskInitialFiles(
+	taskID uuid.UUID,
+	metaFiles []itorrent.FileEntry,
+	selected map[int]struct{},
+) []store.TorrentTaskFile {
+	rows := make([]store.TorrentTaskFile, 0, len(metaFiles))
+	for _, file := range metaFiles {
+		filePath := strings.TrimSpace(file.Path)
+		fileName := strings.TrimSpace(file.Name)
+		if fileName == "" {
+			fileName = filepath.Base(filePath)
+		}
+		_, checked := selected[file.Index]
+		rows = append(rows, store.TorrentTaskFile{
+			TaskID:    taskID,
+			FileIndex: file.Index,
+			FilePath:  filePath,
+			FileName:  fileName,
+			FileSize:  file.Size,
+			Selected:  checked,
+			Uploaded:  false,
+		})
+	}
+	return rows
 }
 
 func parseOptionalParentID(raw *string) (*uuid.UUID, error) {

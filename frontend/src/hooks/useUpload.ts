@@ -54,71 +54,6 @@ function normalizeUploadProcess(input?: UploadProcessDTO | null): UploadProcessD
   };
 }
 
-function uploadFileXHR(file: File, parentId: string | null, chunked: boolean): {
-  promise: Promise<UploadResult>;
-  cancel: () => void;
-  onProgress: (cb: (pct: number) => void) => void;
-} {
-  const xhr = new XMLHttpRequest();
-
-  let progressCb: ((pct: number) => void) | null = null;
-
-  const promise = new Promise<UploadResult>((resolve, reject) => {
-    xhr.open('POST', '/api/files/upload');
-    xhr.withCredentials = true;
-    xhr.setRequestHeader('X-TGCD-Chunked', chunked ? '1' : '0');
-    if (parentId) {
-      xhr.setRequestHeader('X-TGCD-Parent-Id', parentId);
-    }
-
-    xhr.upload.onprogress = (evt) => {
-      if (!evt.lengthComputable) return;
-      const pct = Math.round((evt.loaded / evt.total) * 100);
-      progressCb?.(Math.min(99, Math.max(0, pct)));
-    };
-
-    xhr.onload = () => {
-      try {
-        const text = xhr.responseText || '';
-        const data = text ? (JSON.parse(text) as UploadResultDTO & { message?: string }) : null;
-        if (xhr.status >= 200 && xhr.status < 300 && data?.item) {
-          progressCb?.(100);
-          resolve({
-            item: dtoToFileItem(data.item),
-            uploadProcess: normalizeUploadProcess(data.uploadProcess),
-          });
-          return;
-        }
-
-        const message = data?.message || `上传失败（${xhr.status}）`;
-        reject(new Error(message));
-      } catch {
-        reject(new Error(`上传失败（${xhr.status}）`));
-      }
-    };
-
-    xhr.onerror = () => reject(new Error('网络错误'));
-    xhr.onabort = () => reject(new Error('已取消'));
-
-    const form = new FormData();
-    if (parentId) {
-      form.append('parentId', parentId);
-    }
-    form.append('chunked', chunked ? '1' : '0');
-    form.append('file', file, file.name);
-
-    xhr.send(form);
-  });
-
-  return {
-    promise,
-    cancel: () => xhr.abort(),
-    onProgress: (cb) => {
-      progressCb = cb;
-    },
-  };
-}
-
 async function createUploadSession(file: File, parentId: string | null): Promise<UploadSessionDTO> {
   const res = await apiFetchJson<{ session: UploadSessionDTO }>('/api/uploads', {
     method: 'POST',
@@ -235,51 +170,6 @@ export function useUpload(options?: UploadHookOptions) {
     setUploadTasks([]);
   }, [setUploadTasks]);
 
-  const runStandardUpload = useCallback(
-    async (taskId: string, file: File, parentId: string | null) => {
-      updateTask(taskId, {
-        status: 'uploading',
-        progress: 0,
-        error: undefined,
-        resumable: false,
-        targetParentId: parentId,
-        uploadVideoFaststartApplied: undefined,
-        uploadVideoFaststartFallback: undefined,
-        uploadVideoPreviewAttached: undefined,
-        uploadVideoPreviewFallback: undefined,
-      });
-
-      const { promise, onProgress } = uploadFileXHR(file, parentId, false);
-      onProgress((pct) => {
-        updateTask(taskId, { progress: pct, status: pct >= 100 ? 'completed' : 'uploading' });
-      });
-
-      try {
-        const result = await promise;
-        updateTask(taskId, {
-          progress: 100,
-          status: 'completed',
-          error: undefined,
-          uploadVideoFaststartApplied: result.uploadProcess?.videoFaststartApplied,
-          uploadVideoFaststartFallback: result.uploadProcess?.videoFaststartFallback,
-          uploadVideoPreviewAttached: result.uploadProcess?.videoPreviewAttached,
-          uploadVideoPreviewFallback: result.uploadProcess?.videoPreviewFallback,
-        });
-        const item = result.item;
-        options?.onUploaded?.(item);
-        return item;
-      } catch (err: unknown) {
-        updateTask(taskId, {
-          status: 'error',
-          error: err instanceof Error ? err.message : '上传失败',
-          resumable: false,
-        });
-        return null;
-      }
-    },
-    [options, updateTask]
-  );
-
   const runResumableUpload = useCallback(
     async (taskId: string, file: File, parentId: string | null, existingSessionId?: string) => {
       try {
@@ -369,17 +259,14 @@ export function useUpload(options?: UploadHookOptions) {
       const task = uploadTasks.find((it) => it.id === taskId);
       if (!task) return null;
 
-      if (task.resumable) {
-        return runResumableUpload(
-          task.id,
-          task.file,
-          task.targetParentId ?? null,
-          task.uploadSessionId
-        );
-      }
-      return runStandardUpload(task.id, task.file, task.targetParentId ?? null);
+      return runResumableUpload(
+        task.id,
+        task.file,
+        task.targetParentId ?? null,
+        task.uploadSessionId
+      );
     },
-    [runResumableUpload, runStandardUpload, uploadTasks]
+    [runResumableUpload, uploadTasks]
   );
 
   const uploadFiles = useCallback(
@@ -449,12 +336,9 @@ export function useUpload(options?: UploadHookOptions) {
   );
 
   return {
-    uploadTasks,
     isDragActive,
-    uploadFile,
     uploadFiles,
     retryTask,
-    addUploadTask,
     removeTask,
     clearCompletedTasks,
     clearAllTasks,

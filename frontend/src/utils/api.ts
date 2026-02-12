@@ -1,6 +1,6 @@
 import type { FileItem, FileType } from '@/types';
 
-export interface ApiErrorResponse {
+interface ApiErrorResponse {
   error?: string;
   message?: string;
   details?: unknown;

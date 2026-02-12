@@ -2,6 +2,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { FileItem, SortBy, SortOrder } from '@/types';
+import { ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 import { FileRow } from './FileRow';
 
 function cn(...inputs: (string | undefined | null | boolean)[]) {
@@ -31,13 +32,9 @@ export function FileList({
 }: FileListProps) {
   const SortIcon = ({ column }: { column: SortBy }) => {
     if (sortBy !== column) {
-      return <ArrowUpDown className="w-3 h-3 opacity-0 group-hover:opacity-50" />;
+      return <ArrowUpDown className="h-3 w-3 opacity-60" />;
     }
-    return sortOrder === 'asc' ? (
-      <ArrowUp className="w-3 h-3 text-[#D4AF37]" />
-    ) : (
-      <ArrowDown className="w-3 h-3 text-[#D4AF37]" />
-    );
+    return sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
   if (files.length === 0) {
@@ -47,38 +44,44 @@ export function FileList({
   return (
     <div className="flex flex-col">
       {/* 表头 */}
-      <div className="flex items-center gap-4 px-4 py-2 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50 sticky top-0">
+      <div className="sticky top-0 z-10 flex items-center gap-4 border-b border-neutral-200/80 bg-neutral-100/90 px-4 py-2.5 backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/85">
         <div className="w-10 flex-shrink-0" /> {/* 图标占位 */}
-        <button
-          onClick={() => onSort('name')}
+        <ActionTextButton
+          tone={sortBy === 'name' ? 'brand' : 'neutral'}
+          density="compact"
+          onPress={() => onSort('name')}
+          trailingIcon={<SortIcon column="name" />}
           className={cn(
-            'group flex-1 flex items-center gap-1 text-xs font-medium uppercase tracking-wider',
-            'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300',
-            sortBy === 'name' && 'text-[#D4AF37]'
+            'flex-1 justify-start text-[11px] uppercase tracking-[0.08em]',
+            sortBy !== 'name' && 'text-neutral-500 dark:text-neutral-400'
           )}
         >
-          名称 <SortIcon column="name" />
-        </button>
-        <button
-          onClick={() => onSort('size')}
+          文件名
+        </ActionTextButton>
+        <ActionTextButton
+          tone={sortBy === 'size' ? 'brand' : 'neutral'}
+          density="compact"
+          onPress={() => onSort('size')}
+          trailingIcon={<SortIcon column="size" />}
           className={cn(
-            'group hidden sm:flex w-24 items-center justify-end gap-1 text-xs font-medium uppercase tracking-wider',
-            'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300',
-            sortBy === 'size' && 'text-[#D4AF37]'
+            'hidden w-24 justify-end text-[11px] uppercase tracking-[0.08em] sm:inline-flex',
+            sortBy !== 'size' && 'text-neutral-500 dark:text-neutral-400'
           )}
         >
-          大小 <SortIcon column="size" />
-        </button>
-        <button
-          onClick={() => onSort('date')}
+          大小
+        </ActionTextButton>
+        <ActionTextButton
+          tone={sortBy === 'date' ? 'brand' : 'neutral'}
+          density="compact"
+          onPress={() => onSort('date')}
+          trailingIcon={<SortIcon column="date" />}
           className={cn(
-            'group hidden md:flex w-32 items-center justify-end gap-1 text-xs font-medium uppercase tracking-wider',
-            'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300',
-            sortBy === 'date' && 'text-[#D4AF37]'
+            'hidden w-32 justify-end text-[11px] uppercase tracking-[0.08em] md:inline-flex',
+            sortBy !== 'date' && 'text-neutral-500 dark:text-neutral-400'
           )}
         >
-          修改日期 <SortIcon column="date" />
-        </button>
+          更新时间
+        </ActionTextButton>
         <div className="w-16" /> {/* 操作按钮占位 */}
       </div>
 

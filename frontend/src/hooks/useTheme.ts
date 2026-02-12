@@ -42,15 +42,6 @@ export function useTheme() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme, applyTheme]);
 
-  // 切换主题
-  const toggleTheme = useCallback(() => {
-    setTheme((current) => {
-      const next = current === 'light' ? 'dark' : current === 'dark' ? 'system' : 'light';
-      applyTheme(next);
-      return next;
-    });
-  }, [setTheme, applyTheme]);
-
   // 设置特定主题
   const changeTheme = useCallback(
     (newTheme: Theme) => {
@@ -60,19 +51,8 @@ export function useTheme() {
     [setTheme, applyTheme]
   );
 
-  // 获取当前实际主题（解析 system）
-  const resolvedTheme = useCallback((): 'light' | 'dark' => {
-    if (theme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return theme;
-  }, [theme]);
-
   return {
     theme,
-    toggleTheme,
     changeTheme,
-    resolvedTheme,
-    isDark: resolvedTheme() === 'dark',
   };
 }

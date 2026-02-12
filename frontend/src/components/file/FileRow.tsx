@@ -2,6 +2,7 @@ import { MoreVertical } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { FileItem } from '@/types';
+import { ActionIconButton } from '@/components/ui/HeroActionPrimitives';
 import { formatFileSize, formatDate } from '@/utils/formatters';
 import { FileThumbnail } from './FileThumbnail';
 
@@ -30,11 +31,9 @@ export function FileRow({
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'group flex items-center gap-4 px-4 py-3 cursor-pointer',
-        'hover:bg-neutral-50 dark:hover:bg-neutral-800/50',
-        'border-b border-neutral-100 dark:border-neutral-800',
-        'transition-colors duration-150',
-        selected && 'bg-[#D4AF37]/5 hover:bg-[#D4AF37]/10'
+        'group flex cursor-pointer items-center gap-4 border-b border-neutral-100 px-4 py-3 dark:border-neutral-800',
+        'transition-colors duration-150 hover:bg-neutral-50 dark:hover:bg-neutral-800/45',
+        selected && 'bg-[var(--theme-primary-a08)] hover:bg-[var(--theme-primary-a12)]'
       )}
     >
       {/* 文件图标 */}
@@ -51,7 +50,7 @@ export function FileRow({
           {file.name}
         </h3>
         <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-          {file.type === 'folder' ? '文件夹' : file.mimeType || '文件'}
+          {file.type === 'folder' ? '目录' : file.mimeType || '文件'}
         </p>
       </div>
 
@@ -69,13 +68,15 @@ export function FileRow({
 
       {/* 操作按钮 */}
       <div className="w-16 flex justify-end">
-        <button
+        <ActionIconButton
+          icon={<MoreVertical className="h-4 w-4" />}
+          label="更多操作"
           onClick={(e) => {
             e.stopPropagation();
             onContextMenu?.(e);
           }}
           className={cn(
-            'p-2 rounded-xl border border-neutral-200/80 dark:border-neutral-700/70',
+            'rounded-xl border border-neutral-200/80 dark:border-neutral-700/70',
             'bg-white/85 dark:bg-neutral-900/70 backdrop-blur-sm',
             'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200',
             'hover:bg-white dark:hover:bg-neutral-800/90',
@@ -83,10 +84,7 @@ export function FileRow({
             'scale-100 md:scale-95 md:group-hover:scale-100',
             'shadow-sm transition-all duration-200'
           )}
-          aria-label="更多操作"
-        >
-        <MoreVertical className="w-4 h-4" />
-        </button>
+        />
       </div>
     </div>
   );

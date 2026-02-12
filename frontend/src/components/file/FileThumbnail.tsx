@@ -29,7 +29,7 @@ const fileIcons: Record<FileType, ComponentType<{ className?: string }>> = {
 };
 
 const fileColors: Record<FileType, string> = {
-  folder: 'text-amber-500',
+  folder: 'text-orange-500',
   image: 'text-pink-500',
   video: 'text-purple-500',
   audio: 'text-green-500',

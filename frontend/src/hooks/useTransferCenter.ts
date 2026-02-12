@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from 'jotai';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { uploadTasksAtom } from '@/stores/uploadAtoms';
 import { downloadTasksAtom, transferHistoryAtom } from '@/stores/transferAtoms';
 import type { DownloadTask, FileItem, TransferHistoryItem, UploadTask } from '@/types';
@@ -482,22 +482,6 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
     setHistoryPage(1);
   }, []);
 
-  const activeUploadTasks = useMemo(
-    () =>
-      uploadTasks.filter(
-        (task) => task.status === 'pending' || task.status === 'uploading'
-      ),
-    [uploadTasks]
-  );
-
-  const activeDownloadTasks = useMemo(
-    () =>
-      downloadTasks.filter(
-        (task) => task.status === 'pending' || task.status === 'downloading'
-      ),
-    [downloadTasks]
-  );
-
   return {
     uploadTasks,
     downloadTasks,
@@ -505,8 +489,6 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
     historyFilter,
     historyLoading,
     historyPagination,
-    activeUploadTasks,
-    activeDownloadTasks,
     startDownload,
     retryDownload,
     cancelDownload,
@@ -517,6 +499,5 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
     changeHistoryFilter,
     changeHistoryPage,
     changeHistoryPageSize,
-    reloadHistory: loadHistory,
   };
 }

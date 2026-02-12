@@ -173,6 +173,39 @@ func (s *Server) processDownloadingTorrentTask(ctx context.Context, task store.T
 	if info == nil {
 		return nil
 	}
+	selectionByIndex := map[int]bool{}
+	existingFiles, err := st.ListTorrentTaskFiles(ctx, task.ID)
+	if err != nil {
+		return err
+	}
+	for _, file := range existingFiles {
+		selectionByIndex[file.FileIndex] = file.Selected
+	}
+	selectedIndexes := make([]int, 0, len(selectionByIndex))
+	skippedIndexes := make([]int, 0, len(selectionByIndex))
+	for idx, selected := range selectionByIndex {
+		if selected {
+			selectedIndexes = append(selectedIndexes, idx)
+			continue
+		}
+		skippedIndexes = append(skippedIndexes, idx)
+	}
+	if len(skippedIndexes) > 0 {
+		priorityHash := strings.TrimSpace(strings.ToLower(resolvedHash))
+		if priorityHash == "" {
+			priorityHash = strings.TrimSpace(strings.ToLower(info.Hash))
+		}
+		if priorityHash != "" {
+			if err := qbt.SetTorrentFilePriority(ctx, priorityHash, skippedIndexes, 0); err != nil {
+				s.logger.Warn("set torrent skipped file priority failed", "task_id", task.ID.String(), "error", err.Error())
+			}
+			if len(selectedIndexes) > 0 {
+				if err := qbt.SetTorrentFilePriority(ctx, priorityHash, selectedIndexes, 1); err != nil {
+					s.logger.Warn("set torrent selected file priority failed", "task_id", task.ID.String(), "error", err.Error())
+				}
+			}
+		}
+	}
 
 	estimated := info.TotalSize
 	if estimated <= 0 {
@@ -212,13 +245,19 @@ func (s *Server) processDownloadingTorrentTask(ctx context.Context, task store.T
 	fileRows := make([]store.TorrentTaskFile, 0, len(files))
 	for _, file := range files {
 		absPath := resolveDownloadedFilePath(info, file, len(files))
+		selected := true
+		if len(selectionByIndex) > 0 {
+			if preset, ok := selectionByIndex[file.Index]; ok {
+				selected = preset
+			}
+		}
 		fileRows = append(fileRows, store.TorrentTaskFile{
 			TaskID:    task.ID,
 			FileIndex: file.Index,
 			FilePath:  absPath,
 			FileName:  filepath.Base(absPath),
 			FileSize:  file.Size,
-			Selected:  true,
+			Selected:  selected,
 			Uploaded:  false,
 		})
 	}

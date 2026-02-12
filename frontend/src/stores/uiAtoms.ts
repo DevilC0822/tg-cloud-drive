@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-import type { ViewMode, Theme, StorageStats, ContextMenuPosition, FileItem } from '@/types';
+import type { ViewMode, Theme, ContextMenuPosition, FileItem } from '@/types';
 
 /* 视图模式 */
 export const viewModeAtom = atom<ViewMode>('grid');
@@ -8,8 +8,6 @@ export const viewModeAtom = atom<ViewMode>('grid');
 /* 主题 */
 export const themeAtom = atomWithStorage<Theme>('tg-theme', 'system');
 
-/* 设置：是否启用分片上传（默认关闭） */
-export const chunkedUploadEnabledAtom = atomWithStorage<boolean>('tgcd-chunked-upload-enabled', false);
 export const uploadConcurrencyAtom = atomWithStorage<number>('tgcd-upload-concurrency', 1);
 export const downloadConcurrencyAtom = atomWithStorage<number>('tgcd-download-concurrency', 2);
 export const reservedDiskBytesAtom = atomWithStorage<number>(
@@ -22,21 +20,6 @@ export const sidebarOpenAtom = atom<boolean>(true);
 
 /* 移动端侧边栏展开状态 */
 export const mobileSidebarOpenAtom = atom<boolean>(false);
-
-/* 存储统计 */
-export const storageStatsAtom = atom<StorageStats>({
-  totalBytes: 0,
-  totalFiles: 0,
-  byType: {
-    image: { bytes: 0, count: 0 },
-    video: { bytes: 0, count: 0 },
-    audio: { bytes: 0, count: 0 },
-    document: { bytes: 0, count: 0 },
-    archive: { bytes: 0, count: 0 },
-    code: { bytes: 0, count: 0 },
-    other: { bytes: 0, count: 0 },
-  },
-});
 
 /* 右键菜单状态 */
 export const contextMenuAtom = atom<{

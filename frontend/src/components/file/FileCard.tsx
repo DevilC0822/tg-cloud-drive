@@ -2,6 +2,7 @@ import { MoreVertical } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { FileItem } from '@/types';
+import { ActionIconButton } from '@/components/ui/HeroActionPrimitives';
 import { formatFileSize, truncateFilename } from '@/utils/formatters';
 import { FileThumbnail } from './FileThumbnail';
 
@@ -30,22 +31,21 @@ export function FileCard({
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'group relative p-4 rounded-2xl cursor-pointer',
-        'bg-white dark:bg-neutral-900',
-        'border border-neutral-200/50 dark:border-neutral-700/50',
-        'hover:shadow-lg hover:-translate-y-0.5',
-        'transition-all duration-200',
-        selected && 'ring-2 ring-[#D4AF37] ring-offset-2 dark:ring-offset-neutral-950'
+        'group relative cursor-pointer rounded-2xl border border-neutral-200/70 bg-white/92 p-4 dark:border-neutral-700/70 dark:bg-neutral-900/78',
+        'shadow-[0_12px_28px_-24px_rgba(15,23,42,0.7)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-24px_rgba(15,23,42,0.55)]',
+        selected && 'ring-2 ring-[var(--theme-primary)] ring-offset-2 dark:ring-offset-neutral-950'
       )}
     >
       {/* 更多操作按钮 */}
-      <button
+      <ActionIconButton
+        icon={<MoreVertical className="h-4 w-4" />}
+        label="更多操作"
         onClick={(e) => {
           e.stopPropagation();
           onContextMenu?.(e);
         }}
         className={cn(
-          'absolute top-2.5 right-2.5 z-10 p-2 rounded-xl',
+          'absolute top-2.5 right-2.5 z-10 rounded-xl',
           'border border-white/70 dark:border-neutral-700/80',
           'bg-white/85 dark:bg-neutral-900/80 backdrop-blur',
           'shadow-sm hover:shadow',
@@ -54,10 +54,7 @@ export function FileCard({
           'scale-100 md:scale-95 md:group-hover:scale-100',
           'transition-all duration-200'
         )}
-        aria-label="更多操作"
-      >
-        <MoreVertical className="w-4 h-4" />
-      </button>
+      />
 
       {/* 文件图标/缩略图 */}
       <div className="flex items-center justify-center h-24 mb-3">
@@ -73,7 +70,7 @@ export function FileCard({
           {truncateFilename(file.name, 18)}
         </h3>
         <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-          {file.type === 'folder' ? '文件夹' : formatFileSize(file.size)}
+          {file.type === 'folder' ? '目录' : formatFileSize(file.size)}
         </p>
       </div>
     </div>

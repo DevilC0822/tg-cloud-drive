@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
-import { useSetAtom } from 'jotai';
-import { toastsAtom, type ToastItem, type ToastType } from '@/stores/toastAtoms';
-import { generateId } from '@/utils/fileUtils';
+import { toast } from '@heroui/react';
+
+export type ToastType = 'success' | 'error' | 'info';
 
 export interface PushToastOptions {
   type?: ToastType;
@@ -11,39 +11,26 @@ export interface PushToastOptions {
 }
 
 /**
- * 轻量 Toast 工具（不依赖第三方库）
+ * 统一 Toast 工具（基于 HeroUI Toast）
  */
 export function useToast() {
-  const setToasts = useSetAtom(toastsAtom);
-
   const pushToast = useCallback(
     ({ type = 'info', title, message, durationMs = 3000 }: PushToastOptions) => {
-      const item: ToastItem = {
-        id: generateId(),
-        type,
-        title,
-        message,
-        createdAt: Date.now(),
-        durationMs,
+      const content = title || message;
+      const options = {
+        description: title ? message : undefined,
+        timeout: durationMs,
       };
 
-      setToasts((prev) => [...prev, item]);
-      return item.id;
+      if (type === 'success') {
+        return toast.success(content, options);
+      }
+      if (type === 'error') {
+        return toast.danger(content, options);
+      }
+      return toast.info(content, options);
     },
-    [setToasts]
+    []
   );
-
-  const removeToast = useCallback(
-    (id: string) => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    },
-    [setToasts]
-  );
-
-  const clearToasts = useCallback(() => {
-    setToasts([]);
-  }, [setToasts]);
-
-  return { pushToast, removeToast, clearToasts };
+  return { pushToast };
 }
-

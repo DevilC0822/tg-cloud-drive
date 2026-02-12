@@ -1,5 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600;700&display=swap');
 @import "tailwindcss";
+@import "@heroui/styles";
 
 /* 深色模式使用 class 驱动（配合 html.dark），便于在应用内切换主题 */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -9,22 +10,63 @@
 
 /* 自定义主题 - 使用 hex 颜色覆盖 oklch */
 @theme {
-  /* 金色主题色 */
-  --color-gold: #D4AF37;
-  --color-gold-dark: #B8962E;
+  /* 主题主色（唯一硬编码） */
+  --theme-primary: #f4a48d;
+
+  /* 基于主题主色自动计算出的语义色 */
+  --theme-primary-strong: color-mix(in srgb, var(--theme-primary) 82%, black);
+  --theme-primary-deep: color-mix(in srgb, var(--theme-primary) 70%, black);
+  --theme-primary-ink: color-mix(in srgb, var(--theme-primary) 58%, black);
+  --theme-primary-ink-strong: color-mix(in srgb, var(--theme-primary) 48%, black);
+  --theme-primary-muted: color-mix(in srgb, var(--theme-primary) 70%, white);
+  --theme-primary-soft: color-mix(in srgb, var(--theme-primary) 78%, white);
+  --theme-primary-soft-hover: color-mix(in srgb, var(--theme-primary) 72%, white);
+  --theme-primary-soft-press: color-mix(in srgb, var(--theme-primary) 68%, white);
+  --theme-primary-soft-2: color-mix(in srgb, var(--theme-primary) 74%, white);
+
+  /* 带透明度的主题色（用于 ring/bg/border） */
+  --theme-primary-a08: color-mix(in srgb, var(--theme-primary) 8%, transparent);
+  --theme-primary-a12: color-mix(in srgb, var(--theme-primary) 12%, transparent);
+  --theme-primary-a16: color-mix(in srgb, var(--theme-primary) 16%, transparent);
+  --theme-primary-a20: color-mix(in srgb, var(--theme-primary) 20%, transparent);
+  --theme-primary-a24: color-mix(in srgb, var(--theme-primary) 24%, transparent);
+  --theme-primary-a35: color-mix(in srgb, var(--theme-primary) 35%, transparent);
+  --theme-primary-a55: color-mix(in srgb, var(--theme-primary) 55%, transparent);
+  --theme-primary-a70: color-mix(in srgb, var(--theme-primary) 70%, transparent);
+
+  /* HeroUI 语义色映射：确保 Checkbox 等组件不再回退默认蓝色 */
+  --accent: var(--theme-primary);
+  --accent-foreground: #1f1b16;
+  --focus: var(--theme-primary);
+
+  /* 弹窗动效令牌 */
+  --motion-modal-enter-duration: 200ms;
+  --motion-modal-exit-duration: 160ms;
+  --motion-modal-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-modal-exit-ease: cubic-bezier(0.4, 0, 1, 1);
+
+  /* 品牌色（由主题色派生） */
+  --color-gold: var(--theme-primary);
+  --color-gold-dark: var(--theme-primary-strong);
+  --color-brand-50: color-mix(in srgb, var(--theme-primary) 14%, white);
+  --color-brand-100: color-mix(in srgb, var(--theme-primary) 24%, white);
+  --color-brand-200: color-mix(in srgb, var(--theme-primary) 38%, white);
+  --color-brand-500: var(--theme-primary);
+  --color-brand-600: var(--theme-primary-strong);
+  --color-brand-700: var(--theme-primary-deep);
 
   /* 覆盖 neutral 颜色为 hex 格式 */
-  --color-neutral-50: #fafafa;
-  --color-neutral-100: #f5f5f5;
-  --color-neutral-200: #e5e5e5;
-  --color-neutral-300: #d4d4d4;
-  --color-neutral-400: #a3a3a3;
-  --color-neutral-500: #737373;
-  --color-neutral-600: #525252;
-  --color-neutral-700: #404040;
-  --color-neutral-800: #262626;
-  --color-neutral-900: #171717;
-  --color-neutral-950: #0a0a0a;
+  --color-neutral-50: #f7f8fb;
+  --color-neutral-100: #eff2f6;
+  --color-neutral-200: #dde3ea;
+  --color-neutral-300: #c6ced8;
+  --color-neutral-400: #9ca7b6;
+  --color-neutral-500: #748091;
+  --color-neutral-600: #5a6576;
+  --color-neutral-700: #434d5d;
+  --color-neutral-800: #2f3745;
+  --color-neutral-900: #202733;
+  --color-neutral-950: #141922;
 
   /* 其他颜色 */
   --color-white: #ffffff;
@@ -35,7 +77,7 @@
   --color-green-500: #22c55e;
   --color-green-100: #dcfce7;
   --color-green-900: #14532d;
-  --color-amber-500: #f59e0b;
+  --color-amber-500: #fb923c;
   --color-orange-500: #f97316;
   --color-pink-500: #ec4899;
   --color-purple-500: #a855f7;
@@ -46,36 +88,101 @@
 /* 基础样式 */
 @layer base {
   * {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
   }
 
   html {
-    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-family: 'Manrope', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', ui-sans-serif, system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    background-color: #fafafa;
-    color: #171717;
+    position: relative;
+    background-color: #f6f8fb;
+    background-image:
+      radial-gradient(circle at 14% 6%, var(--theme-primary-a20), transparent 28%),
+      radial-gradient(circle at 84% 8%, color-mix(in srgb, var(--theme-primary-soft) 28%, transparent), transparent 34%),
+      linear-gradient(142deg, rgba(255, 255, 255, 0.66) 0%, rgba(242, 246, 252, 0.94) 56%, rgba(233, 239, 247, 0.96) 100%);
+    color: #1f2937;
     min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.23;
+    background-image:
+      repeating-linear-gradient(
+        8deg,
+        rgba(107, 114, 128, 0.05) 0,
+        rgba(107, 114, 128, 0.05) 1px,
+        transparent 1px,
+        transparent 4px
+      ),
+      radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.34), transparent 26%);
+    mix-blend-mode: multiply;
   }
 
   .dark body {
-    background-color: #0a0a0a;
-    color: #f5f5f5;
+    background-color: #0f1520;
+    background-image:
+      radial-gradient(circle at 12% 10%, color-mix(in srgb, var(--theme-primary) 18%, transparent), transparent 28%),
+      radial-gradient(circle at 88% 4%, rgba(51, 65, 85, 0.42), transparent 30%),
+      linear-gradient(142deg, rgba(17, 24, 39, 0.94) 0%, rgba(12, 18, 31, 0.98) 58%, rgba(8, 13, 23, 1) 100%);
+    color: #f8fafc;
+  }
+
+  .dark body::before {
+    opacity: 0.2;
+    background-image:
+      repeating-linear-gradient(
+        8deg,
+        color-mix(in srgb, var(--theme-primary-soft) 6%, transparent) 0,
+        color-mix(in srgb, var(--theme-primary-soft) 6%, transparent) 1px,
+        transparent 1px,
+        transparent 4px
+      ),
+      radial-gradient(circle at 78% 22%, color-mix(in srgb, var(--theme-primary-soft) 13%, transparent), transparent 32%);
+    mix-blend-mode: screen;
   }
 
   #root {
     min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: 'Noto Serif SC', 'Noto Sans SC', ui-serif, Georgia, serif;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+  }
+
+  code,
+  kbd,
+  pre,
+  .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  ::selection {
+    background-color: var(--theme-primary-a24);
   }
 
   /* 滚动条样式 */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -83,20 +190,22 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: #d4d4d4;
+    background-color: rgba(120, 131, 146, 0.48);
     border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 
   .dark ::-webkit-scrollbar-thumb {
-    background-color: #404040;
+    background-color: rgba(99, 113, 132, 0.66);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: #a3a3a3;
+    background-color: rgba(99, 113, 132, 0.8);
   }
 
   .dark ::-webkit-scrollbar-thumb:hover {
-    background-color: #525252;
+    background-color: rgba(148, 163, 184, 0.78);
   }
 }
 
@@ -104,87 +213,111 @@
 @layer components {
   /* 玻璃态效果 */
   .glass {
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background:
+      linear-gradient(165deg, rgba(255, 255, 255, 0.62) 0%, rgba(244, 248, 252, 0.72) 100%),
+      rgba(242, 246, 251, 0.66);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(148, 163, 184, 0.3);
   }
 
   .dark .glass {
-    background-color: rgba(23, 23, 23, 0.8);
+    background:
+      linear-gradient(165deg, rgba(30, 41, 59, 0.72) 0%, rgba(15, 23, 42, 0.84) 100%),
+      rgba(15, 23, 42, 0.72);
+    border-color: rgba(100, 116, 139, 0.48);
   }
 
   .glass-card {
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(229, 229, 229, 0.5);
-    border-radius: 1rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    background:
+      linear-gradient(160deg, rgba(255, 255, 255, 0.68) 0%, rgba(243, 248, 252, 0.84) 100%),
+      rgba(247, 250, 253, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 1.15rem;
+    box-shadow:
+      0 22px 48px -36px rgba(30, 41, 59, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
   }
 
   .dark .glass-card {
-    background-color: rgba(23, 23, 23, 0.8);
-    border-color: rgba(64, 64, 64, 0.5);
+    background:
+      linear-gradient(160deg, rgba(30, 41, 59, 0.72) 0%, rgba(15, 23, 42, 0.84) 100%),
+      rgba(15, 23, 42, 0.76);
+    border-color: rgba(100, 116, 139, 0.44);
+    box-shadow:
+      0 22px 56px -36px rgba(4, 2, 1, 0.86),
+      inset 0 1px 0 rgba(148, 163, 184, 0.12);
   }
 
   .glass-sidebar {
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-right: 1px solid rgba(229, 229, 229, 0.5);
+    background:
+      linear-gradient(170deg, rgba(250, 252, 255, 0.92) 0%, rgba(240, 246, 252, 0.9) 100%),
+      rgba(245, 249, 253, 0.9);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-right: 1px solid rgba(148, 163, 184, 0.32);
   }
 
   .dark .glass-sidebar {
-    background-color: rgba(23, 23, 23, 0.95);
-    border-color: rgba(64, 64, 64, 0.5);
+    background:
+      linear-gradient(170deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.92) 100%),
+      rgba(15, 23, 42, 0.9);
+    border-color: rgba(100, 116, 139, 0.5);
   }
 
   .glass-header {
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-bottom: 1px solid rgba(229, 229, 229, 0.5);
+    background:
+      linear-gradient(168deg, rgba(255, 255, 255, 0.58) 0%, rgba(243, 248, 252, 0.74) 100%),
+      rgba(247, 250, 253, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
   }
 
   .dark .glass-header {
-    background-color: rgba(23, 23, 23, 0.8);
-    border-color: rgba(64, 64, 64, 0.5);
+    background:
+      linear-gradient(168deg, rgba(30, 41, 59, 0.74) 0%, rgba(15, 23, 42, 0.82) 100%),
+      rgba(15, 23, 42, 0.76);
+    border-color: rgba(100, 116, 139, 0.46);
   }
 
-  /* 金色强调按钮 */
+  /* 品牌强调按钮 */
   .btn-gold {
-    background-color: #D4AF37;
-    color: #171717;
-    font-weight: 500;
+    background-color: var(--theme-primary);
+    color: #1f1b16;
+    font-weight: 600;
     border-radius: 0.75rem;
-    padding: 0.5rem 1rem;
+    padding: 0.55rem 1rem;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+    transition: background-color 0.2s ease, transform 0.16s ease, box-shadow 0.2s ease;
   }
 
   .btn-gold:hover {
-    background-color: #B8962E;
+    background-color: var(--theme-primary-strong);
+    box-shadow: 0 12px 28px -18px rgba(30, 41, 59, 0.42);
   }
 
   .btn-gold:active {
-    transform: scale(0.95);
+    transform: translateY(1px);
   }
 
   /* 悬浮效果 */
   .hover-lift {
-    transition: all 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
   }
 
   .hover-lift:hover {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+    box-shadow: 0 18px 34px -24px rgba(15, 23, 42, 0.35);
+    transform: translateY(-1px);
   }
 
   /* 拖拽区域激活 */
   .dropzone-active {
-    border-color: #D4AF37;
-    background-color: rgba(212, 175, 55, 0.1);
+    border-color: var(--theme-primary);
+    background-color: var(--theme-primary-a16);
   }
 }
 
@@ -216,38 +349,130 @@
   }
 }
 
+@keyframes modalBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalBackdropOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalDialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modalDialogOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.994);
+  }
+}
+
 @keyframes navActivePulse {
   0% {
     opacity: 0;
     transform: scale(0.985);
-    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--theme-primary) 0%, transparent);
   }
   45% {
     opacity: 1;
     transform: scale(1);
-    box-shadow: 0 0 0 5px rgba(212, 175, 55, 0.14);
+    box-shadow: 0 0 0 5px var(--theme-primary-a20);
   }
   100% {
     opacity: 0;
     transform: scale(1);
-    box-shadow: 0 0 0 10px rgba(212, 175, 55, 0);
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--theme-primary) 0%, transparent);
   }
 }
 
 @layer utilities {
   .animate-fadeIn {
-    animation: fadeIn 0.2s ease-out;
+    animation: fadeIn 0.22s ease-out;
   }
 
   .animate-slideUp {
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp 0.24s ease-out;
   }
 
   .animate-scaleIn {
-    animation: scaleIn 0.2s ease-out;
+    animation: scaleIn 0.22s ease-out;
   }
 
   .animate-navActivePulse {
     animation: navActivePulse 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .modal-backdrop-motion {
+    will-change: opacity;
+  }
+
+  .modal-backdrop-motion[data-entering] {
+    animation: modalBackdropIn var(--motion-modal-enter-duration) var(--motion-modal-enter-ease) both;
+  }
+
+  .modal-backdrop-motion[data-exiting] {
+    animation: modalBackdropOut var(--motion-modal-exit-duration) var(--motion-modal-exit-ease) both;
+  }
+
+  .modal-dialog-motion {
+    transform-origin: top center;
+    will-change: transform, opacity;
+  }
+
+  .modal-dialog-motion[data-entering] {
+    animation: modalDialogIn var(--motion-modal-enter-duration) var(--motion-modal-enter-ease) both;
+  }
+
+  .modal-dialog-motion[data-exiting] {
+    animation: modalDialogOut var(--motion-modal-exit-duration) var(--motion-modal-exit-ease) both;
+  }
+
+  .animate-modalOverlayIn {
+    animation: modalBackdropIn var(--motion-modal-enter-duration) var(--motion-modal-enter-ease) both;
+  }
+
+  .animate-modalOverlayOut {
+    animation: modalBackdropOut var(--motion-modal-exit-duration) var(--motion-modal-exit-ease) both;
+  }
+
+  .animate-modalPanelIn {
+    animation: modalDialogIn var(--motion-modal-enter-duration) var(--motion-modal-enter-ease) both;
+  }
+
+  .animate-modalPanelOut {
+    animation: modalDialogOut var(--motion-modal-exit-duration) var(--motion-modal-exit-ease) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

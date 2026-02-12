@@ -1,7 +1,8 @@
-import { useEffect, useCallback, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Modal as HeroModal } from '@heroui/react';
 
 export interface ModalProps {
   open: boolean;
@@ -10,7 +11,7 @@ export interface ModalProps {
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
   showCloseButton?: boolean;
@@ -32,98 +33,75 @@ export function Modal({
   closeOnEscape = true,
   showCloseButton = true,
 }: ModalProps) {
-  // ESC 键关闭
-  const handleEscape = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && closeOnEscape) {
-        onClose();
-      }
-    },
-    [onClose, closeOnEscape]
-  );
-
-  useEffect(() => {
-    if (open) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
-    };
-  }, [open, handleEscape]);
-
   if (!open) return null;
 
   const sizes = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
+    sm: 'sm:max-w-sm',
+    md: 'sm:max-w-md',
+    lg: 'sm:max-w-lg',
+    xl: 'sm:max-w-xl',
+    '2xl': 'sm:max-w-2xl',
+    '3xl': 'sm:max-w-3xl',
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* 遮罩层 */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fadeIn"
-        onClick={closeOnOverlayClick ? onClose : undefined}
-      />
-
-      {/* 模态框内容 */}
-      <div
-        className={cn(
-          'relative w-full bg-white dark:bg-neutral-900',
-          'rounded-2xl shadow-2xl',
-          'animate-scaleIn',
-          sizes[size]
-        )}
-        onClick={(e) => e.stopPropagation()}
+    <HeroModal>
+      <HeroModal.Backdrop
+        isOpen={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) onClose();
+        }}
+        isDismissable={closeOnOverlayClick}
+        isKeyboardDismissDisabled={!closeOnEscape}
+        variant="blur"
+        className="modal-backdrop-motion"
       >
-        {/* 头部 */}
-        {(title || showCloseButton) && (
-          <div className="flex items-start justify-between p-6 pb-0">
-            <div>
-              {title && (
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                  {title}
-                </h2>
-              )}
-              {description && (
-                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                  {description}
-                </p>
-              )}
-            </div>
-            {showCloseButton && (
-              <button
-                onClick={onClose}
+        <HeroModal.Container placement="auto" scroll="inside" className="px-4">
+          <HeroModal.Dialog
+            className={cn(
+              'modal-dialog-motion w-full overflow-hidden rounded-3xl border border-neutral-200/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(250,248,245,0.96))] shadow-[0_28px_72px_-38px_rgba(15,23,42,0.72)]',
+              'dark:border-neutral-700/80 dark:bg-[linear-gradient(160deg,rgba(23,23,23,0.96),rgba(15,23,42,0.94))]',
+              sizes[size]
+            )}
+          >
+            {showCloseButton ? (
+              <HeroModal.CloseTrigger
                 className={cn(
-                  'p-1.5 rounded-lg',
-                  'text-neutral-400 hover:text-neutral-600',
-                  'dark:text-neutral-500 dark:hover:text-neutral-300',
-                  'hover:bg-neutral-100 dark:hover:bg-neutral-800',
-                  'transition-colors duration-200'
+                  'absolute right-5 top-5 z-20 rounded-full bg-transparent p-2',
+                  'text-neutral-500 transition-colors duration-200 hover:bg-[var(--theme-primary-a12)] hover:text-neutral-700',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-primary-a24)]',
+                  'dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-neutral-200'
                 )}
               >
-                <X className="w-5 h-5" />
-              </button>
+                <X className="h-5 w-5" />
+              </HeroModal.CloseTrigger>
+            ) : null}
+
+            {(title || description) && (
+              <HeroModal.Header className="mx-4 mt-4 rounded-2xl border border-[var(--theme-primary-a24)] bg-[linear-gradient(132deg,var(--theme-primary-a20),var(--theme-primary-a08))] px-5 py-4 pr-14 dark:border-[var(--theme-primary-a20)] dark:bg-[linear-gradient(132deg,var(--theme-primary-a24),rgba(15,23,42,0.35))]">
+                <div>
+                  {title ? (
+                    <HeroModal.Heading className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                      {title}
+                    </HeroModal.Heading>
+                  ) : null}
+                  {description ? (
+                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
+                  ) : null}
+                </div>
+              </HeroModal.Header>
             )}
-          </div>
-        )}
 
-        {/* 内容 */}
-        <div className="p-6">{children}</div>
+            <HeroModal.Body className="p-5 sm:p-6">{children}</HeroModal.Body>
 
-        {/* 底部 */}
-        {footer && (
-          <div className="px-6 pb-6 pt-0 flex items-center justify-end gap-3">
-            {footer}
-          </div>
-        )}
-      </div>
-    </div>
+            {footer ? (
+              <HeroModal.Footer className="flex items-center justify-end gap-3 border-t border-neutral-200/70 bg-white/72 px-5 pb-5 pt-4 dark:border-neutral-700/70 dark:bg-neutral-900/62">
+                {footer}
+              </HeroModal.Footer>
+            ) : null}
+          </HeroModal.Dialog>
+        </HeroModal.Container>
+      </HeroModal.Backdrop>
+    </HeroModal>
   );
 }

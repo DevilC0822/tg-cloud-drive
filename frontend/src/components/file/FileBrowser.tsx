@@ -1,5 +1,5 @@
 import { useAtomValue } from 'jotai';
-import { FolderOpen } from 'lucide-react';
+import { Clock3, FolderOpen, HardDrive, Text } from 'lucide-react';
 import { viewModeAtom, contextMenuAtom } from '@/stores/uiAtoms';
 import { breadcrumbsAtom, sortConfigAtom } from '@/stores/fileAtoms';
 import { FileGrid } from './FileGrid';
@@ -9,6 +9,7 @@ import { Breadcrumb } from '@/components/navigation/Breadcrumb';
 import { DropZone } from '@/components/upload/DropZone';
 import { Pagination } from '@/components/ui/Pagination';
 import type { FileItem, SortBy, BreadcrumbItem } from '@/types';
+import { ActionIconButton, ActionStatusPill } from '@/components/ui/HeroActionPrimitives';
 
 export interface FileBrowserProps {
   files: FileItem[];
@@ -76,31 +77,64 @@ export function FileBrowser({
   const breadcrumbs = useAtomValue(breadcrumbsAtom);
   const sortConfig = useAtomValue(sortConfigAtom);
   const contextMenu = useAtomValue(contextMenuAtom);
+  const selectedCount = selectedIds.size;
 
   const handleSort = (by: SortBy) => {
     onSort(by);
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col rounded-3xl border border-neutral-200/85 bg-[linear-gradient(165deg,rgba(255,255,255,0.6),rgba(246,240,232,0.82))] shadow-[0_28px_60px_-44px_rgba(62,47,34,0.65)] dark:border-neutral-700/80 dark:bg-[linear-gradient(165deg,rgba(39,31,27,0.74),rgba(22,18,16,0.8))]">
       {/* 面包屑导航 */}
-      <div className="px-4 lg:px-6 py-3 border-b border-neutral-200/50 dark:border-neutral-700/50">
+      <div className="border-b border-neutral-200/75 px-4 py-3 dark:border-neutral-700/70 lg:px-6">
         <Breadcrumb items={breadcrumbs} onNavigate={onNavigate} />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200/75 bg-white/40 px-4 py-2.5 dark:border-neutral-700/70 dark:bg-neutral-900/42 lg:px-6">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ActionStatusPill tone={selectedCount > 0 ? 'brand' : 'neutral'}>
+            已选 {selectedCount}
+          </ActionStatusPill>
+          <ActionStatusPill>共 {files.length} 项</ActionStatusPill>
+          <ActionStatusPill tone="warning">
+            {sortConfig.order === 'asc' ? '升序' : '降序'}
+          </ActionStatusPill>
+        </div>
+        <div className="flex items-center gap-1">
+          <ActionIconButton
+            icon={<Text className="h-4 w-4" />}
+            label="按名称排序"
+            tone={sortConfig.by === 'name' ? 'brand' : 'neutral'}
+            onPress={() => handleSort('name')}
+          />
+          <ActionIconButton
+            icon={<HardDrive className="h-4 w-4" />}
+            label="按大小排序"
+            tone={sortConfig.by === 'size' ? 'brand' : 'neutral'}
+            onPress={() => handleSort('size')}
+          />
+          <ActionIconButton
+            icon={<Clock3 className="h-4 w-4" />}
+            label="按更新时间排序"
+            tone={sortConfig.by === 'date' ? 'brand' : 'neutral'}
+            onPress={() => handleSort('date')}
+          />
+        </div>
       </div>
 
       {/* 文件区域 */}
       <DropZone onDrop={onUpload} className="flex-1 overflow-auto">
         {files.length === 0 ? (
           /* 空状态 */
-          <div className="flex flex-col items-center justify-center h-full py-20">
-            <div className="w-20 h-20 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center mb-4">
-              <FolderOpen className="w-10 h-10 text-neutral-400 dark:text-neutral-500" />
+          <div className="flex h-full flex-col items-center justify-center px-6 py-20 text-center">
+            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-neutral-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.52)] dark:bg-neutral-800">
+              <FolderOpen className="w-10 h-10 text-[var(--theme-primary-muted)]" />
             </div>
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-              文件夹为空
+            <h3 className="mb-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+              当前目录暂无文件
             </h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-              拖拽文件到此处上传，或点击上传按钮
+            <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
+              你可以拖拽文件到此处，或点击左侧“上传文件”开始。
             </p>
           </div>
         ) : viewMode === 'grid' ? (
@@ -127,7 +161,7 @@ export function FileBrowser({
 
       {/* 分页 */}
       {pagination && pagination.totalCount > 0 && pagination.totalPages > 1 && (
-        <div className="px-4 lg:px-6 py-3 border-t border-neutral-200/50 dark:border-neutral-700/50 bg-neutral-50/70 dark:bg-neutral-900/30">
+        <div className="border-t border-neutral-200/75 bg-white/42 px-4 py-3 dark:border-neutral-700/70 dark:bg-neutral-900/34 lg:px-6">
           <Pagination
             page={pagination.page}
             pageSize={pagination.pageSize}

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -259,6 +260,67 @@ func (c *QBittorrentClient) GetTorrentFiles(ctx context.Context, hash string) ([
 		return nil, err
 	}
 	return files, nil
+}
+
+func (c *QBittorrentClient) SetTorrentFilePriority(
+	ctx context.Context,
+	hash string,
+	fileIndexes []int,
+	priority int,
+) error {
+	hash = strings.TrimSpace(strings.ToLower(hash))
+	if hash == "" {
+		return errors.New("torrent hash 不能为空")
+	}
+	if priority < 0 || priority > 7 {
+		return errors.New("priority 范围应为 0~7")
+	}
+	if len(fileIndexes) == 0 {
+		return nil
+	}
+
+	seen := make(map[int]struct{}, len(fileIndexes))
+	indexes := make([]int, 0, len(fileIndexes))
+	for _, idx := range fileIndexes {
+		if idx < 0 {
+			return errors.New("fileIndexes 仅允许非负整数")
+		}
+		if _, ok := seen[idx]; ok {
+			continue
+		}
+		seen[idx] = struct{}{}
+		indexes = append(indexes, idx)
+	}
+	if len(indexes) == 0 {
+		return nil
+	}
+	sort.Ints(indexes)
+	idParts := make([]string, 0, len(indexes))
+	for _, idx := range indexes {
+		idParts = append(idParts, strconv.Itoa(idx))
+	}
+
+	form := url.Values{}
+	form.Set("hash", hash)
+	form.Set("id", strings.Join(idParts, "|"))
+	form.Set("priority", strconv.Itoa(priority))
+
+	resp, err := c.doRequest(
+		ctx,
+		http.MethodPost,
+		"/api/v2/torrents/filePrio",
+		strings.NewReader(form.Encode()),
+		map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
+	)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		return fmt.Errorf("设置 torrent 文件优先级失败: http %d (%s)", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+	return nil
 }
 
 func (c *QBittorrentClient) DeleteTorrent(ctx context.Context, hash string, deleteFiles bool) error {
