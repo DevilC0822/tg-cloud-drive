@@ -12,8 +12,11 @@ RUN npm ci
 # 复制源代码
 COPY . .
 
+# 提高构建阶段 Node 堆上限，避免在资源较紧的机器上 vite build OOM
+ARG NODE_OPTIONS="--max_old_space_size=2048"
+
 # 构建应用
-RUN npm run build
+RUN NODE_OPTIONS="${NODE_OPTIONS}" npm run build
 
 # 生产阶段
 FROM nginx:alpine
