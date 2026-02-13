@@ -630,18 +630,34 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                     )}
                   />
                 </HeroDropdown.Trigger>
-                <HeroDropdown.Popover className="w-[360px] overflow-hidden p-0">
+                <HeroDropdown.Popover
+                  placement="bottom end"
+                  className="w-[min(360px,calc(100svw-24px))] max-w-[calc(100svw-24px)] overflow-hidden p-0"
+                >
                   <div className="border-b border-neutral-200/80 bg-gradient-to-r from-[var(--theme-primary-a20)] via-[var(--theme-primary-a08)] to-transparent px-4 py-3 dark:border-neutral-700/80 dark:to-transparent">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)] font-semibold text-neutral-900">
-                        U
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="relative shrink-0">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)] font-semibold text-neutral-900 ring-1 ring-white/35 shadow-sm dark:ring-neutral-950/35">
+                          U
+                        </div>
+                        <span className="absolute -right-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full border-2 border-neutral-50 bg-emerald-500 shadow-sm dark:border-neutral-950 dark:bg-emerald-400" />
                       </div>
-                      <div className="min-w-0">
-                        <div className="truncate font-semibold text-neutral-900 dark:text-neutral-100">当前会话</div>
-                        <div className="truncate text-xs text-neutral-500 dark:text-neutral-400">已登录管理员</div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <div className="truncate font-semibold text-neutral-900 dark:text-neutral-100">管理员</div>
+                          <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">当前会话</span>
+                        </div>
+                        <div className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
+                          TG Cloud Drive · 已登录
+                        </div>
                       </div>
-                      <span className="ml-auto shrink-0">
-                        <ActionStatusPill tone="success">在线</ActionStatusPill>
+
+                      <span className="w-full sm:w-auto sm:ml-auto sm:shrink-0">
+                        <ActionStatusPill tone="success" className="inline-flex gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          会话有效
+                        </ActionStatusPill>
                       </span>
                     </div>
                   </div>
@@ -753,7 +769,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
               onPress={handleSwitchService}
               isDisabled={switching}
               leadingIcon={switching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : undefined}
-              className="min-w-[120px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900 shadow-[0_12px_24px_-18px_rgba(30,41,59,0.55)]"
+              className="min-w-[120px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900 shadow-[0_12px_24px_-18px_rgba(30,41,59,0.55)] dark:border-transparent dark:bg-[var(--theme-primary)] dark:text-neutral-900"
             >
               确认切换
             </ActionTextButton>

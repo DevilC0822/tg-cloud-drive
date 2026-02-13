@@ -59,7 +59,10 @@ export function ActionIconButton({
 
   const toneClassName: Record<ActionTone, string> = {
     neutral: '',
-    brand: surface === 'dark' ? 'text-[var(--theme-primary-soft-hover)]' : 'text-[var(--theme-primary-ink)]',
+    brand:
+      surface === 'dark'
+        ? 'text-[var(--theme-primary-soft-hover)]'
+        : 'text-[var(--theme-primary-ink)] dark:text-[var(--theme-primary-soft-hover)]',
     danger: 'text-red-500 dark:text-red-400',
     success: 'text-emerald-500 dark:text-emerald-400',
     warning: 'text-orange-500 dark:text-orange-400',
@@ -124,8 +127,9 @@ export function ActionTextButton({
         'border-neutral-800 bg-neutral-800 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900',
     },
     brand: {
-      idle: 'text-[var(--theme-primary-ink)]',
-      active: 'border-[var(--theme-primary)] bg-[var(--theme-primary)] text-neutral-900 dark:text-neutral-900',
+      idle: 'text-[var(--theme-primary-ink)] dark:text-[var(--theme-primary-soft-hover)]',
+      active:
+        'border-[var(--theme-primary)] bg-[var(--theme-primary)] text-neutral-900 dark:border-[var(--theme-primary)] dark:bg-[var(--theme-primary)] dark:text-neutral-900',
     },
     danger: {
       idle: 'text-red-500 dark:text-red-400',
@@ -176,7 +180,8 @@ export interface ActionStatusPillProps {
 export function ActionStatusPill({ children, tone = 'neutral', className }: ActionStatusPillProps) {
   const toneClassName: Record<ActionTone, string> = {
     neutral: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800/80 dark:text-neutral-300',
-    brand: 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink-strong)]',
+    brand:
+      'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink-strong)] dark:border-[var(--theme-primary-a35)] dark:text-[var(--theme-primary-soft)]',
     danger: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
     success: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
     warning: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',

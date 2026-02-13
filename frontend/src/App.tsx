@@ -14,6 +14,7 @@ import { FilePreview } from '@/components/file/FilePreview';
 import { UploadProgress } from '@/components/upload/UploadProgress';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { TransferCenterPage } from '@/components/transfer/TransferCenterPage';
+import type { TransferCleanupAction } from '@/components/transfer/transferCleanupTypes';
 import { PasswordVaultPage } from '@/components/vault/PasswordVaultPage';
 import {
   SetupInitPage,
@@ -167,7 +168,13 @@ export default function App() {
   } = useFiles();
   const torrentTasksEnabled = transferCenterEnabled && activeNav === 'transfers';
 
-  const { uploadFiles, retryTask } = useUpload({
+  const {
+    uploadFiles,
+    retryTask,
+    removeTask: removeUploadTask,
+    clearCompletedTasks: clearCompletedUploadTasks,
+    clearAllTasks: clearAllUploadTasks,
+  } = useUpload({
     onUploaded: () => {
       refreshFolders();
       refreshItems();
@@ -856,10 +863,6 @@ export default function App() {
       if (!id) {
         return;
       }
-      const confirmed = window.confirm('删除后将尝试清理 qBittorrent 任务和未完成下载文件，是否继续？');
-      if (!confirmed) {
-        return;
-      }
 
       const result = await deleteTorrentTask(id);
       if (!result.ok) {
@@ -895,6 +898,57 @@ export default function App() {
       pushToast({ type: 'success', message: '已加入重试队列，任务将重新下载' });
     },
     [pushToast, retryTorrentTask],
+  );
+
+  const handleTransferCleanup = useCallback(
+    async (action: TransferCleanupAction) => {
+      if (action.type === 'clear-completed-uploads') {
+        clearCompletedUploadTasks();
+        return;
+      }
+
+      if (action.type === 'clear-all-uploads') {
+        clearAllUploadTasks();
+        return;
+      }
+
+      if (action.type === 'clear-finished-downloads') {
+        clearFinishedDownloads();
+        return;
+      }
+
+      if (action.type === 'clear-history') {
+        await handleClearHistory();
+        return;
+      }
+
+      if (action.type === 'clear-history-by-days') {
+        await handleClearHistoryByDays(action.days);
+        return;
+      }
+
+      if (action.type === 'remove-history-item') {
+        await handleRemoveHistoryItem(action.id);
+        return;
+      }
+
+      if (action.type === 'delete-torrent-task') {
+        await handleDeleteTorrentTask(action.id);
+        return;
+      }
+
+      const exhaustiveCheck: never = action;
+      return exhaustiveCheck;
+    },
+    [
+      clearAllUploadTasks,
+      clearCompletedUploadTasks,
+      clearFinishedDownloads,
+      handleClearHistory,
+      handleClearHistoryByDays,
+      handleDeleteTorrentTask,
+      handleRemoveHistoryItem,
+    ],
   );
 
   const copyToClipboard = useCallback(async (text: string) => {
@@ -1632,17 +1686,14 @@ export default function App() {
             historyLoading={historyLoading}
             historyPagination={historyPagination}
             onRetryUpload={retryTask}
+            onRemoveUploadTask={removeUploadTask}
             onRetryDownload={handleRetryDownloadTask}
             onCancelDownload={cancelDownload}
-            onClearFinishedDownloads={clearFinishedDownloads}
-            onClearHistory={handleClearHistory}
-            onClearHistoryByDays={handleClearHistoryByDays}
-            onRemoveHistoryItem={handleRemoveHistoryItem}
+            onCleanup={handleTransferCleanup}
             onHistoryFilterChange={changeHistoryFilter}
             onHistoryPageChange={changeHistoryPage}
             onHistoryPageSizeChange={changeHistoryPageSize}
             onOpenTorrentSelection={handleOpenTorrentSelection}
-            onDeleteTorrentTask={handleDeleteTorrentTask}
             onRetryTorrentTask={handleRetryTorrentTask}
           />
         ) : activeNav === 'vault' ? (
@@ -1745,7 +1796,7 @@ export default function App() {
             <ActionTextButton
               tone="brand"
               onPress={handleCreateFolder}
-              className="min-w-[108px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900"
+              className="min-w-[108px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900 dark:border-transparent dark:bg-[var(--theme-primary)] dark:text-neutral-900"
             >
               创建
             </ActionTextButton>
@@ -1793,7 +1844,7 @@ export default function App() {
             <ActionTextButton
               tone="brand"
               onPress={handleConfirmRename}
-              className="min-w-[108px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900"
+              className="min-w-[108px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900 dark:border-transparent dark:bg-[var(--theme-primary)] dark:text-neutral-900"
             >
               确定
             </ActionTextButton>
@@ -1870,7 +1921,7 @@ export default function App() {
               tone="brand"
               onPress={handleConfirmUploadTarget}
               isDisabled={uploadTargetMode === 'file' ? uploadTargetModal.files.length === 0 : torrentCreateDisabled}
-              className="min-w-[124px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900 shadow-[0_12px_24px_-18px_rgba(30,41,59,0.55)]"
+              className="min-w-[124px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900 shadow-[0_12px_24px_-18px_rgba(30,41,59,0.55)] dark:border-transparent dark:bg-[var(--theme-primary)] dark:text-neutral-900"
             >
               {uploadTargetMode === 'torrent' && torrentTaskSubmitting
                 ? '创建中...'
@@ -2311,7 +2362,7 @@ export default function App() {
               tone="brand"
               onPress={handleConfirmTorrentDispatch}
               isDisabled={torrentSelectionModal.selectedFileIndexes.length === 0 || torrentSelectionModal.loading}
-              className="min-w-[120px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900"
+              className="min-w-[120px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900 dark:border-transparent dark:bg-[var(--theme-primary)] dark:text-neutral-900"
             >
               {torrentSelectionModal.loading ? '发送中...' : '确认发送'}
             </ActionTextButton>
@@ -2410,7 +2461,7 @@ export default function App() {
             <ActionTextButton
               tone="brand"
               onPress={handleConfirmMoveOrCopy}
-              className="min-w-[108px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900"
+              className="min-w-[108px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900 dark:border-transparent dark:bg-[var(--theme-primary)] dark:text-neutral-900"
             >
               {moveModal.action === 'move' ? '移动' : '复制'}
             </ActionTextButton>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, apiFetchJson } from '@/utils/api';
 import type { TorrentMetaPreview, TorrentTask } from '@/types';
 
@@ -78,33 +78,65 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
   const [tasks, setTasks] = useState<TorrentTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const requestSeqRef = useRef(0);
+  const loadRunningRef = useRef(false);
   const hasActiveTasks = tasks.some(isActiveTorrentTask);
 
   const loadTasks = useCallback(async () => {
     if (!enabled) {
       return;
     }
+    if (loadRunningRef.current) {
+      return;
+    }
+    loadRunningRef.current = true;
+    const requestSeq = requestSeqRef.current + 1;
+    requestSeqRef.current = requestSeq;
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      params.set('page', '1');
-      params.set('pageSize', '50');
-      const res = await apiFetchJson<TorrentTaskListResponse>(`/api/torrents/tasks?${params.toString()}`);
-      setTasks((res.items || []).map(normalizeTask));
+      const pageSize = 200;
+      const buildQuery = (page: number) => {
+        const params = new URLSearchParams();
+        params.set('page', String(page));
+        params.set('pageSize', String(pageSize));
+        return params.toString();
+      };
+
+      const firstPage = await apiFetchJson<TorrentTaskListResponse>(`/api/torrents/tasks?${buildQuery(1)}`);
+      const totalPages = Math.max(1, firstPage.pagination?.totalPages || 1);
+      const allItems: TorrentTask[] = Array.isArray(firstPage.items) ? [...firstPage.items] : [];
+
+      for (let page = 2; page <= totalPages; page += 1) {
+        const pageRes = await apiFetchJson<TorrentTaskListResponse>(`/api/torrents/tasks?${buildQuery(page)}`);
+        if (Array.isArray(pageRes.items) && pageRes.items.length > 0) {
+          allItems.push(...pageRes.items);
+        }
+      }
+
+      if (requestSeq !== requestSeqRef.current) {
+        return;
+      }
+      setTasks(allItems.map(normalizeTask));
     } catch {
       // 保持已有列表，避免瞬时网络波动导致界面闪断
     } finally {
-      setLoading(false);
+      loadRunningRef.current = false;
+      if (requestSeq === requestSeqRef.current) {
+        setLoading(false);
+      }
     }
   }, [enabled]);
 
   useEffect(() => {
     if (!enabled) {
+      requestSeqRef.current += 1;
+      loadRunningRef.current = false;
+      setLoading(false);
       setTasks([]);
       return;
     }
 
-    // 进入传输中心后先拉取一次快照，后续是否轮询取决于是否存在进行中任务。
+    // 进入传输中心后先做分页聚合拉取，避免只显示固定条数的任务快照。
     void loadTasks();
   }, [enabled, loadTasks]);
 
