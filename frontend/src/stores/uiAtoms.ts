@@ -10,10 +10,7 @@ export const themeAtom = atomWithStorage<Theme>('tg-theme', 'system');
 
 export const uploadConcurrencyAtom = atomWithStorage<number>('tgcd-upload-concurrency', 1);
 export const downloadConcurrencyAtom = atomWithStorage<number>('tgcd-download-concurrency', 2);
-export const reservedDiskBytesAtom = atomWithStorage<number>(
-  'tgcd-reserved-disk-bytes',
-  2 * 1024 * 1024 * 1024
-);
+export const reservedDiskBytesAtom = atomWithStorage<number>('tgcd-reserved-disk-bytes', 2 * 1024 * 1024 * 1024);
 
 /* 侧边栏展开状态 */
 export const sidebarOpenAtom = atom<boolean>(true);

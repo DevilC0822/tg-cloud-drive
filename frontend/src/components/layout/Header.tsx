@@ -35,11 +35,7 @@ import { searchQueryAtom } from '@/stores/fileAtoms';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import {
-  ActionIconButton,
-  ActionStatusPill,
-  ActionTextButton,
-} from '@/components/ui/HeroActionPrimitives';
+import { ActionIconButton, ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
 import { useState, useEffect, useCallback, useMemo, type ComponentType } from 'react';
@@ -130,8 +126,7 @@ const ACCESS_METHOD_META: Record<
     label: '官方 Bot API',
     shortLabel: '官方',
     Icon: ShieldCheck,
-    className:
-      'border-sky-200 text-sky-700 bg-sky-50 dark:border-sky-800 dark:text-sky-300 dark:bg-sky-900/20',
+    className: 'border-sky-200 text-sky-700 bg-sky-50 dark:border-sky-800 dark:text-sky-300 dark:bg-sky-900/20',
   },
   self_hosted_bot_api: {
     label: '自建 Bot API',
@@ -238,7 +233,8 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
   const [serviceAccessError, setServiceAccessError] = useState('');
   const [switchModalOpen, setSwitchModalOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
-  const [switchTargetMethod, setSwitchTargetMethod] = useState<Exclude<SetupAccessMethod, 'mtproto'>>('official_bot_api');
+  const [switchTargetMethod, setSwitchTargetMethod] =
+    useState<Exclude<SetupAccessMethod, 'mtproto'>>('official_bot_api');
   const [switchBotToken, setSwitchBotToken] = useState('');
   const [switchStorageChatId, setSwitchStorageChatId] = useState('');
   const [switchApiId, setSwitchApiId] = useState('');
@@ -381,13 +377,11 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
   }, [setAuthChecked, setAuthenticated]);
 
   const storageRows = useMemo(() => {
-    return STORAGE_TYPE_META
-      .map((meta) => ({
-        ...meta,
-        bytes: storageStats.byType[meta.key].bytes,
-        count: storageStats.byType[meta.key].count,
-      }))
-      .sort((a, b) => b.bytes - a.bytes);
+    return STORAGE_TYPE_META.map((meta) => ({
+      ...meta,
+      bytes: storageStats.byType[meta.key].bytes,
+      count: storageStats.byType[meta.key].count,
+    })).sort((a, b) => b.bytes - a.bytes);
   }, [storageStats]);
 
   const currentMethod = normalizeAccessMethod(serviceAccess.accessMethod);
@@ -401,9 +395,15 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
 
   return (
     <>
-      <header className="glass-header sticky top-0 z-30 rounded-3xl border border-neutral-200/80 px-4 py-3 shadow-[0_18px_40px_-34px_rgba(30,41,59,0.46)] dark:border-neutral-700/75 lg:px-6">
+      <header className="glass-header sticky top-0 z-30 rounded-3xl border border-neutral-200/80 px-4 py-3 shadow-[0_18px_40px_-34px_rgba(30,41,59,0.46)] lg:px-6 dark:border-neutral-700/75">
         <div className={cn('flex items-center gap-2.5 xl:gap-3')}>
-          <div className={cn('flex shrink-0 items-center border border-[var(--theme-primary-a24)] bg-[linear-gradient(132deg,var(--theme-primary-a24),var(--theme-primary-a08))] shadow-[0_10px_20px_-16px_rgba(30,41,59,0.42)]', capsuleFrameClass, capsuleInnerGapClass)}>
+          <div
+            className={cn(
+              'flex shrink-0 items-center border border-[var(--theme-primary-a24)] bg-[linear-gradient(132deg,var(--theme-primary-a24),var(--theme-primary-a08))] shadow-[0_10px_20px_-16px_rgba(30,41,59,0.42)]',
+              capsuleFrameClass,
+              capsuleInnerGapClass,
+            )}
+          >
             <ActionIconButton
               icon={<Upload className="h-3.5 w-3.5" />}
               label="上传文件"
@@ -422,7 +422,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
               tone="brand"
               leadingIcon={<Upload className="h-3.5 w-3.5" />}
               onPress={onUpload}
-              className="hidden sm:inline-flex border-transparent bg-white/78 text-[var(--theme-primary-ink)] shadow-[0_8px_16px_-14px_rgba(30,41,59,0.45)] dark:bg-neutral-900/70 dark:text-[var(--theme-primary-soft-hover)]"
+              className="hidden border-transparent bg-white/78 text-[var(--theme-primary-ink)] shadow-[0_8px_16px_-14px_rgba(30,41,59,0.45)] sm:inline-flex dark:bg-neutral-900/70 dark:text-[var(--theme-primary-soft-hover)]"
             >
               上传文件
             </ActionTextButton>
@@ -430,49 +430,51 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
               tone="neutral"
               leadingIcon={<Plus className="h-3.5 w-3.5" />}
               onPress={onNewFolder}
-              className="hidden sm:inline-flex border-transparent bg-transparent text-neutral-700 dark:text-neutral-200"
+              className="hidden border-transparent bg-transparent text-neutral-700 sm:inline-flex dark:text-neutral-200"
             >
               新建文件夹
             </ActionTextButton>
           </div>
 
           <ActionIconButton
-            icon={<Menu className="w-5 h-5" />}
+            icon={<Menu className="h-5 w-5" />}
             label="打开侧边栏"
             onPress={() => setMobileSidebarOpen(true)}
             className="lg:hidden"
           />
 
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <div className={cn('flex items-center', capsuleGroupGapClass)}>
               <div className="w-full max-w-xl lg:max-w-2xl">
-                <SearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="搜索文件和文件夹..."
-                />
+                <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="搜索文件和文件夹..." />
               </div>
-              <div className={cn('hidden xl:flex items-center border border-neutral-200/80 bg-white/60 dark:border-neutral-700/80 dark:bg-neutral-900/65', capsuleFrameClass, capsuleInnerGapClass)}>
+              <div
+                className={cn(
+                  'hidden items-center border border-neutral-200/80 bg-white/60 xl:flex dark:border-neutral-700/80 dark:bg-neutral-900/65',
+                  capsuleFrameClass,
+                  capsuleInnerGapClass,
+                )}
+              >
                 <ActionIconButton
-                  icon={<Grid3X3 className="w-4 h-4" />}
+                  icon={<Grid3X3 className="h-4 w-4" />}
                   label="网格视图"
                   tone={viewMode === 'grid' ? 'brand' : 'neutral'}
                   onPress={() => setViewMode('grid')}
                   className={cn(
                     'border-transparent bg-transparent',
                     viewMode === 'grid' &&
-                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700'
+                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700',
                   )}
                 />
                 <ActionIconButton
-                  icon={<List className="w-4 h-4" />}
+                  icon={<List className="h-4 w-4" />}
                   label="列表视图"
                   tone={viewMode === 'list' ? 'brand' : 'neutral'}
                   onPress={() => setViewMode('list')}
                   className={cn(
                     'border-transparent bg-transparent',
                     viewMode === 'list' &&
-                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700'
+                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700',
                   )}
                 />
               </div>
@@ -480,7 +482,13 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
           </div>
 
           <div className={cn('ml-auto flex shrink-0 items-center', capsuleGroupGapClass)}>
-            <div className={cn('flex lg:hidden items-center border border-neutral-200/80 bg-white/56 dark:border-neutral-700/80 dark:bg-neutral-900/62', capsuleFrameClass, capsuleInnerGapClass)}>
+            <div
+              className={cn(
+                'flex items-center border border-neutral-200/80 bg-white/56 lg:hidden dark:border-neutral-700/80 dark:bg-neutral-900/62',
+                capsuleFrameClass,
+                capsuleInnerGapClass,
+              )}
+            >
               <ActionIconButton
                 icon={<ArrowRightLeft className="h-3.5 w-3.5" />}
                 label="切换 Telegram 服务接入方式"
@@ -490,15 +498,15 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
               />
             </div>
 
-            <div className={cn('hidden lg:flex items-center border border-neutral-200/80 bg-white/56 dark:border-neutral-700/80 dark:bg-neutral-900/62', capsuleFrameClass, capsuleInnerGapClass)}>
+            <div
+              className={cn(
+                'hidden items-center border border-neutral-200/80 bg-white/56 lg:flex dark:border-neutral-700/80 dark:bg-neutral-900/62',
+                capsuleFrameClass,
+                capsuleInnerGapClass,
+              )}
+            >
               <ActionStatusPill
-                tone={
-                  serviceAccessError
-                    ? 'danger'
-                    : currentMethod === 'self_hosted_bot_api'
-                      ? 'success'
-                      : 'brand'
-                }
+                tone={serviceAccessError ? 'danger' : currentMethod === 'self_hosted_bot_api' ? 'success' : 'brand'}
                 className={cn('h-8 border border-white/40 px-2.5 dark:border-neutral-700/80', capsuleInnerGapClass)}
               >
                 {serviceAccessLoading ? (
@@ -508,9 +516,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                 ) : (
                   <currentMethodMeta.Icon className="h-3.5 w-3.5" />
                 )}
-                <span title={serviceAccessError || '当前 Telegram 服务接入方式'}>
-                  {currentMethodMeta.shortLabel}
-                </span>
+                <span title={serviceAccessError || '当前 Telegram 服务接入方式'}>{currentMethodMeta.shortLabel}</span>
               </ActionStatusPill>
 
               <span className={capsuleDividerClass} />
@@ -526,37 +532,48 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
 
               <span className={cn(capsuleDividerClass, 'xl:hidden')} />
 
-              <div className={cn('flex h-8 xl:hidden items-center rounded-xl border border-neutral-200/80 bg-white/68 px-0.5 py-0.5 dark:border-neutral-700/80 dark:bg-neutral-800/75', capsuleInnerGapClass)}>
+              <div
+                className={cn(
+                  'flex h-8 items-center rounded-xl border border-neutral-200/80 bg-white/68 px-0.5 py-0.5 xl:hidden dark:border-neutral-700/80 dark:bg-neutral-800/75',
+                  capsuleInnerGapClass,
+                )}
+              >
                 <ActionIconButton
-                  icon={<Grid3X3 className="w-4 h-4" />}
+                  icon={<Grid3X3 className="h-4 w-4" />}
                   label="网格视图"
                   tone={viewMode === 'grid' ? 'brand' : 'neutral'}
                   onPress={() => setViewMode('grid')}
                   className={cn(
                     'border-transparent bg-transparent',
                     viewMode === 'grid' &&
-                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700'
+                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700',
                   )}
                 />
                 <ActionIconButton
-                  icon={<List className="w-4 h-4" />}
+                  icon={<List className="h-4 w-4" />}
                   label="列表视图"
                   tone={viewMode === 'list' ? 'brand' : 'neutral'}
                   onPress={() => setViewMode('list')}
                   className={cn(
                     'border-transparent bg-transparent',
                     viewMode === 'list' &&
-                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700'
+                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700',
                   )}
                 />
               </div>
             </div>
 
-            <div className={cn('flex items-center border border-neutral-200/80 bg-white/56 shadow-[0_10px_20px_-16px_rgba(30,41,59,0.42)] dark:border-neutral-700/80 dark:bg-neutral-900/62', capsuleFrameClass, capsuleInnerGapClass)}>
+            <div
+              className={cn(
+                'flex items-center border border-neutral-200/80 bg-white/56 shadow-[0_10px_20px_-16px_rgba(30,41,59,0.42)] dark:border-neutral-700/80 dark:bg-neutral-900/62',
+                capsuleFrameClass,
+                capsuleInnerGapClass,
+              )}
+            >
               <HeroDropdown>
                 <HeroDropdown.Trigger>
                   <ActionIconButton
-                    icon={<ThemeIcon className="w-5 h-5" />}
+                    icon={<ThemeIcon className="h-5 w-5" />}
                     label="切换主题"
                     tone="neutral"
                     className="border-transparent bg-transparent"
@@ -595,140 +612,121 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                 </HeroDropdown.Popover>
               </HeroDropdown>
 
-              <HeroDropdown
-                isOpen={userMenuOpen}
-                onOpenChange={setUserMenuOpen}
-              >
+              <HeroDropdown isOpen={userMenuOpen} onOpenChange={setUserMenuOpen}>
                 <HeroDropdown.Trigger>
                   <ActionIconButton
-                    icon={<span className="text-sm font-semibold leading-none">U</span>}
+                    icon={<span className="text-sm leading-none font-semibold">U</span>}
                     label="打开用户菜单"
                     aria-haspopup="menu"
                     aria-expanded={userMenuOpen}
                     className={cn(
-                      'h-9 w-9 min-h-9 min-w-9 rounded-full',
+                      'h-9 min-h-9 w-9 min-w-9 rounded-full',
                       'bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)]',
                       'text-neutral-900',
                       'shadow-[0_12px_26px_-18px_rgba(30,41,59,0.58)]',
                       'data-[hovered=true]:bg-gradient-to-br data-[hovered=true]:from-[var(--theme-primary-soft-hover)] data-[hovered=true]:to-[var(--theme-primary-soft-2)]',
                       'data-[pressed=true]:bg-gradient-to-br data-[pressed=true]:from-[var(--theme-primary-soft-press)] data-[pressed=true]:to-[var(--theme-primary-deep)]',
-                      userMenuOpen && 'ring-2 ring-[var(--theme-primary-a55)]'
+                      userMenuOpen && 'ring-2 ring-[var(--theme-primary-a55)]',
                     )}
                   />
                 </HeroDropdown.Trigger>
-              <HeroDropdown.Popover className="w-[360px] overflow-hidden p-0">
-                <div className="border-b border-neutral-200/80 bg-gradient-to-r from-[var(--theme-primary-a20)] via-[var(--theme-primary-a08)] to-transparent px-4 py-3 dark:border-neutral-700/80 dark:to-transparent">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)] font-semibold text-neutral-900">
-                      U
+                <HeroDropdown.Popover className="w-[360px] overflow-hidden p-0">
+                  <div className="border-b border-neutral-200/80 bg-gradient-to-r from-[var(--theme-primary-a20)] via-[var(--theme-primary-a08)] to-transparent px-4 py-3 dark:border-neutral-700/80 dark:to-transparent">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)] font-semibold text-neutral-900">
+                        U
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold text-neutral-900 dark:text-neutral-100">当前会话</div>
+                        <div className="truncate text-xs text-neutral-500 dark:text-neutral-400">已登录管理员</div>
+                      </div>
+                      <span className="ml-auto shrink-0">
+                        <ActionStatusPill tone="success">在线</ActionStatusPill>
+                      </span>
                     </div>
-                    <div className="min-w-0">
-                      <div className="truncate font-semibold text-neutral-900 dark:text-neutral-100">
-                        当前会话
-                      </div>
-                      <div className="truncate text-xs text-neutral-500 dark:text-neutral-400">
-                        已登录管理员
-                      </div>
-                    </div>
-                    <span className="ml-auto shrink-0">
-                      <ActionStatusPill tone="success">
-                      在线
-                      </ActionStatusPill>
-                    </span>
-                  </div>
-                </div>
-
-                <div className="px-4 py-3">
-                  <div className="rounded-xl border border-neutral-200/80 bg-white/48 p-3 dark:border-neutral-700/80 dark:bg-neutral-800/52">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                        <HardDrive className="w-4 h-4" />
-                        存储概览
-                      </div>
-                      {storageStatsLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-neutral-400 dark:text-neutral-500" />
-                      ) : null}
-                    </div>
-                    {storageStatsError ? (
-                      <div className="mt-2 flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400">
-                        <AlertCircle className="w-3.5 h-3.5" />
-                        {storageStatsError}
-                      </div>
-                    ) : (
-                      <>
-                        <div className="mt-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                          {formatFileSize(storageStats.totalBytes)}
-                        </div>
-                        <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                          共 {storageStats.totalFiles} 个文件（不含目录）
-                        </div>
-                      </>
-                    )}
                   </div>
 
-                  <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
-                    {storageRows.map((row) => {
-                      const Icon = row.icon;
-                      return (
-                        <div
-                          key={row.key}
-                          className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800/80"
-                        >
-                          <div className="min-w-0 flex items-center gap-2">
-                            <span className={cn('h-2 w-2 shrink-0 rounded-full', row.color)} />
-                            <Icon className="h-3.5 w-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" />
-                            <span className="truncate text-xs font-medium text-neutral-700 dark:text-neutral-200">
-                              {row.label}
-                            </span>
+                  <div className="px-4 py-3">
+                    <div className="rounded-xl border border-neutral-200/80 bg-white/48 p-3 dark:border-neutral-700/80 dark:bg-neutral-800/52">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                          <HardDrive className="h-4 w-4" />
+                          存储概览
+                        </div>
+                        {storageStatsLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-neutral-400 dark:text-neutral-500" />
+                        ) : null}
+                      </div>
+                      {storageStatsError ? (
+                        <div className="mt-2 flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400">
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          {storageStatsError}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mt-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                            {formatFileSize(storageStats.totalBytes)}
                           </div>
-                          <div className="ml-3 text-right">
-                            <div className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
-                              {formatFileSize(row.bytes)}
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                            共 {storageStats.totalFiles} 个文件（不含目录）
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
+                      {storageRows.map((row) => {
+                        const Icon = row.icon;
+                        return (
+                          <div
+                            key={row.key}
+                            className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800/80"
+                          >
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className={cn('h-2 w-2 shrink-0 rounded-full', row.color)} />
+                              <Icon className="h-3.5 w-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" />
+                              <span className="truncate text-xs font-medium text-neutral-700 dark:text-neutral-200">
+                                {row.label}
+                              </span>
                             </div>
-                            <div className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                              {row.count} 个
+                            <div className="ml-3 text-right">
+                              <div className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
+                                {formatFileSize(row.bytes)}
+                              </div>
+                              <div className="text-[11px] text-neutral-500 dark:text-neutral-400">{row.count} 个</div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
 
-                <HeroDropdown.Menu
-                  aria-label="用户菜单"
-                  className="border-t border-neutral-200 p-2 dark:border-neutral-700"
-                  onAction={(key) => {
-                    if (key === 'refresh-storage') {
-                      void fetchStorageStats();
-                      return;
-                    }
-                    if (key === 'logout') {
-                      void handleLogout();
-                    }
-                  }}
-                >
-                  <HeroDropdown.Item
-                    id="refresh-storage"
-                    textValue="刷新存储概览"
-                    isDisabled={storageStatsLoading}
+                  <HeroDropdown.Menu
+                    aria-label="用户菜单"
+                    className="border-t border-neutral-200 p-2 dark:border-neutral-700"
+                    onAction={(key) => {
+                      if (key === 'refresh-storage') {
+                        void fetchStorageStats();
+                        return;
+                      }
+                      if (key === 'logout') {
+                        void handleLogout();
+                      }
+                    }}
                   >
-                    <HardDrive className="h-4 w-4 text-current" />
-                    <HeroLabel>刷新存储概览</HeroLabel>
-                  </HeroDropdown.Item>
-                  <HeroDropdown.Item
-                    id="logout"
-                    textValue="退出登录"
-                    variant="danger"
-                  >
-                    <LogOut className="h-4 w-4 text-current" />
-                    <HeroLabel>退出登录</HeroLabel>
-                  </HeroDropdown.Item>
-                </HeroDropdown.Menu>
-              </HeroDropdown.Popover>
-            </HeroDropdown>
+                    <HeroDropdown.Item id="refresh-storage" textValue="刷新存储概览" isDisabled={storageStatsLoading}>
+                      <HardDrive className="h-4 w-4 text-current" />
+                      <HeroLabel>刷新存储概览</HeroLabel>
+                    </HeroDropdown.Item>
+                    <HeroDropdown.Item id="logout" textValue="退出登录" variant="danger">
+                      <LogOut className="h-4 w-4 text-current" />
+                      <HeroLabel>退出登录</HeroLabel>
+                    </HeroDropdown.Item>
+                  </HeroDropdown.Menu>
+                </HeroDropdown.Popover>
+              </HeroDropdown>
+            </div>
           </div>
-        </div>
         </div>
       </header>
 
@@ -765,15 +763,25 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
         <div className="space-y-4">
           <div className="rounded-2xl border border-[var(--theme-primary-a24)] bg-[linear-gradient(138deg,var(--theme-primary-a20),var(--theme-primary-a08))] p-3.5 shadow-[0_14px_28px_-22px_rgba(30,41,59,0.46)]">
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-medium uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400">
+              <span className="font-medium tracking-[0.12em] text-neutral-500 uppercase dark:text-neutral-400">
                 切换预览
               </span>
-              <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium', currentMethodMeta.className)}>
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                  currentMethodMeta.className,
+                )}
+              >
                 <currentMethodMeta.Icon className="h-3.5 w-3.5" />
                 {currentMethodMeta.label}
               </span>
               <ArrowRightLeft className="h-3.5 w-3.5 text-neutral-500 dark:text-neutral-400" />
-              <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium', switchTargetMeta.className)}>
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                  switchTargetMeta.className,
+                )}
+              >
                 <switchTargetMeta.Icon className="h-3.5 w-3.5" />
                 {switchTargetMeta.label}
               </span>
@@ -784,7 +792,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
           </div>
 
           <section className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
               步骤 1 · 选择目标服务
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -801,14 +809,12 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                       'flex-col gap-2 whitespace-normal',
                       active
                         ? 'border-[var(--theme-primary-a70)] bg-[var(--theme-primary-a12)]'
-                        : 'border-neutral-200 bg-white/58 hover:bg-white/80 dark:border-neutral-700 dark:bg-neutral-900/68 dark:hover:bg-neutral-800/88'
+                        : 'border-neutral-200 bg-white/58 hover:bg-white/80 dark:border-neutral-700 dark:bg-neutral-900/68 dark:hover:bg-neutral-800/88',
                     )}
                   >
                     <div className="flex w-full items-center gap-2">
                       <meta.Icon className="h-4 w-4 text-[var(--theme-primary)]" />
-                      <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                        {meta.label}
-                      </span>
+                      <span className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{meta.label}</span>
                       {isCurrent ? (
                         <span className="ml-auto rounded-full border border-neutral-200 bg-white/85 px-2 py-0.5 text-[10px] font-medium text-neutral-500 dark:border-neutral-700 dark:bg-neutral-900/80 dark:text-neutral-400">
                           当前
@@ -825,7 +831,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
           </section>
 
           <section className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
               步骤 2 · 填写连接参数
             </p>
             <div className="space-y-3 rounded-2xl border border-neutral-200/75 bg-neutral-50/70 p-3 dark:border-neutral-700/80 dark:bg-neutral-900/55">
@@ -841,7 +847,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                     label={showSwitchBotToken ? '隐藏 Bot Token' : '查看 Bot Token'}
                     aria-label={showSwitchBotToken ? '隐藏 Bot Token' : '查看 Bot Token'}
                     onPress={() => setShowSwitchBotToken((prev) => !prev)}
-                    className="h-6 w-6 min-h-6 min-w-6"
+                    className="h-6 min-h-6 w-6 min-w-6"
                   />
                 }
               />
@@ -856,7 +862,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
 
           {isSwitchTargetSelfHosted && (
             <section className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+              <p className="text-[11px] font-semibold tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
                 步骤 3 · 自建服务参数
               </p>
               <div className="space-y-3 rounded-2xl border border-neutral-200/75 bg-neutral-50/70 p-3 dark:border-neutral-700/80 dark:bg-neutral-900/55">
@@ -882,7 +888,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                         label={showSwitchApiHash ? '隐藏 API Hash' : '查看 API Hash'}
                         aria-label={showSwitchApiHash ? '隐藏 API Hash' : '查看 API Hash'}
                         onPress={() => setShowSwitchApiHash((prev) => !prev)}
-                        className="h-6 w-6 min-h-6 min-w-6"
+                        className="h-6 min-h-6 w-6 min-w-6"
                       />
                     }
                   />
@@ -916,7 +922,13 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                 <div className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-neutral-600 dark:text-neutral-300">Bot Token</span>
-                    <span className={cn(switchDetails.bot.ok ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400')}>
+                    <span
+                      className={cn(
+                        switchDetails.bot.ok
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-orange-600 dark:text-orange-400',
+                      )}
+                    >
                       {switchDetails.bot.ok ? '通过' : '失败'}
                     </span>
                   </div>
@@ -930,7 +942,13 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                 <div className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-neutral-600 dark:text-neutral-300">Chat ID</span>
-                    <span className={cn(switchDetails.chat.ok ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400')}>
+                    <span
+                      className={cn(
+                        switchDetails.chat.ok
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-orange-600 dark:text-orange-400',
+                      )}
+                    >
                       {switchDetails.chat.ok ? '通过' : '失败'}
                     </span>
                   </div>
@@ -944,7 +962,13 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                 <div className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-neutral-600 dark:text-neutral-300">管理员权限</span>
-                    <span className={cn(switchDetails.admin.ok ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400')}>
+                    <span
+                      className={cn(
+                        switchDetails.admin.ok
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-orange-600 dark:text-orange-400',
+                      )}
+                    >
                       {switchDetails.admin.ok ? '通过' : '失败'}
                     </span>
                   </div>

@@ -14,23 +14,20 @@ export interface PushToastOptions {
  * 统一 Toast 工具（基于 HeroUI Toast）
  */
 export function useToast() {
-  const pushToast = useCallback(
-    ({ type = 'info', title, message, durationMs = 3000 }: PushToastOptions) => {
-      const content = title || message;
-      const options = {
-        description: title ? message : undefined,
-        timeout: durationMs,
-      };
+  const pushToast = useCallback(({ type = 'info', title, message, durationMs = 3000 }: PushToastOptions) => {
+    const content = title || message;
+    const options = {
+      description: title ? message : undefined,
+      timeout: durationMs,
+    };
 
-      if (type === 'success') {
-        return toast.success(content, options);
-      }
-      if (type === 'error') {
-        return toast.danger(content, options);
-      }
-      return toast.info(content, options);
-    },
-    []
-  );
+    if (type === 'success') {
+      return toast.success(content, options);
+    }
+    if (type === 'error') {
+      return toast.danger(content, options);
+    }
+    return toast.info(content, options);
+  }, []);
   return { pushToast };
 }

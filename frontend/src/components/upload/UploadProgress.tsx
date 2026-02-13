@@ -1,15 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
-import {
-  X,
-  Check,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  Trash2,
-  RotateCcw,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { X, Check, AlertCircle, ChevronDown, ChevronUp, Trash2, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { Dropdown as HeroDropdown, Label as HeroLabel } from '@heroui/react';
 import { uploadTasksAtom, uploadPanelExpandedAtom, isUploadingAtom } from '@/stores/uploadAtoms';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -74,8 +65,8 @@ export function UploadProgress() {
   const summaryText = isUploading
     ? `进行中 ${activeCount} 个任务`
     : errorCount > 0
-    ? `失败 ${errorCount} 个任务`
-    : `完成 ${completedCount} 个任务`;
+      ? `失败 ${errorCount} 个任务`
+      : `完成 ${completedCount} 个任务`;
 
   const dangerConfirmConfig = useMemo(() => {
     if (!dangerAction) return null;
@@ -129,13 +120,13 @@ export function UploadProgress() {
     <>
       <div
         className={
-          'fixed bottom-4 right-4 z-40 w-[22rem] overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/92 shadow-[0_24px_52px_-36px_rgba(15,23,42,0.55)] dark:border-neutral-700/80 dark:bg-neutral-900/88 animate-slideUp'
+          'animate-slideUp fixed right-4 bottom-4 z-40 w-[22rem] overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/92 shadow-[0_24px_52px_-36px_rgba(15,23,42,0.55)] dark:border-neutral-700/80 dark:bg-neutral-900/88'
         }
       >
         <div className="flex items-center justify-between border-b border-neutral-200/80 bg-neutral-50/90 px-4 py-3 dark:border-neutral-700/80 dark:bg-neutral-800/90">
           <div className="flex items-center gap-2">
             {isUploading ? (
-              <div className="h-4 w-4 rounded-full border-2 border-[var(--theme-primary)] border-t-transparent animate-spin" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--theme-primary)] border-t-transparent" />
             ) : errorCount > 0 ? (
               <AlertCircle className="h-4 w-4 text-red-500" />
             ) : (
@@ -150,11 +141,7 @@ export function UploadProgress() {
           <div className="flex items-center gap-1">
             <HeroDropdown>
               <HeroDropdown.Trigger>
-                <ActionIconButton
-                  icon={<SlidersHorizontal className="h-4 w-4" />}
-                  label="任务操作"
-                  tone="brand"
-                />
+                <ActionIconButton icon={<SlidersHorizontal className="h-4 w-4" />} label="任务操作" tone="brand" />
               </HeroDropdown.Trigger>
               <HeroDropdown.Popover className="w-48">
                 <HeroDropdown.Menu
@@ -168,11 +155,7 @@ export function UploadProgress() {
                     }
                   }}
                 >
-                  <HeroDropdown.Item
-                    id="clear-completed"
-                    textValue="清除已完成任务"
-                    isDisabled={completedCount === 0}
-                  >
+                  <HeroDropdown.Item id="clear-completed" textValue="清除已完成任务" isDisabled={completedCount === 0}>
                     <Check className="h-4 w-4 text-current" />
                     <HeroLabel>清除已完成任务</HeroLabel>
                   </HeroDropdown.Item>
@@ -210,7 +193,7 @@ export function UploadProgress() {
                     </div>
                   ) : (
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-                      <div className="h-4 w-4 rounded-full border-2 border-[var(--theme-primary)] border-t-transparent animate-spin" />
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--theme-primary)] border-t-transparent" />
                     </div>
                   )}
                 </div>
@@ -220,7 +203,9 @@ export function UploadProgress() {
                     <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
                       {task.file.name}
                     </p>
-                    <ActionStatusPill tone={taskStatusTone(task.status)}>{taskStatusLabel(task.status)}</ActionStatusPill>
+                    <ActionStatusPill tone={taskStatusTone(task.status)}>
+                      {taskStatusLabel(task.status)}
+                    </ActionStatusPill>
                   </div>
 
                   {task.status === 'error' ? (

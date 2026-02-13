@@ -20,11 +20,7 @@ import {
   ListBox as HeroListBox,
   Select as HeroSelect,
 } from '@heroui/react';
-import {
-  downloadConcurrencyAtom,
-  reservedDiskBytesAtom,
-  uploadConcurrencyAtom,
-} from '@/stores/uiAtoms';
+import { downloadConcurrencyAtom, reservedDiskBytesAtom, uploadConcurrencyAtom } from '@/stores/uiAtoms';
 import { Input } from '@/components/ui/Input';
 import { NumberFieldInput } from '@/components/ui/NumberFieldInput';
 import { ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
@@ -85,7 +81,7 @@ function SectionHeader({
   return (
     <div className="flex items-start gap-3">
       <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--theme-primary-a12)]">
-        <Icon className="w-4 h-4 text-[var(--theme-primary)]" />
+        <Icon className="h-4 w-4 text-[var(--theme-primary)]" />
       </div>
       <div className="min-w-0">
         <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{title}</h2>
@@ -95,15 +91,7 @@ function SectionHeader({
   );
 }
 
-function SettingsRow({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
+function SettingsRow({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
     <div className="rounded-2xl border border-neutral-200/80 bg-white/92 p-4 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.6)] dark:border-neutral-700/80 dark:bg-neutral-900/72">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
@@ -111,7 +99,7 @@ function SettingsRow({
           <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</div>
           <div className="mt-1 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">{description}</div>
         </div>
-        <div className="w-full md:w-[280px] shrink-0">{children}</div>
+        <div className="w-full shrink-0 md:w-[280px]">{children}</div>
       </div>
     </div>
   );
@@ -172,7 +160,9 @@ export function SettingsPage() {
   const [vaultPasswordInput, setVaultPasswordInput] = useState('');
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [torrentQbtPasswordInput, setTorrentQbtPasswordInput] = useState('');
-  const [torrentSourceDeleteModeInput, setTorrentSourceDeleteModeInput] = useState<'immediate' | 'fixed' | 'random'>('immediate');
+  const [torrentSourceDeleteModeInput, setTorrentSourceDeleteModeInput] = useState<'immediate' | 'fixed' | 'random'>(
+    'immediate',
+  );
   const [torrentSourceDeleteFixedMinutesInput, setTorrentSourceDeleteFixedMinutesInput] = useState('30');
   const [torrentSourceDeleteRandomMinMinutesInput, setTorrentSourceDeleteRandomMinMinutesInput] = useState('30');
   const [torrentSourceDeleteRandomMaxMinutesInput, setTorrentSourceDeleteRandomMaxMinutesInput] = useState('120');
@@ -267,7 +257,7 @@ export function SettingsPage() {
   const reservedDiskHint = useMemo(() => {
     const gb = Number.parseFloat(reservedDiskGBInput);
     if (!Number.isFinite(gb) || gb < 0) return '请输入大于等于 0 的数字';
-    return `约 ${(gb * BYTES_PER_GB / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+    return `约 ${((gb * BYTES_PER_GB) / (1024 * 1024 * 1024)).toFixed(2)} GB`;
   }, [reservedDiskGBInput]);
 
   const handleSave = useCallback(async () => {
@@ -285,18 +275,20 @@ export function SettingsPage() {
     const nextTorrentQbtPassword = torrentQbtPasswordInput.trim();
     const nextTorrentSourceDeleteMode = torrentSourceDeleteModeInput;
     const nextTorrentSourceDeleteFixedMinutes = Number.parseInt(torrentSourceDeleteFixedMinutesInput.trim(), 10);
-    const nextTorrentSourceDeleteRandomMinMinutes = Number.parseInt(torrentSourceDeleteRandomMinMinutesInput.trim(), 10);
-    const nextTorrentSourceDeleteRandomMaxMinutes = Number.parseInt(torrentSourceDeleteRandomMaxMinutesInput.trim(), 10);
+    const nextTorrentSourceDeleteRandomMinMinutes = Number.parseInt(
+      torrentSourceDeleteRandomMinMinutesInput.trim(),
+      10,
+    );
+    const nextTorrentSourceDeleteRandomMaxMinutes = Number.parseInt(
+      torrentSourceDeleteRandomMaxMinutesInput.trim(),
+      10,
+    );
 
     if (!Number.isFinite(nextUploadConcurrency) || nextUploadConcurrency < 1 || nextUploadConcurrency > 16) {
       pushToast({ type: 'error', message: '并发上传范围应为 1~16' });
       return;
     }
-    if (
-      !Number.isFinite(nextDownloadConcurrency) ||
-      nextDownloadConcurrency < 1 ||
-      nextDownloadConcurrency > 32
-    ) {
+    if (!Number.isFinite(nextDownloadConcurrency) || nextDownloadConcurrency < 1 || nextDownloadConcurrency > 32) {
       pushToast({ type: 'error', message: '并发下载范围应为 1~32' });
       return;
     }
@@ -304,7 +296,11 @@ export function SettingsPage() {
       pushToast({ type: 'error', message: '预留硬盘空间必须为大于等于 0 的数字' });
       return;
     }
-    if (!Number.isFinite(nextUploadSessionTtlHours) || nextUploadSessionTtlHours < 1 || nextUploadSessionTtlHours > 720) {
+    if (
+      !Number.isFinite(nextUploadSessionTtlHours) ||
+      nextUploadSessionTtlHours < 1 ||
+      nextUploadSessionTtlHours > 720
+    ) {
       pushToast({ type: 'error', message: '会话 TTL 范围应为 1~720 小时' });
       return;
     }
@@ -480,10 +476,10 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6 md:py-8">
-      <div className="rounded-3xl border border-neutral-200/80 bg-gradient-to-br from-white to-neutral-50 p-5 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] dark:border-neutral-700/80 dark:from-neutral-900 dark:to-neutral-950 md:p-6">
+      <div className="rounded-3xl border border-neutral-200/80 bg-gradient-to-br from-white to-neutral-50 p-5 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] md:p-6 dark:border-neutral-700/80 dark:from-neutral-900 dark:to-neutral-950">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+            <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 md:text-3xl dark:text-neutral-100">
               设置
             </h1>
             <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
@@ -491,10 +487,10 @@ export function SettingsPage() {
             </p>
           </div>
           <div
-            className="hidden md:flex items-center gap-2 rounded-xl border border-neutral-200 dark:border-neutral-700 px-3 py-1.5 text-xs text-neutral-500 dark:text-neutral-400"
+            className="hidden items-center gap-2 rounded-xl border border-neutral-200 px-3 py-1.5 text-xs text-neutral-500 md:flex dark:border-neutral-700 dark:text-neutral-400"
             aria-live="polite"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
             <ActionStatusPill tone={loading ? 'warning' : 'success'}>
               {loading ? '正在读取配置' : '配置已加载'}
             </ActionStatusPill>
@@ -530,7 +526,7 @@ export function SettingsPage() {
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'transfer' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              activeTab === 'transfer' ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
           >
             <div className="space-y-8">
@@ -550,10 +546,7 @@ export function SettingsPage() {
                     </HeroCheckbox.Content>
                   </HeroCheckbox>
                 </SettingsRow>
-                <SettingsRow
-                  title="并发上传"
-                  description="限制同时上传数量，超出后自动排队。"
-                >
+                <SettingsRow title="并发上传" description="限制同时上传数量，超出后自动排队。">
                   <NumberFieldInput
                     min={1}
                     max={16}
@@ -570,10 +563,7 @@ export function SettingsPage() {
                   title="下载策略"
                   description="控制下载与预览并发，避免连接被瞬时占满。"
                 />
-                <SettingsRow
-                  title="并发下载"
-                  description="超过并发上限时，后续下载任务进入等待队列。"
-                >
+                <SettingsRow title="并发下载" description="超过并发上限时，后续下载任务进入等待队列。">
                   <NumberFieldInput
                     min={1}
                     max={32}
@@ -589,16 +579,13 @@ export function SettingsPage() {
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'storage' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              activeTab === 'storage' ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
           >
             <div className="space-y-8">
               <section className="space-y-3">
                 <SectionHeader icon={HardDrive} title="磁盘保护" description="上传前预留磁盘空间，防止服务盘被写满。" />
-                <SettingsRow
-                  title="预留硬盘空间（GB）"
-                  description="可用空间低于此阈值时，拒绝新的上传请求。"
-                >
+                <SettingsRow title="预留硬盘空间（GB）" description="可用空间低于此阈值时，拒绝新的上传请求。">
                   <NumberFieldInput
                     min={0}
                     step={0.1}
@@ -650,19 +637,12 @@ export function SettingsPage() {
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'sessions' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              activeTab === 'sessions' ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
           >
             <section className="space-y-3">
-              <SectionHeader
-                icon={Clock3}
-                title="会话清理"
-                description="控制续传会话过期时间与后台清理频率。"
-              />
-              <SettingsRow
-                title="会话 TTL（小时）"
-                description="会话超时后会被标记过期并参与清理。"
-              >
+              <SectionHeader icon={Clock3} title="会话清理" description="控制续传会话过期时间与后台清理频率。" />
+              <SettingsRow title="会话 TTL（小时）" description="会话超时后会被标记过期并参与清理。">
                 <NumberFieldInput
                   min={1}
                   max={720}
@@ -671,10 +651,7 @@ export function SettingsPage() {
                   placeholder="1 ~ 720"
                 />
               </SettingsRow>
-              <SettingsRow
-                title="清理周期（分钟）"
-                description="后台按该周期扫描并清理过期会话与残留分片。"
-              >
+              <SettingsRow title="清理周期（分钟）" description="后台按该周期扫描并清理过期会话与残留分片。">
                 <NumberFieldInput
                   min={1}
                   max={1440}
@@ -689,7 +666,7 @@ export function SettingsPage() {
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'torrent' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              activeTab === 'torrent' ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
           >
             <section className="space-y-3">
@@ -716,9 +693,7 @@ export function SettingsPage() {
                 <HeroSelect
                   aria-label="源文件清理策略"
                   value={torrentSourceDeleteModeInput}
-                  onChange={(value) =>
-                    setTorrentSourceDeleteModeInput(value as 'immediate' | 'fixed' | 'random')
-                  }
+                  onChange={(value) => setTorrentSourceDeleteModeInput(value as 'immediate' | 'fixed' | 'random')}
                   variant="secondary"
                   className="w-full"
                 >
@@ -783,7 +758,7 @@ export function SettingsPage() {
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'vault' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              activeTab === 'vault' ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
           >
             <section className="space-y-3">
@@ -826,15 +801,10 @@ export function SettingsPage() {
               </SettingsRow>
             </section>
           </div>
-
         </div>
 
         <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end">
-          <ActionTextButton
-            onPress={handleReset}
-            isDisabled={saving || loading}
-            className="justify-center"
-          >
+          <ActionTextButton onPress={handleReset} isDisabled={saving || loading} className="justify-center">
             重置编辑
           </ActionTextButton>
           <ActionTextButton
@@ -843,7 +813,7 @@ export function SettingsPage() {
               saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
-                <Save className="w-4 h-4" aria-hidden="true" />
+                <Save className="h-4 w-4" aria-hidden="true" />
               )
             }
             onPress={() => {

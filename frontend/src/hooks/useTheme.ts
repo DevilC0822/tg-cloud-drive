@@ -13,8 +13,7 @@ export function useTheme() {
   const applyTheme = useCallback((newTheme: Theme) => {
     const root = document.documentElement;
     const isDark =
-      newTheme === 'dark' ||
-      (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      newTheme === 'dark' || (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     if (isDark) {
       root.classList.add('dark');
@@ -48,7 +47,7 @@ export function useTheme() {
       setTheme(newTheme);
       applyTheme(newTheme);
     },
-    [setTheme, applyTheme]
+    [setTheme, applyTheme],
   );
 
   return {

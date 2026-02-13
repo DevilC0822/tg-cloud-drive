@@ -77,7 +77,7 @@ export function Pagination({
           <HeroSelect.Trigger
             className={cn(
               'w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs text-neutral-700',
-              'dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200'
+              'dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200',
             )}
           >
             <HeroSelect.Value />

@@ -1,13 +1,5 @@
 /* 文件类型定义 */
-export type FileType =
-  | 'folder'
-  | 'image'
-  | 'video'
-  | 'audio'
-  | 'document'
-  | 'archive'
-  | 'code'
-  | 'other';
+export type FileType = 'folder' | 'image' | 'video' | 'audio' | 'document' | 'archive' | 'code' | 'other';
 
 /* 文件项接口 */
 export interface FileItem {
@@ -90,13 +82,7 @@ export interface TransferHistoryItem {
   uploadVideoPreviewFallback?: boolean;
 }
 
-type TorrentTaskStatus =
-  | 'queued'
-  | 'downloading'
-  | 'awaiting_selection'
-  | 'uploading'
-  | 'completed'
-  | 'error';
+type TorrentTaskStatus = 'queued' | 'downloading' | 'awaiting_selection' | 'uploading' | 'completed' | 'error';
 
 interface TorrentTaskFile {
   fileIndex: number;
@@ -165,14 +151,7 @@ export interface SortConfig {
 export type Theme = 'light' | 'dark' | 'system';
 
 /* 存储统计 */
-export type StorageTypeKey =
-  | 'image'
-  | 'video'
-  | 'audio'
-  | 'document'
-  | 'archive'
-  | 'code'
-  | 'other';
+export type StorageTypeKey = 'image' | 'video' | 'audio' | 'document' | 'archive' | 'code' | 'other';
 
 interface StorageTypeStats {
   bytes: number;

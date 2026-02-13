@@ -15,16 +15,14 @@ export function MainLayout({ children, onNewFolder, onUpload }: MainLayoutProps)
       <Sidebar />
 
       {/* 主内容区 */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* 顶部栏 */}
         <div className="px-2 pt-2 pb-2 md:px-3 md:pt-3 md:pb-3">
           <Header onNewFolder={onNewFolder} onUpload={onUpload} />
         </div>
 
         {/* 内容区域 */}
-        <main className="flex-1 overflow-auto px-2 pb-2 md:px-3 md:pb-3">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto px-2 pb-2 md:px-3 md:pb-3">{children}</main>
       </div>
     </div>
   );

@@ -303,7 +303,7 @@ export function FileContextMenu({
     >
       <HeroDropdown.Trigger
         aria-label="右键菜单锚点"
-        className="pointer-events-none fixed h-px w-px min-h-px min-w-px opacity-0"
+        className="pointer-events-none fixed h-px min-h-px w-px min-w-px opacity-0"
         style={{ left: safePosition.x, top: safePosition.y }}
       >
         <span className="sr-only">右键菜单锚点</span>
@@ -314,9 +314,7 @@ export function FileContextMenu({
           className="max-h-[70vh] overflow-y-auto"
           onAction={(key) => {
             const id = String(key);
-            const target = menuItems.find(
-              (item): item is ContextMenuItem => !isMenuDivider(item) && item.id === id
-            );
+            const target = menuItems.find((item): item is ContextMenuItem => !isMenuDivider(item) && item.id === id);
             target?.onClick?.();
           }}
         >
@@ -338,10 +336,7 @@ export function FileContextMenu({
                 {Icon ? <Icon className="h-4 w-4 text-current" /> : null}
                 <HeroLabel>{item.label}</HeroLabel>
                 {item.shortcut ? (
-                  <span
-                    slot="keyboard"
-                    className="ms-auto text-[11px] text-neutral-400 dark:text-neutral-500"
-                  >
+                  <span slot="keyboard" className="ms-auto text-[11px] text-neutral-400 dark:text-neutral-500">
                     {item.shortcut}
                   </span>
                 ) : null}

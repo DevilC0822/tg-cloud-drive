@@ -12,12 +12,7 @@ function cn(...inputs: (string | undefined | null | boolean)[]) {
   return twMerge(clsx(inputs));
 }
 
-export function ProgressBar({
-  value,
-  size = 'md',
-  color = 'default',
-  className,
-}: ProgressBarProps) {
+export function ProgressBar({ value, size = 'md', color = 'default', className }: ProgressBarProps) {
   const clampedValue = Math.min(100, Math.max(0, value));
 
   const sizes = {
@@ -36,16 +31,11 @@ export function ProgressBar({
 
   return (
     <div className={cn('w-full', className)}>
-      <div
-        className={cn(
-          'w-full overflow-hidden rounded-full bg-neutral-200/90 dark:bg-neutral-700/85',
-          sizes[size]
-        )}
-      >
+      <div className={cn('w-full overflow-hidden rounded-full bg-neutral-200/90 dark:bg-neutral-700/85', sizes[size])}>
         <div
           className={cn(
             'h-full rounded-full shadow-[0_4px_12px_-8px_rgba(15,23,42,0.7)] transition-all duration-300 ease-out',
-            colors[color]
+            colors[color],
           )}
           style={{ width: `${clampedValue}%` }}
         />

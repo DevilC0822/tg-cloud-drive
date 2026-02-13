@@ -30,6 +30,14 @@ API），并由后端代理下载/预览，避免在浏览器暴露 Bot Token。
 - 前端：React、TypeScript、Vite、Tailwind、Jotai
 - 运行：Docker Compose（postgres + backend + frontend + telegram-bot-api + qbittorrent）
 
+## 前端样式规范化
+
+在仓库根目录执行以下命令，可批量对前端 `className` 做 canonical 排序与规范化：
+
+```bash
+npm --prefix "./frontend" run format:classes
+```
+
 ## 目录结构
 
 ```text

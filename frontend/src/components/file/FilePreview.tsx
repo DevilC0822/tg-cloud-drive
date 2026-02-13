@@ -119,8 +119,7 @@ export function FilePreview({
     if (file.type !== 'document') return;
 
     const isTextLike =
-      (file.mimeType?.startsWith('text/') ?? false) ||
-      /\.(md|txt|json|xml|yaml|yml)$/i.test(file.name);
+      (file.mimeType?.startsWith('text/') ?? false) || /\.(md|txt|json|xml|yaml|yml)$/i.test(file.name);
 
     if (!previewUrl || !isTextLike || file.mimeType === 'application/pdf') {
       setDocumentText(null);
@@ -171,7 +170,7 @@ export function FilePreview({
           break;
       }
     },
-    [navigateNext, navigatePrev, onClose, open]
+    [navigateNext, navigatePrev, onClose, open],
   );
 
   useEffect(() => {
@@ -210,7 +209,7 @@ export function FilePreview({
           <img
             src={previewUrl || file.thumbnail}
             alt={file.name}
-            className="max-w-full max-h-full object-contain transition-transform duration-200"
+            className="max-h-full max-w-full object-contain transition-transform duration-200"
             style={{
               transform: `scale(${zoom}) rotate(${rotation}deg)`,
             }}
@@ -222,11 +221,7 @@ export function FilePreview({
           return <p className="text-neutral-400">暂无可用预览数据（需要先上传或接入后端）</p>;
         }
         return (
-          <video
-            src={previewUrl}
-            controls
-            className="max-w-full max-h-full"
-          >
+          <video src={previewUrl} controls className="max-h-full max-w-full">
             您的浏览器不支持视频播放
           </video>
         );
@@ -251,29 +246,21 @@ export function FilePreview({
           if (!previewUrl) {
             return <p className="text-neutral-400">暂无可用预览数据（需要先上传或接入后端）</p>;
           }
-          return (
-            <iframe
-              src={previewUrl}
-              className="w-full h-full"
-              title={file.name}
-            />
-          );
+          return <iframe src={previewUrl} className="h-full w-full" title={file.name} />;
         }
         if (documentLoading) {
           return <p className="text-neutral-400">正在加载文档内容...</p>;
         }
         if (documentText) {
           return (
-            <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 max-w-2xl max-h-[80vh] overflow-auto">
-              <pre className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
-                {documentText}
-              </pre>
+            <div className="max-h-[80vh] max-w-2xl overflow-auto rounded-xl bg-white p-6 dark:bg-neutral-800">
+              <pre className="text-sm whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">{documentText}</pre>
             </div>
           );
         }
         return (
-          <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 max-w-2xl max-h-[80vh] overflow-auto">
-            <pre className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
+          <div className="max-h-[80vh] max-w-2xl overflow-auto rounded-xl bg-white p-6 dark:bg-neutral-800">
+            <pre className="text-sm whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">
               文档暂不可预览（需要先上传或接入后端）。
             </pre>
           </div>
@@ -296,20 +283,17 @@ export function FilePreview({
     <div
       className={cn(
         'fixed inset-0 z-50 bg-slate-950/96',
-        isClosing ? 'animate-modalOverlayOut' : 'animate-modalOverlayIn'
+        isClosing ? 'animate-modalOverlayOut' : 'animate-modalOverlayIn',
       )}
     >
       <div
-        className={cn(
-          'relative flex h-full flex-col',
-          isClosing ? 'animate-modalPanelOut' : 'animate-modalPanelIn'
-        )}
+        className={cn('relative flex h-full flex-col', isClosing ? 'animate-modalPanelOut' : 'animate-modalPanelIn')}
       >
         {/* 顶部工具栏 */}
         <div className="flex items-center justify-between border-b border-white/10 bg-slate-900/65 px-4 py-3 backdrop-blur">
           <div className="flex items-center gap-4">
             <ActionIconButton
-              icon={<X className="w-5 h-5" />}
+              icon={<X className="h-5 w-5" />}
               label="关闭预览"
               surface="dark"
               onPress={onClose}
@@ -327,22 +311,20 @@ export function FilePreview({
             {file.type === 'image' && (
               <>
                 <ActionIconButton
-                  icon={<ZoomOut className="w-5 h-5" />}
+                  icon={<ZoomOut className="h-5 w-5" />}
                   label="缩小"
                   surface="dark"
                   onPress={() => setZoom((z) => Math.max(z - 0.25, 0.5))}
                 />
-                <span className="min-w-[3rem] text-center text-sm text-white">
-                  {Math.round(zoom * 100)}%
-                </span>
+                <span className="min-w-[3rem] text-center text-sm text-white">{Math.round(zoom * 100)}%</span>
                 <ActionIconButton
-                  icon={<ZoomIn className="w-5 h-5" />}
+                  icon={<ZoomIn className="h-5 w-5" />}
                   label="放大"
                   surface="dark"
                   onPress={() => setZoom((z) => Math.min(z + 0.25, 3))}
                 />
                 <ActionIconButton
-                  icon={<RotateCw className="w-5 h-5" />}
+                  icon={<RotateCw className="h-5 w-5" />}
                   label="旋转"
                   surface="dark"
                   onPress={() => setRotation((r) => r + 90)}
@@ -353,11 +335,7 @@ export function FilePreview({
 
             <HeroDropdown>
               <HeroDropdown.Trigger>
-                <ActionIconButton
-                  icon={<MoreVertical className="w-5 h-5" />}
-                  label="更多操作"
-                  surface="dark"
-                />
+                <ActionIconButton icon={<MoreVertical className="h-5 w-5" />} label="更多操作" surface="dark" />
               </HeroDropdown.Trigger>
               <HeroDropdown.Popover className="w-44">
                 <HeroDropdown.Menu
@@ -371,19 +349,11 @@ export function FilePreview({
                     }
                   }}
                 >
-                  <HeroDropdown.Item
-                    id="download"
-                    textValue="下载文件"
-                    isDisabled={!onDownload}
-                  >
+                  <HeroDropdown.Item id="download" textValue="下载文件" isDisabled={!onDownload}>
                     <Download className="h-4 w-4 text-current" />
                     <HeroLabel>下载文件</HeroLabel>
                   </HeroDropdown.Item>
-                  <HeroDropdown.Item
-                    id="share"
-                    textValue="分享文件"
-                    isDisabled={!onShare}
-                  >
+                  <HeroDropdown.Item id="share" textValue="分享文件" isDisabled={!onShare}>
                     <Share2 className="h-4 w-4 text-current" />
                     <HeroLabel>分享文件</HeroLabel>
                   </HeroDropdown.Item>
@@ -394,39 +364,31 @@ export function FilePreview({
         </div>
 
         {/* 预览内容 */}
-        <div className="flex flex-1 items-center justify-center overflow-hidden p-4">
-          {renderPreview()}
-        </div>
+        <div className="flex flex-1 items-center justify-center overflow-hidden p-4">{renderPreview()}</div>
 
         {/* 导航按钮 */}
         {files.length > 1 && (
           <>
-            <div className="absolute left-4 top-1/2 -translate-y-1/2">
+            <div className="absolute top-1/2 left-4 -translate-y-1/2">
               <ActionIconButton
-                icon={<ChevronLeft className="w-6 h-6" />}
+                icon={<ChevronLeft className="h-6 w-6" />}
                 label="上一个文件"
                 surface="dark"
                 density="cozy"
                 onPress={navigatePrev}
                 isDisabled={!hasPrev}
-                className={cn(
-                  'rounded-full bg-slate-900/65 backdrop-blur',
-                  !hasPrev && 'opacity-40'
-                )}
+                className={cn('rounded-full bg-slate-900/65 backdrop-blur', !hasPrev && 'opacity-40')}
               />
             </div>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+            <div className="absolute top-1/2 right-4 -translate-y-1/2">
               <ActionIconButton
-                icon={<ChevronRight className="w-6 h-6" />}
+                icon={<ChevronRight className="h-6 w-6" />}
                 label="下一个文件"
                 surface="dark"
                 density="cozy"
                 onPress={navigateNext}
                 isDisabled={!hasNext}
-                className={cn(
-                  'rounded-full bg-slate-900/65 backdrop-blur',
-                  !hasNext && 'opacity-40'
-                )}
+                className={cn('rounded-full bg-slate-900/65 backdrop-blur', !hasNext && 'opacity-40')}
               />
             </div>
           </>

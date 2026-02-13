@@ -30,11 +30,7 @@ export function NumberFieldInput({
 }: NumberFieldInputProps) {
   const inputId = useId();
   const parsedValue = Number(value);
-  const safeValue = Number.isFinite(parsedValue)
-    ? parsedValue
-    : Number.isFinite(min)
-      ? Number(min)
-      : 0;
+  const safeValue = Number.isFinite(parsedValue) ? parsedValue : Number.isFinite(min) ? Number(min) : 0;
 
   return (
     <div className={cn('w-full', className)}>
@@ -57,7 +53,7 @@ export function NumberFieldInput({
           className={cn(
             'w-full rounded-xl border bg-white/96 dark:bg-neutral-900/90',
             'transition-[border-color,box-shadow,background-color] duration-200',
-            'border-neutral-200 dark:border-neutral-700'
+            'border-neutral-200 dark:border-neutral-700',
           )}
         >
           <HeroNumberField.Input
@@ -68,7 +64,7 @@ export function NumberFieldInput({
               'w-full bg-transparent px-4 py-2.5 text-sm',
               'text-neutral-900 dark:text-neutral-100',
               'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
-              'focus-visible:outline-none focus-visible:ring-0'
+              'focus-visible:ring-0 focus-visible:outline-none',
             )}
           />
         </HeroNumberField.Group>

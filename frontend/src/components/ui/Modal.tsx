@@ -61,16 +61,16 @@ export function Modal({
             className={cn(
               'modal-dialog-motion w-full overflow-hidden rounded-3xl border border-neutral-200/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(250,248,245,0.96))] shadow-[0_28px_72px_-38px_rgba(15,23,42,0.72)]',
               'dark:border-neutral-700/80 dark:bg-[linear-gradient(160deg,rgba(23,23,23,0.96),rgba(15,23,42,0.94))]',
-              sizes[size]
+              sizes[size],
             )}
           >
             {showCloseButton ? (
               <HeroModal.CloseTrigger
                 className={cn(
-                  'absolute right-5 top-5 z-20 rounded-full bg-transparent p-2',
+                  'absolute top-5 right-5 z-20 rounded-full bg-transparent p-2',
                   'text-neutral-500 transition-colors duration-200 hover:bg-[var(--theme-primary-a12)] hover:text-neutral-700',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--theme-primary-a24)]',
-                  'dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-neutral-200'
+                  'focus-visible:ring-2 focus-visible:ring-[var(--theme-primary-a24)] focus-visible:outline-none',
+                  'dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-neutral-200',
                 )}
               >
                 <X className="h-5 w-5" />
@@ -95,7 +95,7 @@ export function Modal({
             <HeroModal.Body className="p-5 sm:p-6">{children}</HeroModal.Body>
 
             {footer ? (
-              <HeroModal.Footer className="flex items-center justify-end gap-3 border-t border-neutral-200/70 bg-white/72 px-5 pb-5 pt-4 dark:border-neutral-700/70 dark:bg-neutral-900/62">
+              <HeroModal.Footer className="flex items-center justify-end gap-3 border-t border-neutral-200/70 bg-white/72 px-5 pt-4 pb-5 dark:border-neutral-700/70 dark:bg-neutral-900/62">
                 {footer}
               </HeroModal.Footer>
             ) : null}

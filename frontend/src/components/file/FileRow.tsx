@@ -18,13 +18,7 @@ export interface FileRowProps {
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-export function FileRow({
-  file,
-  selected = false,
-  onClick,
-  onDoubleClick,
-  onContextMenu,
-}: FileRowProps) {
+export function FileRow({ file, selected = false, onClick, onDoubleClick, onContextMenu }: FileRowProps) {
   return (
     <div
       onClick={onClick}
@@ -33,7 +27,7 @@ export function FileRow({
       className={cn(
         'group flex cursor-pointer items-center gap-4 border-b border-neutral-100 px-4 py-3 dark:border-neutral-800',
         'transition-colors duration-150 hover:bg-neutral-50 dark:hover:bg-neutral-800/45',
-        selected && 'bg-[var(--theme-primary-a08)] hover:bg-[var(--theme-primary-a12)]'
+        selected && 'bg-[var(--theme-primary-a08)] hover:bg-[var(--theme-primary-a12)]',
       )}
     >
       {/* 文件图标 */}
@@ -42,32 +36,29 @@ export function FileRow({
       </div>
 
       {/* 文件名 */}
-      <div className="flex-1 min-w-0">
-        <h3
-          className="font-medium text-sm text-neutral-900 dark:text-neutral-100 truncate"
-          title={file.name}
-        >
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100" title={file.name}>
           {file.name}
         </h3>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+        <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
           {file.type === 'folder' ? '目录' : file.mimeType || '文件'}
         </p>
       </div>
 
       {/* 文件大小 */}
-      <div className="hidden sm:block w-24 text-right">
+      <div className="hidden w-24 text-right sm:block">
         <span className="text-sm text-neutral-500 dark:text-neutral-400">
           {file.type === 'folder' ? '-' : formatFileSize(file.size)}
         </span>
       </div>
 
       {/* 修改日期 */}
-      <div className="hidden md:block w-32 text-right">
+      <div className="hidden w-32 text-right md:block">
         <span className="text-sm text-neutral-500 dark:text-neutral-400">{formatDate(file.updatedAt)}</span>
       </div>
 
       {/* 操作按钮 */}
-      <div className="w-16 flex justify-end">
+      <div className="flex w-16 justify-end">
         <ActionIconButton
           icon={<MoreVertical className="h-4 w-4" />}
           label="更多操作"
@@ -77,12 +68,12 @@ export function FileRow({
           }}
           className={cn(
             'rounded-xl border border-neutral-200/80 dark:border-neutral-700/70',
-            'bg-white/85 dark:bg-neutral-900/70 backdrop-blur-sm',
-            'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200',
+            'bg-white/85 backdrop-blur-sm dark:bg-neutral-900/70',
+            'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
             'hover:bg-white dark:hover:bg-neutral-800/90',
             'opacity-100 md:opacity-0 md:group-hover:opacity-100',
             'scale-100 md:scale-95 md:group-hover:scale-100',
-            'shadow-sm transition-all duration-200'
+            'shadow-sm transition-all duration-200',
           )}
         />
       </div>

@@ -6,9 +6,7 @@ import type { DownloadTask, FileItem, TransferHistoryItem, UploadTask } from '@/
 import { generateId } from '@/utils/fileUtils';
 import { apiFetchJson } from '@/utils/api';
 
-type DownloadStartResult =
-  | { ok: true }
-  | { ok: false; reason: string };
+type DownloadStartResult = { ok: true } | { ok: false; reason: string };
 
 export type HistoryFilter = 'all' | 'upload' | 'download';
 
@@ -101,7 +99,7 @@ function toDownloadHistory(
   status: TransferHistoryItem['status'],
   startedAt: number,
   finishedAt: number,
-  error?: string
+  error?: string,
 ): TransferHistoryItem {
   return {
     id: `download:${taskId}`,
@@ -153,9 +151,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
         params.set('direction', historyFilter);
       }
 
-      const res = await apiFetchJson<TransferHistoryListResponse>(
-        `/api/transfers/history?${params.toString()}`
-      );
+      const res = await apiFetchJson<TransferHistoryListResponse>(`/api/transfers/history?${params.toString()}`);
 
       const next = (res.items || []).map(fromTransferHistoryDTO);
       const nextPagination: HistoryPagination = {
@@ -223,7 +219,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
         // 保存失败不影响主流程
       }
     },
-    [enabled, loadHistory]
+    [enabled, loadHistory],
   );
 
   useEffect(() => {
@@ -252,10 +248,10 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
             ...patch,
             updatedAt: now,
           };
-        })
+        }),
       );
     },
-    [setDownloadTasks]
+    [setDownloadTasks],
   );
 
   const startDownload = useCallback(
@@ -310,9 +306,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
           finishedAt,
           error: '网络错误',
         });
-        void persistHistory(
-          toDownloadHistory(taskId, file, 'error', now, finishedAt, '网络错误')
-        );
+        void persistHistory(toDownloadHistory(taskId, file, 'error', now, finishedAt, '网络错误'));
       };
 
       xhr.onabort = () => {
@@ -324,9 +318,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
           finishedAt,
           error: '已取消',
         });
-        void persistHistory(
-          toDownloadHistory(taskId, file, 'canceled', now, finishedAt, '已取消')
-        );
+        void persistHistory(toDownloadHistory(taskId, file, 'canceled', now, finishedAt, '已取消'));
       };
 
       xhr.onload = () => {
@@ -340,9 +332,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
             finishedAt,
             error: reason,
           });
-          void persistHistory(
-            toDownloadHistory(taskId, file, 'error', now, finishedAt, reason)
-          );
+          void persistHistory(toDownloadHistory(taskId, file, 'error', now, finishedAt, reason));
           return;
         }
 
@@ -363,9 +353,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
           finishedAt,
           error: undefined,
         });
-        void persistHistory(
-          toDownloadHistory(taskId, file, 'completed', now, finishedAt)
-        );
+        void persistHistory(toDownloadHistory(taskId, file, 'completed', now, finishedAt));
       };
 
       updateDownloadTask(taskId, { status: 'downloading' });
@@ -373,7 +361,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
 
       return { ok: true };
     },
-    [persistHistory, setDownloadTasks, updateDownloadTask]
+    [persistHistory, setDownloadTasks, updateDownloadTask],
   );
 
   const retryDownload = useCallback(
@@ -393,10 +381,10 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
           size: task.size,
           type: 'document',
         },
-        `/api/items/${task.fileId}/content?download=1`
+        `/api/items/${task.fileId}/content?download=1`,
       );
     },
-    [downloadTasks, startDownload]
+    [downloadTasks, startDownload],
   );
 
   const cancelDownload = useCallback((taskId: string) => {
@@ -405,9 +393,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
   }, []);
 
   const clearFinishedDownloads = useCallback(() => {
-    setDownloadTasks((prev) =>
-      prev.filter((task) => task.status === 'pending' || task.status === 'downloading')
-    );
+    setDownloadTasks((prev) => prev.filter((task) => task.status === 'pending' || task.status === 'downloading'));
   }, [setDownloadTasks]);
 
   const clearHistory = useCallback(async () => {
@@ -430,10 +416,9 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
         return { ok: false as const, reason: '天数范围应为 1~3650' };
       }
       try {
-        await apiFetchJson<{ deleted: number }>(
-          `/api/transfers/history?olderThanDays=${Math.floor(days)}`,
-          { method: 'DELETE' }
-        );
+        await apiFetchJson<{ deleted: number }>(`/api/transfers/history?olderThanDays=${Math.floor(days)}`, {
+          method: 'DELETE',
+        });
         if (historyPage !== 1) {
           setHistoryPage(1);
         } else {
@@ -444,7 +429,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
         return { ok: false as const, reason: '按天清理失败' };
       }
     },
-    [historyPage, loadHistory]
+    [historyPage, loadHistory],
   );
 
   const removeHistoryItem = useCallback(
@@ -463,7 +448,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
         return { ok: false as const, reason: '删除历史记录失败' };
       }
     },
-    [loadHistory, setHistory]
+    [loadHistory, setHistory],
   );
 
   const changeHistoryFilter = useCallback((filter: HistoryFilter) => {

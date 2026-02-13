@@ -334,25 +334,25 @@ export function TransferCenterPage({
 
   const activeUploads = useMemo(
     () => uploadTasks.filter((task) => task.status === 'pending' || task.status === 'uploading'),
-    [uploadTasks]
+    [uploadTasks],
   );
   const activeDownloads = useMemo(
     () => downloadTasks.filter((task) => task.status === 'pending' || task.status === 'downloading'),
-    [downloadTasks]
+    [downloadTasks],
   );
   const failedUploads = useMemo(() => uploadTasks.filter((task) => task.status === 'error'), [uploadTasks]);
   const failedDownloads = useMemo(
     () => downloadTasks.filter((task) => task.status === 'error' || task.status === 'canceled'),
-    [downloadTasks]
+    [downloadTasks],
   );
 
   const pendingTorrentCleanupCount = useMemo(
     () => torrentTasks.filter((task) => task.status === 'completed' && parseDueAt(task.dueAt)).length,
-    [torrentTasks]
+    [torrentTasks],
   );
   const cleanedTorrentCount = useMemo(
     () => torrentTasks.filter((task) => task.status === 'completed' && !parseDueAt(task.dueAt)).length,
-    [torrentTasks]
+    [torrentTasks],
   );
 
   const historyTableRows = useMemo(() => {
@@ -389,15 +389,12 @@ export function TransferCenterPage({
       for (const task of torrentTasks) {
         const progress = Math.min(
           100,
-          Math.max(0, Math.round(((task.status === 'completed' ? 1 : task.progress) || 0) * 100))
+          Math.max(0, Math.round(((task.status === 'completed' ? 1 : task.progress) || 0) * 100)),
         );
         const cleanupState = torrentCleanupStatus(task);
         const dueAtDate = parseDueAt(task.dueAt);
         const finishedAtMs =
-          parseDateMs(task.finishedAt) ??
-          parseDateMs(task.updatedAt) ??
-          parseDateMs(task.createdAt) ??
-          Date.now();
+          parseDateMs(task.finishedAt) ?? parseDateMs(task.updatedAt) ?? parseDateMs(task.createdAt) ?? Date.now();
 
         let cleanupDueLabel = '-';
         if (task.status === 'completed' && dueAtDate) {
@@ -558,8 +555,8 @@ export function TransferCenterPage({
         {showRetryAction && torrentTask ? (
           <ActionTextButton
             tone="brand"
-            leadingIcon={<RotateCcw className="w-3.5 h-3.5" />}
-            className={compact ? '!px-2.5 !py-1.5 !text-xs' : undefined}
+            leadingIcon={<RotateCcw className="h-3.5 w-3.5" />}
+            className={compact ? 'px-2.5! py-1.5! text-xs!' : undefined}
             onPress={() => void onRetryTorrentTask(torrentTask.id)}
           >
             重试
@@ -568,8 +565,8 @@ export function TransferCenterPage({
         {showSelectAction && torrentTask ? (
           <ActionTextButton
             tone="brand"
-            leadingIcon={<Send className="w-3.5 h-3.5" />}
-            className={compact ? '!px-2.5 !py-1.5 !text-xs' : undefined}
+            leadingIcon={<Send className="h-3.5 w-3.5" />}
+            className={compact ? 'px-2.5! py-1.5! text-xs!' : undefined}
             onPress={() => onOpenTorrentSelection(torrentTask.id)}
           >
             选择文件
@@ -578,7 +575,7 @@ export function TransferCenterPage({
 
         {row.rowType === 'file' && fileItem ? (
           <ActionIconButton
-            icon={<Trash2 className="w-4 h-4" />}
+            icon={<Trash2 className="h-4 w-4" />}
             label="删除记录"
             tone="danger"
             onPress={() =>
@@ -594,7 +591,7 @@ export function TransferCenterPage({
 
         {row.rowType === 'torrent' && torrentTask ? (
           <ActionIconButton
-            icon={<Trash2 className="w-4 h-4" />}
+            icon={<Trash2 className="h-4 w-4" />}
             label="删除任务并清理临时文件"
             tone="danger"
             onPress={() =>
@@ -614,16 +611,16 @@ export function TransferCenterPage({
   return (
     <div className="mx-auto w-full max-w-[90rem] px-3 py-5 md:px-5 md:py-7">
       <div className="space-y-6">
-        <section className="relative overflow-hidden rounded-3xl border border-neutral-200/80 bg-gradient-to-br from-white via-neutral-50 to-orange-50/65 p-5 shadow-[0_28px_64px_-46px_rgba(15,23,42,0.65)] dark:border-neutral-700/80 dark:from-neutral-950 dark:via-neutral-900 dark:to-orange-950/25 md:p-7">
-          <div className="pointer-events-none absolute -right-12 -top-24 h-64 w-64 rounded-full bg-[var(--theme-primary-a24)] blur-3xl" />
-          <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-slate-300/30 blur-3xl dark:bg-slate-700/30" />
+        <section className="relative overflow-hidden rounded-3xl border border-neutral-200/80 bg-gradient-to-br from-white via-neutral-50 to-orange-50/65 p-5 shadow-[0_28px_64px_-46px_rgba(15,23,42,0.65)] md:p-7 dark:border-neutral-700/80 dark:from-neutral-950 dark:via-neutral-900 dark:to-orange-950/25">
+          <div className="pointer-events-none absolute -top-24 -right-12 h-64 w-64 rounded-full bg-[var(--theme-primary-a24)] blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 -left-16 h-56 w-56 rounded-full bg-slate-300/30 blur-3xl dark:bg-slate-700/30" />
 
           <div className="relative grid gap-5 lg:grid-cols-[1.2fr_1fr]">
             <div>
-              <span className="inline-flex items-center rounded-full border border-neutral-300/80 bg-white/85 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-neutral-600 dark:border-neutral-700/70 dark:bg-neutral-900/80 dark:text-neutral-300">
+              <span className="inline-flex items-center rounded-full border border-neutral-300/80 bg-white/85 px-3 py-1 text-[11px] font-medium tracking-[0.16em] text-neutral-600 uppercase dark:border-neutral-700/70 dark:bg-neutral-900/80 dark:text-neutral-300">
                 Transfer Hub
               </span>
-              <h1 className="mt-3 text-3xl font-semibold text-neutral-900 dark:text-neutral-100 md:text-[2.1rem]">
+              <h1 className="mt-3 text-3xl font-semibold text-neutral-900 md:text-[2.1rem] dark:text-neutral-100">
                 传输中心
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-400">
@@ -640,12 +637,14 @@ export function TransferCenterPage({
                     className="rounded-2xl border border-white/90 bg-white/88 px-3.5 py-3 shadow-sm backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/82"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                      <span className="text-[11px] tracking-[0.14em] text-neutral-500 uppercase dark:text-neutral-400">
                         {card.label}
                       </span>
                       <Icon className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
                     </div>
-                    <div className="mt-2 text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{card.value}</div>
+                    <div className="mt-2 text-2xl font-semibold text-neutral-900 dark:text-neutral-100">
+                      {card.value}
+                    </div>
                     <p className="mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">{card.description}</p>
                   </div>
                 );
@@ -655,7 +654,7 @@ export function TransferCenterPage({
         </section>
 
         <section className="rounded-3xl border border-neutral-200/80 bg-white/86 shadow-[0_24px_54px_-44px_rgba(15,23,42,0.85)] dark:border-neutral-700/80 dark:bg-neutral-900/74">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200/80 px-4 py-3.5 dark:border-neutral-700/80 md:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200/80 px-4 py-3.5 md:px-5 dark:border-neutral-700/80">
             <div>
               <div className="text-base font-semibold text-neutral-900 dark:text-neutral-100">实时任务</div>
               <div className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
@@ -663,17 +662,13 @@ export function TransferCenterPage({
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <ActionStatusPill tone="brand">
-                上传 {activeUploads.length}
-              </ActionStatusPill>
-              <ActionStatusPill tone="success">
-                下载 {activeDownloads.length}
-              </ActionStatusPill>
+              <ActionStatusPill tone="brand">上传 {activeUploads.length}</ActionStatusPill>
+              <ActionStatusPill tone="success">下载 {activeDownloads.length}</ActionStatusPill>
             </div>
           </div>
 
           {activeTaskCount === 0 ? (
-            <div className="px-4 py-9 text-sm text-neutral-500 dark:text-neutral-400 md:px-5">
+            <div className="px-4 py-9 text-sm text-neutral-500 md:px-5 dark:text-neutral-400">
               暂无实时任务。新的上传或下载开始后会显示在这里。
             </div>
           ) : (
@@ -699,7 +694,9 @@ export function TransferCenterPage({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{task.file.name}</div>
+                          <div className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                            {task.file.name}
+                          </div>
                           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400">
                             <span>{formatFileSize(task.file.size)}</span>
                             <span>{taskStatusLabel(task.status)}</span>
@@ -721,7 +718,9 @@ export function TransferCenterPage({
                     <ArrowDownToLine className="h-3.5 w-3.5" />
                     下载任务
                   </div>
-                  <span className="text-[11px] text-emerald-700 dark:text-emerald-300/90">{activeDownloads.length} 项</span>
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-300/90">
+                    {activeDownloads.length} 项
+                  </span>
                 </div>
                 <div className="max-h-[380px] space-y-2.5 overflow-y-auto pr-1">
                   {activeDownloads.length === 0 ? (
@@ -736,7 +735,9 @@ export function TransferCenterPage({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{task.fileName}</div>
+                          <div className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                            {task.fileName}
+                          </div>
                           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500 dark:text-neutral-400">
                             <span>{formatFileSize(task.size)}</span>
                             <span>{taskStatusLabel(task.status)}</span>
@@ -749,7 +750,7 @@ export function TransferCenterPage({
                           <ActionTextButton
                             tone="warning"
                             onPress={() => onCancelDownload(task.id)}
-                            className="!h-7 !px-2 !py-0 text-[11px]"
+                            className="h-7! px-2! py-0! text-[11px]"
                           >
                             取消
                           </ActionTextButton>
@@ -766,15 +767,12 @@ export function TransferCenterPage({
 
         {hasIssueTasks ? (
           <section className="rounded-3xl border border-orange-200/80 bg-orange-50/80 shadow-[0_18px_42px_-34px_rgba(217,119,6,0.45)] dark:border-orange-500/30 dark:bg-orange-500/8">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-orange-200/80 px-4 py-3 dark:border-orange-500/20 md:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-orange-200/80 px-4 py-3 md:px-5 dark:border-orange-500/20">
               <div className="flex items-center gap-2 text-sm font-medium text-orange-700 dark:text-orange-300">
                 <ShieldAlert className="h-4 w-4" />
                 异常任务
               </div>
-              <ActionTextButton
-                tone="warning"
-                onPress={() => setDangerAction({ type: 'clear-finished-downloads' })}
-              >
+              <ActionTextButton tone="warning" onPress={() => setDangerAction({ type: 'clear-finished-downloads' })}>
                 清理已结束下载
               </ActionTextButton>
             </div>
@@ -786,7 +784,9 @@ export function TransferCenterPage({
                   className="flex items-center justify-between gap-3 px-4 py-3 md:px-5"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{task.file.name}</div>
+                    <div className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {task.file.name}
+                    </div>
                     <div className="mt-1 text-xs text-red-600 dark:text-red-300">{task.error || '上传失败'}</div>
                   </div>
                   <ActionTextButton
@@ -805,7 +805,9 @@ export function TransferCenterPage({
                   className="flex items-center justify-between gap-3 px-4 py-3 md:px-5"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{task.fileName}</div>
+                    <div className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      {task.fileName}
+                    </div>
                     <div className="mt-1 text-xs text-red-600 dark:text-red-300">{task.error || '下载失败'}</div>
                   </div>
                   <ActionTextButton
@@ -822,7 +824,7 @@ export function TransferCenterPage({
         ) : null}
 
         <section className="rounded-3xl border border-neutral-200/80 bg-white/88 shadow-[0_26px_58px_-44px_rgba(15,23,42,0.75)] dark:border-neutral-700/80 dark:bg-neutral-900/76">
-          <div className="border-b border-neutral-200/80 px-4 py-4 dark:border-neutral-700/80 md:px-5">
+          <div className="border-b border-neutral-200/80 px-4 py-4 md:px-5 dark:border-neutral-700/80">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-base font-semibold text-neutral-900 dark:text-neutral-100">历史记录</div>
@@ -835,9 +837,7 @@ export function TransferCenterPage({
                 <ActionStatusPill>
                   {historyFilterLabel(historyFilter)} / {rowTypeFilterLabel(historyRowTypeFilter)}
                 </ActionStatusPill>
-                <ActionStatusPill>
-                  记录 {historyTableRows.length}
-                </ActionStatusPill>
+                <ActionStatusPill>记录 {historyTableRows.length}</ActionStatusPill>
                 {torrentLoading ? (
                   <span className="text-xs text-neutral-500 dark:text-neutral-400">种子任务同步中...</span>
                 ) : null}
@@ -862,7 +862,7 @@ export function TransferCenterPage({
             </div>
 
             {historyAdvancedOpen ? (
-              <div className="mt-3 grid gap-3 rounded-2xl border border-neutral-200/80 bg-white/90 p-3.5 dark:border-neutral-700/80 dark:bg-neutral-900/70 lg:grid-cols-3">
+              <div className="mt-3 grid gap-3 rounded-2xl border border-neutral-200/80 bg-white/90 p-3.5 lg:grid-cols-3 dark:border-neutral-700/80 dark:bg-neutral-900/70">
                 <div className="space-y-2">
                   <div className="text-xs text-neutral-500 dark:text-neutral-400">方向（仅文件记录）</div>
                   <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white p-1 dark:border-neutral-700/80 dark:bg-neutral-900/85">
@@ -940,10 +940,7 @@ export function TransferCenterPage({
                     >
                       清理早于 N 天
                     </ActionTextButton>
-                    <ActionTextButton
-                      tone="danger"
-                      onPress={() => setDangerAction({ type: 'clear-history' })}
-                    >
+                    <ActionTextButton tone="danger" onPress={() => setDangerAction({ type: 'clear-history' })}>
                       清空历史
                     </ActionTextButton>
                   </div>
@@ -973,7 +970,9 @@ export function TransferCenterPage({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{row.name}</div>
+                      <div className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                        {row.name}
+                      </div>
                       <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                           {row.typeLabel}
@@ -981,7 +980,9 @@ export function TransferCenterPage({
                         <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                           {row.subTypeLabel}
                         </span>
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.statusClassName}`}>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.statusClassName}`}
+                        >
                           {row.statusLabel}
                         </span>
                       </div>
@@ -993,7 +994,9 @@ export function TransferCenterPage({
 
                   <div className="mt-3 rounded-xl border border-neutral-200/80 bg-neutral-50/85 p-2.5 dark:border-neutral-700/80 dark:bg-neutral-900/75">
                     <div className="text-[11px] text-neutral-500 dark:text-neutral-400">大小 / 进度</div>
-                    <div className="mt-1 text-xs text-neutral-700 dark:text-neutral-200">{formatFileSize(row.size)}</div>
+                    <div className="mt-1 text-xs text-neutral-700 dark:text-neutral-200">
+                      {formatFileSize(row.size)}
+                    </div>
                     {safeProgress !== null ? (
                       <div className="mt-1.5">
                         <ProgressBar value={safeProgress} size="sm" color="gold" />
@@ -1003,10 +1006,14 @@ export function TransferCenterPage({
 
                   <div className="mt-2.5 rounded-xl border border-neutral-200/80 bg-neutral-50/85 p-2.5 dark:border-neutral-700/80 dark:bg-neutral-900/75">
                     <div className="text-[11px] text-neutral-500 dark:text-neutral-400">清理状态</div>
-                    <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.cleanupClassName}`}>
+                    <span
+                      className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.cleanupClassName}`}
+                    >
                       {row.cleanupLabel}
                     </span>
-                    <div className="mt-1 text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">{row.cleanupDueLabel}</div>
+                    <div className="mt-1 text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">
+                      {row.cleanupDueLabel}
+                    </div>
                   </div>
 
                   <div className="mt-3 flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
@@ -1040,25 +1047,25 @@ export function TransferCenterPage({
                 </colgroup>
                 <thead>
                   <tr>
-                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
+                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold tracking-[0.12em] text-neutral-500 uppercase backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
                       名称
                     </th>
-                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
+                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold tracking-[0.12em] text-neutral-500 uppercase backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
                       来源
                     </th>
-                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
+                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold tracking-[0.12em] text-neutral-500 uppercase backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
                       大小 / 进度
                     </th>
-                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
+                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold tracking-[0.12em] text-neutral-500 uppercase backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
                       状态
                     </th>
-                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
+                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold tracking-[0.12em] text-neutral-500 uppercase backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
                       清理
                     </th>
-                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
+                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold tracking-[0.12em] text-neutral-500 uppercase backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
                       完成时间
                     </th>
-                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-neutral-500 backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
+                    <th className="sticky top-0 z-10 border-b border-neutral-200/80 bg-neutral-100/95 px-4 py-3 text-left text-[11px] font-semibold tracking-[0.12em] text-neutral-500 uppercase backdrop-blur dark:border-neutral-700/80 dark:bg-neutral-900/95 dark:text-neutral-400">
                       操作
                     </th>
                   </tr>
@@ -1086,10 +1093,14 @@ export function TransferCenterPage({
                             </div>
                           ) : null}
                           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.faststartClassName}`}>
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.faststartClassName}`}
+                            >
                               视频加速: {row.faststartLabel}
                             </span>
-                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.previewClassName}`}>
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.previewClassName}`}
+                            >
                               封面: {row.previewLabel}
                             </span>
                           </div>
@@ -1105,7 +1116,9 @@ export function TransferCenterPage({
                           </div>
                         </td>
                         <td className="px-4 py-3.5">
-                          <div className="text-xs text-neutral-600 dark:text-neutral-300">{formatFileSize(row.size)}</div>
+                          <div className="text-xs text-neutral-600 dark:text-neutral-300">
+                            {formatFileSize(row.size)}
+                          </div>
                           {safeProgress !== null ? (
                             <div className="mt-1.5 max-w-[160px]">
                               <ProgressBar value={safeProgress} size="sm" color="gold" />
@@ -1113,13 +1126,17 @@ export function TransferCenterPage({
                           ) : null}
                         </td>
                         <td className="px-4 py-3.5">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.statusClassName}`}>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.statusClassName}`}
+                          >
                             {row.statusLabel}
                           </span>
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="flex flex-col gap-1">
-                            <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.cleanupClassName}`}>
+                            <span
+                              className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${row.cleanupClassName}`}
+                            >
                               {row.cleanupLabel}
                             </span>
                             <span className="max-w-[240px] text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">
@@ -1158,11 +1175,9 @@ export function TransferCenterPage({
             </ScrollShadow>
           </div>
 
-          <div className="border-t border-neutral-200/80 px-4 py-3.5 dark:border-neutral-700/80 md:px-5">
+          <div className="border-t border-neutral-200/80 px-4 py-3.5 md:px-5 dark:border-neutral-700/80">
             {historyRowTypeFilter === 'torrent' ? (
-              <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                当前仅显示种子记录，不使用文件分页。
-              </div>
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">当前仅显示种子记录，不使用文件分页。</div>
             ) : (
               <>
                 <div className="text-xs text-neutral-500 dark:text-neutral-400">

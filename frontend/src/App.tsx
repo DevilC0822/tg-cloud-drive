@@ -1,7 +1,12 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAtom, useSetAtom } from 'jotai';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Checkbox as HeroCheckbox, Label as HeroLabel, ListBox as HeroListBox, Select as HeroSelect } from '@heroui/react';
+import {
+  Checkbox as HeroCheckbox,
+  Label as HeroLabel,
+  ListBox as HeroListBox,
+  Select as HeroSelect,
+} from '@heroui/react';
 import { ArrowDown, ArrowUp, ArrowUpDown, CloudUpload, FileArchive, FileText, Link2 } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { FileBrowser } from '@/components/file/FileBrowser';
@@ -43,10 +48,7 @@ function isGifOrWebpFile(file: FileItem): boolean {
   if (mime === 'image/gif' || mime === 'image/webp') {
     return true;
   }
-  const ext = (file.extension || file.name.split('.').pop() || '')
-    .trim()
-    .toLowerCase()
-    .replace(/^\./, '');
+  const ext = (file.extension || file.name.split('.').pop() || '').trim().toLowerCase().replace(/^\./, '');
   return ext === 'gif' || ext === 'webp';
 }
 
@@ -306,12 +308,7 @@ export default function App() {
           const e = err as ApiError;
           const status = Number.isFinite(e?.status) ? e.status : 0;
           const isRetryable =
-            status === 0 ||
-            status === 429 ||
-            status === 502 ||
-            status === 503 ||
-            status === 504 ||
-            status >= 500;
+            status === 0 || status === 429 || status === 502 || status === 503 || status === 504 || status >= 500;
           if (isRetryable) {
             retryCount += 1;
             if (retryCount >= 3 && !retryNotified) {
@@ -435,14 +432,7 @@ export default function App() {
     } finally {
       setSetupTestLoading(false);
     }
-  }, [
-    pushToast,
-    setupAccessMethod,
-    setupApiHash,
-    setupApiId,
-    setupBotToken,
-    setupStorageChatID,
-  ]);
+  }, [pushToast, setupAccessMethod, setupApiHash, setupApiId, setupBotToken, setupStorageChatID]);
 
   const handleSetupInit = useCallback(async () => {
     const token = setupBotToken.trim();
@@ -631,7 +621,7 @@ export default function App() {
       if (droppedFiles.length === 0) return;
       openUploadModal(droppedFiles);
     },
-    [openUploadModal]
+    [openUploadModal],
   );
 
   // 处理右键菜单
@@ -644,7 +634,7 @@ export default function App() {
         targetFile: file,
       });
     },
-    [setContextMenu]
+    [setContextMenu],
   );
 
   const handleCloseContextMenu = useCallback(() => {
@@ -664,7 +654,7 @@ export default function App() {
         openPreview(file);
       }
     },
-    [openFile, openPreview]
+    [openFile, openPreview],
   );
 
   // 处理重命名
@@ -674,7 +664,7 @@ export default function App() {
       setRenameError('');
       setRenameModal({ visible: true, file });
     },
-    [setRenameModal]
+    [setRenameModal],
   );
 
   const handleConfirmRename = useCallback(async () => {
@@ -701,7 +691,7 @@ export default function App() {
     (file: FileItem) => {
       setDeleteModal({ visible: true, files: [file] });
     },
-    [setDeleteModal]
+    [setDeleteModal],
   );
 
   const handleConfirmDelete = useCallback(async () => {
@@ -722,7 +712,7 @@ export default function App() {
     (by: SortBy) => {
       toggleSort(by);
     },
-    [toggleSort]
+    [toggleSort],
   );
 
   const handleDownload = useCallback(
@@ -737,7 +727,7 @@ export default function App() {
         pushToast({ type: 'error', message: downloadResult.reason });
       }
     },
-    [downloadFile, pushToast, startDownload]
+    [downloadFile, pushToast, startDownload],
   );
 
   const handleRetryDownloadTask = useCallback(
@@ -747,7 +737,7 @@ export default function App() {
         pushToast({ type: 'error', message: result.reason });
       }
     },
-    [pushToast, retryDownload]
+    [pushToast, retryDownload],
   );
 
   const handleClearHistory = useCallback(async () => {
@@ -768,7 +758,7 @@ export default function App() {
       }
       pushToast({ type: 'success', message: `已清理 ${days} 天前的历史记录` });
     },
-    [clearHistoryByDays, pushToast]
+    [clearHistoryByDays, pushToast],
   );
 
   const handleRemoveHistoryItem = useCallback(
@@ -778,7 +768,7 @@ export default function App() {
         pushToast({ type: 'error', message: result.reason });
       }
     },
-    [pushToast, removeHistoryItem]
+    [pushToast, removeHistoryItem],
   );
 
   const closeTorrentSelectionModal = useCallback(() => {
@@ -806,9 +796,7 @@ export default function App() {
         return;
       }
       const task = result.task;
-      const defaultIndexes = (task.files || [])
-        .filter((file) => file.selected)
-        .map((file) => file.fileIndex);
+      const defaultIndexes = (task.files || []).filter((file) => file.selected).map((file) => file.fileIndex);
 
       setTorrentSelectionModal({
         visible: true,
@@ -817,7 +805,7 @@ export default function App() {
         loading: false,
       });
     },
-    [closeTorrentSelectionModal, getTorrentTaskDetail, pushToast]
+    [closeTorrentSelectionModal, getTorrentTaskDetail, pushToast],
   );
 
   const handleToggleTorrentSelectionFile = useCallback((fileIndex: number) => {
@@ -885,7 +873,7 @@ export default function App() {
       }
       pushToast({ type: 'success', message: 'Torrent 任务已删除' });
     },
-    [deleteTorrentTask, pushToast]
+    [deleteTorrentTask, pushToast],
   );
 
   const handleRetryTorrentTask = useCallback(
@@ -906,27 +894,24 @@ export default function App() {
       }
       pushToast({ type: 'success', message: '已加入重试队列，任务将重新下载' });
     },
-    [pushToast, retryTorrentTask]
+    [pushToast, retryTorrentTask],
   );
 
-  const copyToClipboard = useCallback(
-    async (text: string) => {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return;
-      }
-      const input = document.createElement('input');
-      input.value = text;
-      input.autocomplete = 'off';
-      input.style.position = 'fixed';
-      input.style.opacity = '0';
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand('copy');
-      document.body.removeChild(input);
-    },
-    []
-  );
+  const copyToClipboard = useCallback(async (text: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const input = document.createElement('input');
+    input.value = text;
+    input.autocomplete = 'off';
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+  }, []);
 
   const handleShare = useCallback(
     async (file: FileItem) => {
@@ -937,9 +922,7 @@ export default function App() {
 
       try {
         // 始终基于当前站点 origin 组装，避免反代 Host 头缺失端口导致链接不可访问。
-        const shareCode = file.isShared && file.shareCode
-          ? file.shareCode
-          : (await shareItem(file.id)).shareCode;
+        const shareCode = file.isShared && file.shareCode ? file.shareCode : (await shareItem(file.id)).shareCode;
         const shareUrl = `${window.location.origin}/d/${shareCode}`;
 
         await copyToClipboard(shareUrl);
@@ -949,7 +932,7 @@ export default function App() {
         pushToast({ type: 'error', message: e?.message || '分享失败' });
       }
     },
-    [copyToClipboard, pushToast, shareItem]
+    [copyToClipboard, pushToast, shareItem],
   );
 
   const handleUnshare = useCallback(
@@ -963,7 +946,7 @@ export default function App() {
         pushToast({ type: 'error', message: e?.message || '取消分享失败' });
       }
     },
-    [pushToast, unshareItem]
+    [pushToast, unshareItem],
   );
 
   const handleVaultIn = useCallback(
@@ -999,7 +982,7 @@ export default function App() {
         pushToast({ type: 'error', message: e?.message || '移入密码箱失败' });
       }
     },
-    [pushToast, toggleVault]
+    [pushToast, toggleVault],
   );
 
   const handleVaultOut = useCallback(
@@ -1031,7 +1014,7 @@ export default function App() {
         pushToast({ type: 'error', message: e?.message || '移出密码箱失败' });
       }
     },
-    [pushToast, toggleVault]
+    [pushToast, toggleVault],
   );
 
   const handleMove = useCallback((file: FileItem) => {
@@ -1085,12 +1068,7 @@ export default function App() {
     }
     setUploadCreateFolderEnabled(false);
     setUploadCreateFolderName('');
-  }, [
-    uploadTargetMode,
-    uploadTargetModal.files.length,
-    torrentPreview,
-    torrentPreviewSelectedFileIndexes.length,
-  ]);
+  }, [uploadTargetMode, uploadTargetModal.files.length, torrentPreview, torrentPreviewSelectedFileIndexes.length]);
 
   useEffect(() => {
     if (!uploadTargetModal.visible || uploadTargetMode !== 'torrent') {
@@ -1164,25 +1142,17 @@ export default function App() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [
-    previewTorrent,
-    uploadTargetModal.visible,
-    uploadTargetMode,
-    uploadTorrentFile,
-    uploadTorrentURL,
-  ]);
+  }, [previewTorrent, uploadTargetModal.visible, uploadTargetMode, uploadTorrentFile, uploadTorrentURL]);
 
   const uploadTargetFolders = useMemo(
     () =>
-      folders
-        .filter((f) => f.type === 'folder' && !f.trashedAt)
-        .sort((a, b) => a.path.localeCompare(b.path, 'zh-CN')),
-    [folders]
+      folders.filter((f) => f.type === 'folder' && !f.trashedAt).sort((a, b) => a.path.localeCompare(b.path, 'zh-CN')),
+    [folders],
   );
 
   const uploadTargetTotalBytes = useMemo(
     () => uploadTargetModal.files.reduce((sum, file) => sum + file.size, 0),
-    [uploadTargetModal.files]
+    [uploadTargetModal.files],
   );
 
   const handleConfirmUploadTarget = useCallback(() => {
@@ -1192,7 +1162,7 @@ export default function App() {
       const torrentFile = uploadTorrentFile;
       const torrentUrl = torrentFile ? '' : uploadTorrentURL.trim();
       const selectedFileIndexes = Array.from(
-        new Set(torrentPreviewSelectedFileIndexes.filter((idx) => Number.isInteger(idx) && idx >= 0))
+        new Set(torrentPreviewSelectedFileIndexes.filter((idx) => Number.isInteger(idx) && idx >= 0)),
       ).sort((a, b) => a - b);
       if (!torrentUrl && !torrentFile) {
         pushToast({ type: 'error', message: '请填写 Torrent URL 或选择种子文件' });
@@ -1363,7 +1333,7 @@ export default function App() {
         pushToast({ type: 'error', message: e?.message || '还原失败' });
       }
     },
-    [pushToast, restoreFiles]
+    [pushToast, restoreFiles],
   );
 
   const closePermanentDeleteModal = useCallback(() => {
@@ -1418,14 +1388,14 @@ export default function App() {
     (item: BreadcrumbItem) => {
       navigateTo(item);
     },
-    [navigateTo]
+    [navigateTo],
   );
 
   const handlePreviewNavigate = useCallback(
     (file: FileItem) => {
       openPreview(file);
     },
-    [openPreview]
+    [openPreview],
   );
 
   const previewableFiles = allVisibleFiles.filter((f) => f.type !== 'folder');
@@ -1434,7 +1404,7 @@ export default function App() {
   const torrentSourceReady = hasTorrentURL || hasTorrentFile;
   const torrentPreviewSelectedSet = useMemo(
     () => new Set(torrentPreviewSelectedFileIndexes),
-    [torrentPreviewSelectedFileIndexes]
+    [torrentPreviewSelectedFileIndexes],
   );
   const selectedTorrentPreviewFileCount = useMemo(() => {
     if (!torrentPreview) {
@@ -1442,18 +1412,18 @@ export default function App() {
     }
     return torrentPreview.files.reduce(
       (count, file) => (torrentPreviewSelectedSet.has(file.fileIndex) ? count + 1 : count),
-      0
+      0,
     );
   }, [torrentPreview, torrentPreviewSelectedSet]);
   const allTorrentPreviewFilesSelected = Boolean(
     torrentPreview &&
-      torrentPreview.files.length > 0 &&
-      selectedTorrentPreviewFileCount === torrentPreview.files.length
+    torrentPreview.files.length > 0 &&
+    selectedTorrentPreviewFileCount === torrentPreview.files.length,
   );
   const isTorrentPreviewPartiallySelected = Boolean(
     torrentPreview &&
-      selectedTorrentPreviewFileCount > 0 &&
-      selectedTorrentPreviewFileCount < torrentPreview.files.length
+    selectedTorrentPreviewFileCount > 0 &&
+    selectedTorrentPreviewFileCount < torrentPreview.files.length,
   );
   useEffect(() => {
     if (uploadTargetMode !== 'torrent' || !torrentPreview) {
@@ -1483,7 +1453,7 @@ export default function App() {
 
     if (torrentPreviewSortField === 'source') {
       return withType.sort((a, b) =>
-        torrentPreviewSortOrder === 'asc' ? a.fileIndex - b.fileIndex : b.fileIndex - a.fileIndex
+        torrentPreviewSortOrder === 'asc' ? a.fileIndex - b.fileIndex : b.fileIndex - a.fileIndex,
       );
     }
 
@@ -1534,7 +1504,7 @@ export default function App() {
       setTorrentPreviewSortField(field);
       setTorrentPreviewSortOrder('asc');
     },
-    [torrentPreviewSortField]
+    [torrentPreviewSortField],
   );
 
   const renderTorrentPreviewSortIcon = useCallback(
@@ -1547,12 +1517,12 @@ export default function App() {
       }
       return <ArrowDown className="h-3.5 w-3.5 text-[var(--theme-primary-ink)]" />;
     },
-    [torrentPreviewSortField, torrentPreviewSortOrder]
+    [torrentPreviewSortField, torrentPreviewSortOrder],
   );
 
   if (!setupChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-950">
         <div className="text-sm text-neutral-500 dark:text-neutral-400">正在加载...</div>
       </div>
     );
@@ -1560,7 +1530,7 @@ export default function App() {
 
   if (!setupInitialized && !isSetupRoute) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-950">
         <div className="text-sm text-neutral-500 dark:text-neutral-400">正在跳转初始化页面...</div>
       </div>
     );
@@ -1569,7 +1539,7 @@ export default function App() {
   if (isSetupRoute) {
     if (setupInitialized) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+        <div className="flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-950">
           <div className="text-sm text-neutral-500 dark:text-neutral-400">正在跳转...</div>
         </div>
       );
@@ -1601,7 +1571,7 @@ export default function App() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-950">
         <div className="text-sm text-neutral-500 dark:text-neutral-400">正在加载...</div>
       </div>
     );
@@ -1609,11 +1579,11 @@ export default function App() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-4">
-        <div className="w-full max-w-sm rounded-2xl border border-neutral-200/60 dark:border-neutral-800 bg-white/80 dark:bg-neutral-900/60 backdrop-blur p-6 shadow-xl">
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-950">
+        <div className="w-full max-w-sm rounded-2xl border border-neutral-200/60 bg-white/80 p-6 shadow-xl backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/60">
           <div className="mb-6">
             <div className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">TG Cloud Drive</div>
-            <div className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">请输入管理员密码登录</div>
+            <div className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">请输入管理员密码登录</div>
           </div>
 
           <Input
@@ -1638,9 +1608,7 @@ export default function App() {
             </ActionTextButton>
           </div>
 
-          <div className="mt-4 text-xs text-neutral-500 dark:text-neutral-500">
-            提示：分享链接下载不需要登录。
-          </div>
+          <div className="mt-4 text-xs text-neutral-500 dark:text-neutral-500">提示：分享链接下载不需要登录。</div>
 
           <ToastContainer />
         </div>
@@ -1850,9 +1818,7 @@ export default function App() {
               onKeyDown={(e) => e.key === 'Enter' && handleConfirmRename()}
             />
           </div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            重命名后，分享链接和文件内容不会改变。
-          </p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">重命名后，分享链接和文件内容不会改变。</p>
         </div>
       </Modal>
 
@@ -1880,9 +1846,7 @@ export default function App() {
         <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 text-sm text-amber-800 dark:border-amber-800/70 dark:bg-amber-900/20 dark:text-amber-200">
           确定要删除{' '}
           <span className="font-semibold">
-            {deleteModal.files.length === 1
-              ? deleteModal.files[0].name
-              : `${deleteModal.files.length} 个文件`}
+            {deleteModal.files.length === 1 ? deleteModal.files[0].name : `${deleteModal.files.length} 个文件`}
           </span>{' '}
           吗？
         </div>
@@ -1905,20 +1869,16 @@ export default function App() {
             <ActionTextButton
               tone="brand"
               onPress={handleConfirmUploadTarget}
-              isDisabled={
-                uploadTargetMode === 'file'
-                  ? uploadTargetModal.files.length === 0
-                  : torrentCreateDisabled
-              }
+              isDisabled={uploadTargetMode === 'file' ? uploadTargetModal.files.length === 0 : torrentCreateDisabled}
               className="min-w-[124px] justify-center border-transparent bg-[var(--theme-primary)] text-neutral-900 shadow-[0_12px_24px_-18px_rgba(30,41,59,0.55)]"
             >
               {uploadTargetMode === 'torrent' && torrentTaskSubmitting
                 ? '创建中...'
                 : uploadTargetMode === 'torrent' && torrentPreviewLoading
                   ? '解析中...'
-                : uploadTargetMode === 'file'
-                  ? '开始上传'
-                  : '创建任务'}
+                  : uploadTargetMode === 'file'
+                    ? '开始上传'
+                    : '创建任务'}
             </ActionTextButton>
           </>
         }
@@ -1963,7 +1923,7 @@ export default function App() {
             </div>
 
             <div className="mb-4 space-y-2">
-              <label className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400">
+              <label className="text-xs font-medium tracking-[0.12em] text-neutral-500 uppercase dark:text-neutral-400">
                 目标目录
               </label>
               <HeroSelect
@@ -2203,7 +2163,7 @@ export default function App() {
                       <p className="mt-1 truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
                         {torrentPreview.torrentName}
                       </p>
-                      <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-neutral-600 dark:text-neutral-300 sm:grid-cols-3">
+                      <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-neutral-600 sm:grid-cols-3 dark:text-neutral-300">
                         <span>文件数：{sortedTorrentPreviewFiles.length}</span>
                         <span>
                           已选择：{selectedTorrentPreviewFileCount}/{sortedTorrentPreviewFiles.length}
@@ -2377,9 +2337,9 @@ export default function App() {
                 return (
                   <label
                     key={file.fileIndex}
-                    className="flex items-center justify-between gap-3 border-b border-neutral-200/70 px-3 py-2.5 transition-colors hover:bg-neutral-50/80 last:border-b-0 dark:border-neutral-700/70 dark:hover:bg-neutral-800/70"
+                    className="flex items-center justify-between gap-3 border-b border-neutral-200/70 px-3 py-2.5 transition-colors last:border-b-0 hover:bg-neutral-50/80 dark:border-neutral-700/70 dark:hover:bg-neutral-800/70"
                   >
-                    <div className="min-w-0 flex items-center gap-2.5">
+                    <div className="flex min-w-0 items-center gap-2.5">
                       <HeroCheckbox
                         isSelected={checked}
                         onChange={() => handleToggleTorrentSelectionFile(file.fileIndex)}
@@ -2389,7 +2349,7 @@ export default function App() {
                         </HeroCheckbox.Content>
                       </HeroCheckbox>
                     </div>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0">
+                    <span className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">
                       {formatFileSize(file.fileSize)}
                     </span>
                   </label>
@@ -2431,9 +2391,7 @@ export default function App() {
       >
         <div className="rounded-xl border border-red-200 bg-red-50/80 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300">
           确定要永久删除 <span className="font-semibold">{permanentDeleteModal.file?.name}</span> 吗？
-          <p className="mt-1 text-xs text-red-600/90 dark:text-red-300/90">
-            删除后无法恢复，请确认你已完成备份。
-          </p>
+          <p className="mt-1 text-xs text-red-600/90 dark:text-red-300/90">删除后无法恢复，请确认你已完成备份。</p>
         </div>
       </Modal>
 
@@ -2462,9 +2420,13 @@ export default function App() {
         <div className="space-y-3">
           <div className="rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
             <p className="text-xs text-neutral-500 dark:text-neutral-400">目标文件</p>
-            <p className="mt-1 truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">{moveModal.file?.name}</p>
+            <p className="mt-1 truncate text-sm font-medium text-neutral-800 dark:text-neutral-200">
+              {moveModal.file?.name}
+            </p>
           </div>
-          <label className="text-xs font-medium uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400">目标目录</label>
+          <label className="text-xs font-medium tracking-[0.12em] text-neutral-500 uppercase dark:text-neutral-400">
+            目标目录
+          </label>
           <HeroSelect
             aria-label="移动复制目标目录"
             value={moveTargetFolderId}
@@ -2506,42 +2468,52 @@ export default function App() {
           <div className="grid gap-2 text-sm">
             <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
               <span className="text-neutral-500 dark:text-neutral-400">名称</span>
-              <span className="text-neutral-900 dark:text-neutral-100 text-right break-all">{infoFile.name}</span>
+              <span className="text-right break-all text-neutral-900 dark:text-neutral-100">{infoFile.name}</span>
             </div>
             <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
               <span className="text-neutral-500 dark:text-neutral-400">类型</span>
-              <span className="text-neutral-900 dark:text-neutral-100 text-right">{infoFile.type}</span>
+              <span className="text-right text-neutral-900 dark:text-neutral-100">{infoFile.type}</span>
             </div>
             <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
               <span className="text-neutral-500 dark:text-neutral-400">大小</span>
-              <span className="text-neutral-900 dark:text-neutral-100 text-right">
+              <span className="text-right text-neutral-900 dark:text-neutral-100">
                 {infoFile.type === 'folder' ? '-' : formatFileSize(infoFile.size)}
               </span>
             </div>
             <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
               <span className="text-neutral-500 dark:text-neutral-400">路径</span>
-              <span className="text-neutral-900 dark:text-neutral-100 text-right break-all">{infoFile.path}</span>
+              <span className="text-right break-all text-neutral-900 dark:text-neutral-100">{infoFile.path}</span>
             </div>
             <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
               <span className="text-neutral-500 dark:text-neutral-400">创建时间</span>
-              <span className="text-neutral-900 dark:text-neutral-100 text-right">{formatDateTime(infoFile.createdAt)}</span>
+              <span className="text-right text-neutral-900 dark:text-neutral-100">
+                {formatDateTime(infoFile.createdAt)}
+              </span>
             </div>
             <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
               <span className="text-neutral-500 dark:text-neutral-400">更新时间</span>
-              <span className="text-neutral-900 dark:text-neutral-100 text-right">{formatDateTime(infoFile.updatedAt)}</span>
+              <span className="text-right text-neutral-900 dark:text-neutral-100">
+                {formatDateTime(infoFile.updatedAt)}
+              </span>
             </div>
             <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
               <span className="text-neutral-500 dark:text-neutral-400">收藏</span>
-              <span className="text-neutral-900 dark:text-neutral-100 text-right">{infoFile.isFavorite ? '是' : '否'}</span>
+              <span className="text-right text-neutral-900 dark:text-neutral-100">
+                {infoFile.isFavorite ? '是' : '否'}
+              </span>
             </div>
             <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
               <span className="text-neutral-500 dark:text-neutral-400">分享</span>
-              <span className="text-neutral-900 dark:text-neutral-100 text-right">{infoFile.isShared ? '是' : '否'}</span>
+              <span className="text-right text-neutral-900 dark:text-neutral-100">
+                {infoFile.isShared ? '是' : '否'}
+              </span>
             </div>
             {infoFile.trashedAt && (
               <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
                 <span className="text-neutral-500 dark:text-neutral-400">回收站时间</span>
-                <span className="text-neutral-900 dark:text-neutral-100 text-right">{formatDateTime(infoFile.trashedAt)}</span>
+                <span className="text-right text-neutral-900 dark:text-neutral-100">
+                  {formatDateTime(infoFile.trashedAt)}
+                </span>
               </div>
             )}
           </div>

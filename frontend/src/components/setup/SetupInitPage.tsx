@@ -1,4 +1,14 @@
-import { AlertTriangle, Bot, CheckCircle2, CloudOff, Eye, EyeOff, LockKeyhole, ServerCog, ShieldCheck } from 'lucide-react';
+import {
+  AlertTriangle,
+  Bot,
+  CheckCircle2,
+  CloudOff,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  ServerCog,
+  ShieldCheck,
+} from 'lucide-react';
 import { useState, type ComponentType } from 'react';
 import { ActionIconButton, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 import { Input } from '@/components/ui/Input';
@@ -124,19 +134,19 @@ export function SetupInitPage({
   const [showAdminPasswordConfirm, setShowAdminPasswordConfirm] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--color-brand-50)] via-white to-stone-100 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900 px-4 py-8 md:px-6 md:py-12">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--color-brand-50)] via-white to-stone-100 px-4 py-8 md:px-6 md:py-12 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900">
       <div className="mx-auto w-full max-w-4xl">
-        <div className="rounded-3xl border border-[var(--theme-primary-a35)] dark:border-neutral-700 bg-white/92 dark:bg-neutral-900/85 backdrop-blur-xl shadow-[0_24px_48px_-34px_var(--theme-primary-a24)] dark:shadow-black/30 p-6 md:p-8">
+        <div className="rounded-3xl border border-[var(--theme-primary-a35)] bg-white/92 p-6 shadow-[0_24px_48px_-34px_var(--theme-primary-a24)] backdrop-blur-xl md:p-8 dark:border-neutral-700 dark:bg-neutral-900/85 dark:shadow-black/30">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-[var(--theme-primary-a35)] bg-[var(--theme-primary-a12)] px-3 py-1 text-xs text-[var(--theme-primary-ink)]">
                 <Bot className="h-3.5 w-3.5" />
                 初始化步骤 1 / 2
               </div>
-              <h1 className="mt-3 text-2xl md:text-3xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+              <h1 className="mt-3 text-2xl font-semibold tracking-tight text-neutral-900 md:text-3xl dark:text-neutral-100">
                 配置接入方式
               </h1>
-              <p className="mt-2 text-sm md:text-base text-slate-600 dark:text-slate-300">
+              <p className="mt-2 text-sm text-slate-600 md:text-base dark:text-slate-300">
                 选择一种接入模式并填写参数，保存前可以先测试连接。
               </p>
             </div>
@@ -162,16 +172,16 @@ export function SetupInitPage({
                     'h-auto min-h-0 w-full items-stretch justify-start rounded-2xl border p-4 text-left',
                     'flex-col gap-0 whitespace-normal transition-colors duration-200',
                     disabled
-                      ? 'opacity-55 cursor-not-allowed border-neutral-200 bg-neutral-100/70 dark:border-neutral-700 dark:bg-neutral-800/40'
+                      ? 'cursor-not-allowed border-neutral-200 bg-neutral-100/70 opacity-55 dark:border-neutral-700 dark:bg-neutral-800/40'
                       : 'cursor-pointer',
                     !disabled && active && 'border-[var(--theme-primary)] bg-[var(--theme-primary-a08)]',
                     !disabled &&
                       !active &&
-                      'border-neutral-200 bg-white hover:border-[var(--theme-primary-a55)] hover:bg-[var(--theme-primary-a08)] dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600 dark:hover:bg-neutral-800'
+                      'border-neutral-200 bg-white hover:border-[var(--theme-primary-a55)] hover:bg-[var(--theme-primary-a08)] dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-600 dark:hover:bg-neutral-800',
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="inline-flex items-center justify-center rounded-xl bg-[var(--theme-primary-a12)] text-[var(--theme-primary-ink)] p-2">
+                    <span className="inline-flex items-center justify-center rounded-xl bg-[var(--theme-primary-a12)] p-2 text-[var(--theme-primary-ink)]">
                       <Icon className="h-4 w-4" />
                     </span>
                     <span
@@ -180,8 +190,8 @@ export function SetupInitPage({
                         disabled
                           ? 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
                           : active
-                          ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink-strong)]'
-                          : 'bg-[var(--theme-primary-a12)] text-[var(--theme-primary-ink)]'
+                            ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink-strong)]'
+                            : 'bg-[var(--theme-primary-a12)] text-[var(--theme-primary-ink)]',
                       )}
                     >
                       {option.badge}
@@ -194,7 +204,7 @@ export function SetupInitPage({
             })}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4 md:p-5">
+          <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-4 md:p-5 dark:border-neutral-700 dark:bg-neutral-900">
             <div className="flex items-center gap-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
               <LockKeyhole className="h-4 w-4 text-[var(--theme-primary)]" />
               初始化参数
@@ -213,7 +223,7 @@ export function SetupInitPage({
                     label={showBotToken ? '隐藏 Bot Token' : '查看 Bot Token'}
                     aria-label={showBotToken ? '隐藏 Bot Token' : '查看 Bot Token'}
                     onPress={() => setShowBotToken((prev) => !prev)}
-                    className="h-6 w-6 min-h-6 min-w-6"
+                    className="h-6 min-h-6 w-6 min-w-6"
                   />
                 }
               />
@@ -250,7 +260,7 @@ export function SetupInitPage({
                           label={showApiHash ? '隐藏 API Hash' : '查看 API Hash'}
                           aria-label={showApiHash ? '隐藏 API Hash' : '查看 API Hash'}
                           onPress={() => setShowApiHash((prev) => !prev)}
-                          className="h-6 w-6 min-h-6 min-w-6"
+                          className="h-6 min-h-6 w-6 min-w-6"
                         />
                       }
                     />
@@ -271,7 +281,7 @@ export function SetupInitPage({
                       label={showAdminPassword ? '隐藏管理员密码' : '查看管理员密码'}
                       aria-label={showAdminPassword ? '隐藏管理员密码' : '查看管理员密码'}
                       onPress={() => setShowAdminPassword((prev) => !prev)}
-                      className="h-6 w-6 min-h-6 min-w-6"
+                      className="h-6 min-h-6 w-6 min-w-6"
                     />
                   }
                 />
@@ -290,7 +300,7 @@ export function SetupInitPage({
                       label={showAdminPasswordConfirm ? '隐藏确认密码' : '查看确认密码'}
                       aria-label={showAdminPasswordConfirm ? '隐藏确认密码' : '查看确认密码'}
                       onPress={() => setShowAdminPasswordConfirm((prev) => !prev)}
-                      className="h-6 w-6 min-h-6 min-w-6"
+                      className="h-6 min-h-6 w-6 min-w-6"
                     />
                   }
                 />
@@ -299,10 +309,10 @@ export function SetupInitPage({
           </div>
 
           <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <p className="text-xs md:text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 md:text-sm dark:text-neutral-400">
               当前配置仅用于初始化，后续可在“设置”页面修改。
             </p>
-            <div className="w-full md:w-auto flex flex-col md:flex-row gap-2 md:min-w-[360px]">
+            <div className="flex w-full flex-col gap-2 md:w-auto md:min-w-[360px] md:flex-row">
               <ActionTextButton
                 onPress={onTestConnection}
                 isDisabled={loading || testLoading}
@@ -324,7 +334,7 @@ export function SetupInitPage({
           </div>
 
           {testDetails && (
-            <div className="mt-5 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/70 dark:bg-neutral-800/40 p-4">
+            <div className="mt-5 rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 dark:border-neutral-700 dark:bg-neutral-800/40">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   {testDetails.overallOk ? (
@@ -345,10 +355,16 @@ export function SetupInitPage({
               )}
 
               <div className="mt-4 grid gap-2 text-xs">
-                <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2">
+                <div className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-neutral-600 dark:text-neutral-300">Bot Token 校验</span>
-                    <span className={cn(testDetails.bot.ok ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400')}>
+                    <span
+                      className={cn(
+                        testDetails.bot.ok
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-orange-600 dark:text-orange-400',
+                      )}
+                    >
                       {testDetails.bot.ok ? '通过' : '失败'}
                     </span>
                   </div>
@@ -359,10 +375,16 @@ export function SetupInitPage({
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2">
+                <div className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-neutral-600 dark:text-neutral-300">Chat ID 校验</span>
-                    <span className={cn(testDetails.chat.ok ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400')}>
+                    <span
+                      className={cn(
+                        testDetails.chat.ok
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-orange-600 dark:text-orange-400',
+                      )}
+                    >
                       {testDetails.chat.ok ? '通过' : '失败'}
                     </span>
                   </div>
@@ -373,10 +395,16 @@ export function SetupInitPage({
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-2">
+                <div className="rounded-xl border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-neutral-600 dark:text-neutral-300">管理员权限校验</span>
-                    <span className={cn(testDetails.admin.ok ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400')}>
+                    <span
+                      className={cn(
+                        testDetails.admin.ok
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-orange-600 dark:text-orange-400',
+                      )}
+                    >
                       {testDetails.admin.ok ? '通过' : '失败'}
                     </span>
                   </div>

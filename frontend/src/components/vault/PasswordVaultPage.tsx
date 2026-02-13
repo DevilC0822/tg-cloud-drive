@@ -101,7 +101,7 @@ export function PasswordVaultPage({ children, onUnlocked, onLocked }: PasswordVa
   if (!status.enabled) {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-8 md:px-6">
-        <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] dark:border-neutral-700/80 dark:bg-neutral-900/70 md:p-8">
+        <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] md:p-8 dark:border-neutral-700/80 dark:bg-neutral-900/70">
           <div className="flex items-start gap-3">
             <KeyRound className="mt-0.5 h-5 w-5 text-[var(--theme-primary)]" />
             <div>
@@ -119,7 +119,7 @@ export function PasswordVaultPage({ children, onUnlocked, onLocked }: PasswordVa
   if (!status.unlocked) {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-8 md:px-6">
-        <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] dark:border-neutral-700/80 dark:bg-neutral-900/70 md:p-8">
+        <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] md:p-8 dark:border-neutral-700/80 dark:bg-neutral-900/70">
           <div className="flex items-start gap-3">
             <Lock className="mt-0.5 h-5 w-5 text-[var(--theme-primary)]" />
             <div className="min-w-0">
@@ -160,14 +160,14 @@ export function PasswordVaultPage({ children, onUnlocked, onLocked }: PasswordVa
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full flex-col">
       <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6 md:py-8">
-        <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] dark:border-neutral-700/80 dark:bg-neutral-900/70 md:p-8">
+        <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] md:p-8 dark:border-neutral-700/80 dark:bg-neutral-900/70">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-[var(--theme-primary)]" />
-                <h1 className="text-xl md:text-2xl font-semibold text-neutral-900 dark:text-neutral-100">密码箱</h1>
+                <h1 className="text-xl font-semibold text-neutral-900 md:text-2xl dark:text-neutral-100">密码箱</h1>
               </div>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
                 当前为已解锁状态，仅展示已移入密码箱的文件。

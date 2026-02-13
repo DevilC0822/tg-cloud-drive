@@ -14,8 +14,10 @@ type ActionDensity = 'compact' | 'cozy';
 
 type HeroButtonProps = ComponentProps<typeof HeroButton>;
 
-export interface ActionIconButtonProps
-  extends Omit<HeroButtonProps, 'children' | 'onPress' | 'isIconOnly' | 'size' | 'variant' | 'className'> {
+export interface ActionIconButtonProps extends Omit<
+  HeroButtonProps,
+  'children' | 'onPress' | 'isIconOnly' | 'size' | 'variant' | 'className'
+> {
   icon: ReactNode;
   label: string;
   tone?: ActionTone;
@@ -46,12 +48,12 @@ export function ActionIconButton({
       'dark:border-neutral-700/80 dark:bg-neutral-900/40 dark:text-neutral-300',
       'data-[hovered=true]:border-neutral-300/80 data-[hovered=true]:bg-neutral-100/85',
       'dark:data-[hovered=true]:border-neutral-600/80 dark:data-[hovered=true]:bg-neutral-800/85',
-      'data-[pressed=true]:bg-neutral-200/85 dark:data-[pressed=true]:bg-neutral-700/85'
+      'data-[pressed=true]:bg-neutral-200/85 dark:data-[pressed=true]:bg-neutral-700/85',
     ),
     dark: cn(
       'border border-white/15 text-white/90',
       'bg-white/8 data-[hovered=true]:bg-white/14',
-      'data-[pressed=true]:bg-white/20'
+      'data-[pressed=true]:bg-white/20',
     ),
   };
 
@@ -76,7 +78,7 @@ export function ActionIconButton({
         densityClassName[density],
         surfaceClassName[surface],
         toneClassName[tone],
-        className
+        className,
       )}
       {...props}
     >
@@ -85,8 +87,7 @@ export function ActionIconButton({
   );
 }
 
-export interface ActionTextButtonProps
-  extends Omit<HeroButtonProps, 'onPress' | 'size' | 'variant' | 'className'> {
+export interface ActionTextButtonProps extends Omit<HeroButtonProps, 'onPress' | 'size' | 'variant' | 'className'> {
   children: ReactNode;
   tone?: ActionTone;
   density?: ActionDensity;
@@ -124,8 +125,7 @@ export function ActionTextButton({
     },
     brand: {
       idle: 'text-[var(--theme-primary-ink)]',
-      active:
-        'border-[var(--theme-primary)] bg-[var(--theme-primary)] text-neutral-900 dark:text-neutral-900',
+      active: 'border-[var(--theme-primary)] bg-[var(--theme-primary)] text-neutral-900 dark:text-neutral-900',
     },
     danger: {
       idle: 'text-red-500 dark:text-red-400',
@@ -156,7 +156,7 @@ export function ActionTextButton({
         densityClassName[density],
         baseClassName,
         stateClassName,
-        className
+        className,
       )}
       {...props}
     >
@@ -187,7 +187,7 @@ export function ActionStatusPill({ children, tone = 'neutral', className }: Acti
       className={cn(
         'inline-flex items-center rounded-full border border-transparent px-2.5 py-1 text-[11px] font-medium',
         toneClassName[tone],
-        className
+        className,
       )}
     >
       {children}

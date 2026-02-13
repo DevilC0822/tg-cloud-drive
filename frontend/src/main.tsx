@@ -28,8 +28,7 @@ function applyInitialTheme() {
   const root = document.documentElement;
   const storedTheme = parseStoredTheme(window.localStorage.getItem('tg-theme'));
   const isDark =
-    storedTheme === 'dark' ||
-    (storedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    storedTheme === 'dark' || (storedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   root.classList.toggle('dark', isDark);
   root.style.colorScheme = isDark ? 'dark' : 'light';
@@ -42,5 +41,5 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <App />
     </BrowserRouter>
-  </StrictMode>
+  </StrictMode>,
 );

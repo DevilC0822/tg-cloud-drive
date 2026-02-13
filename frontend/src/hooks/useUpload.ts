@@ -73,14 +73,22 @@ async function getUploadSession(sessionId: string): Promise<UploadSessionDTO> {
   return res.session;
 }
 
-async function uploadSessionChunk(sessionId: string, chunkIndex: number, chunk: Blob, fileName: string): Promise<UploadSessionChunkResult> {
+async function uploadSessionChunk(
+  sessionId: string,
+  chunkIndex: number,
+  chunk: Blob,
+  fileName: string,
+): Promise<UploadSessionChunkResult> {
   const form = new FormData();
   form.append('chunk', chunk, `${fileName}.part${String(chunkIndex).padStart(5, '0')}`);
 
-  const res = await apiFetchJson<{ session: UploadSessionDTO; uploadProcess?: UploadProcessDTO | null }>(`/api/uploads/${sessionId}/chunks/${chunkIndex}`, {
-    method: 'POST',
-    body: form,
-  });
+  const res = await apiFetchJson<{ session: UploadSessionDTO; uploadProcess?: UploadProcessDTO | null }>(
+    `/api/uploads/${sessionId}/chunks/${chunkIndex}`,
+    {
+      method: 'POST',
+      body: form,
+    },
+  );
   return {
     ...res.session,
     uploadProcess: normalizeUploadProcess(res.uploadProcess),
@@ -121,7 +129,7 @@ export function useUpload(options?: UploadHookOptions) {
       setUploadTasks((prev) => [...prev, task]);
       return task;
     },
-    [setUploadTasks]
+    [setUploadTasks],
   );
 
   const updateTask = useCallback(
@@ -149,17 +157,17 @@ export function useUpload(options?: UploadHookOptions) {
           }
 
           return next;
-        })
+        }),
       );
     },
-    [setUploadTasks]
+    [setUploadTasks],
   );
 
   const removeTask = useCallback(
     (taskId: string) => {
       setUploadTasks((prev) => prev.filter((task) => task.id !== taskId));
     },
-    [setUploadTasks]
+    [setUploadTasks],
   );
 
   const clearCompletedTasks = useCallback(() => {
@@ -241,7 +249,7 @@ export function useUpload(options?: UploadHookOptions) {
         return null;
       }
     },
-    [options, updateTask]
+    [options, updateTask],
   );
 
   const uploadFile = useCallback(
@@ -251,7 +259,7 @@ export function useUpload(options?: UploadHookOptions) {
       // 上传统一走会话分片路径，接入模式差异由后端在 complete 阶段处理。
       return runResumableUpload(task.id, file, resolvedParentId ?? null);
     },
-    [addUploadTask, currentFolderId, runResumableUpload]
+    [addUploadTask, currentFolderId, runResumableUpload],
   );
 
   const retryTask = useCallback(
@@ -259,14 +267,9 @@ export function useUpload(options?: UploadHookOptions) {
       const task = uploadTasks.find((it) => it.id === taskId);
       if (!task) return null;
 
-      return runResumableUpload(
-        task.id,
-        task.file,
-        task.targetParentId ?? null,
-        task.uploadSessionId
-      );
+      return runResumableUpload(task.id, task.file, task.targetParentId ?? null, task.uploadSessionId);
     },
-    [runResumableUpload, uploadTasks]
+    [runResumableUpload, uploadTasks],
   );
 
   const uploadFiles = useCallback(
@@ -294,7 +297,7 @@ export function useUpload(options?: UploadHookOptions) {
       }
       return results;
     },
-    [uploadConcurrency, uploadFile]
+    [uploadConcurrency, uploadFile],
   );
 
   // 拖拽事件处理
@@ -304,7 +307,7 @@ export function useUpload(options?: UploadHookOptions) {
       e.stopPropagation();
       setIsDragActive(true);
     },
-    [setIsDragActive]
+    [setIsDragActive],
   );
 
   const handleDragLeave = useCallback(
@@ -313,7 +316,7 @@ export function useUpload(options?: UploadHookOptions) {
       e.stopPropagation();
       setIsDragActive(false);
     },
-    [setIsDragActive]
+    [setIsDragActive],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -332,7 +335,7 @@ export function useUpload(options?: UploadHookOptions) {
         uploadFiles(files, parentId);
       }
     },
-    [setIsDragActive, uploadFiles]
+    [setIsDragActive, uploadFiles],
   );
 
   return {

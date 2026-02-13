@@ -16,10 +16,7 @@ import {
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { activeNavAtom, mobileSidebarOpenAtom, sidebarOpenAtom } from '@/stores/uiAtoms';
-import {
-  ActionIconButton,
-  ActionTextButton,
-} from '@/components/ui/HeroActionPrimitives';
+import { ActionIconButton, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 
 function cn(...inputs: (string | undefined | null | boolean)[]) {
   return twMerge(clsx(inputs));
@@ -91,33 +88,35 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
         'motion-reduce:transition-none',
         'active:scale-[0.99]',
         isActive
-          ? 'border border-[var(--theme-primary-a35)] bg-[linear-gradient(132deg,var(--theme-primary-a24),var(--theme-primary-a08))] text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800/86 dark:text-neutral-100 shadow-[0_14px_28px_-20px_rgba(30,41,59,0.45)]'
-          : 'border border-transparent text-neutral-600 dark:text-neutral-300 hover:border-neutral-200/85 dark:hover:border-neutral-700/85 hover:bg-white/70 dark:hover:bg-neutral-800/74 hover:text-neutral-900 dark:hover:text-neutral-100'
+          ? 'border border-[var(--theme-primary-a35)] bg-[linear-gradient(132deg,var(--theme-primary-a24),var(--theme-primary-a08))] text-neutral-900 shadow-[0_14px_28px_-20px_rgba(30,41,59,0.45)] dark:border-neutral-700 dark:bg-neutral-800/86 dark:text-neutral-100'
+          : 'border border-transparent text-neutral-600 hover:border-neutral-200/85 hover:bg-white/70 hover:text-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-700/85 dark:hover:bg-neutral-800/74 dark:hover:text-neutral-100',
       )}
     >
       {pulseToken !== null ? (
         <span
           key={pulseToken}
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-2xl animate-navActivePulse motion-reduce:animate-none z-0"
+          className="animate-navActivePulse pointer-events-none absolute inset-0 z-0 rounded-2xl motion-reduce:animate-none"
         />
       ) : null}
       <span
         aria-hidden="true"
         className={cn(
           'absolute inset-x-3 top-0 h-px transition-colors duration-300',
-          isActive ? 'bg-[var(--theme-primary-a55)]' : 'bg-transparent group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700'
+          isActive
+            ? 'bg-[var(--theme-primary-a55)]'
+            : 'bg-transparent group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700',
         )}
       />
       <span
         className={cn(
-          'absolute left-1.5 top-1/2 h-7 w-1 -translate-y-1/2 rounded-full origin-center',
+          'absolute top-1/2 left-1.5 h-7 w-1 origin-center -translate-y-1/2 rounded-full',
           'transition-[opacity,transform,background-color] duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
           'motion-reduce:transition-none',
           'z-10',
           isActive
-            ? 'bg-[var(--theme-primary)] opacity-100 scale-y-100'
-            : 'bg-neutral-300 dark:bg-neutral-600 opacity-0 scale-y-60 group-hover:opacity-40 group-hover:scale-y-80'
+            ? 'scale-y-100 bg-[var(--theme-primary)] opacity-100'
+            : 'scale-y-60 bg-neutral-300 opacity-0 group-hover:scale-y-80 group-hover:opacity-40 dark:bg-neutral-600',
         )}
       />
       <span
@@ -126,7 +125,7 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
           'relative z-10',
           'transition-transform duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
           'motion-reduce:transition-none',
-          isActive ? 'translate-x-0.5' : 'translate-x-0 group-hover:translate-x-0.5'
+          isActive ? 'translate-x-0.5' : 'translate-x-0 group-hover:translate-x-0.5',
         )}
       >
         <span
@@ -135,8 +134,8 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
             'transition-[background-color,transform] duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
             'motion-reduce:transition-none',
             isActive
-              ? 'border-[var(--theme-primary-a35)] bg-[var(--theme-primary-a20)] scale-100'
-              : 'border-neutral-200/85 bg-neutral-100 dark:border-neutral-700/80 dark:bg-neutral-800 scale-95 group-hover:scale-100'
+              ? 'scale-100 border-[var(--theme-primary-a35)] bg-[var(--theme-primary-a20)]'
+              : 'scale-95 border-neutral-200/85 bg-neutral-100 group-hover:scale-100 dark:border-neutral-700/80 dark:bg-neutral-800',
           )}
         >
           <Icon
@@ -146,17 +145,17 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
               'motion-reduce:transition-none',
               isActive
                 ? 'text-[var(--theme-primary-ink)]'
-                : 'text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-200'
+                : 'text-neutral-500 group-hover:text-neutral-700 dark:text-neutral-400 dark:group-hover:text-neutral-200',
             )}
           />
         </span>
         <span className="min-w-0">
           <span
             className={cn(
-              'block truncate text-sm font-semibold leading-tight',
+              'block truncate text-sm leading-tight font-semibold',
               'transition-colors duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
               'motion-reduce:transition-none',
-              isActive ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-700 dark:text-neutral-200'
+              isActive ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-700 dark:text-neutral-200',
             )}
           >
             {item.label}
@@ -166,7 +165,7 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
               'mt-0.5 block truncate text-xs leading-tight',
               'transition-colors duration-[560ms] ease-[cubic-bezier(0.22,1,0.36,1)]',
               'motion-reduce:transition-none',
-              isActive ? 'text-neutral-700/90 dark:text-neutral-300/90' : 'text-neutral-400 dark:text-neutral-500'
+              isActive ? 'text-neutral-700/90 dark:text-neutral-300/90' : 'text-neutral-400 dark:text-neutral-500',
             )}
           >
             {item.subtitle}
@@ -176,8 +175,8 @@ function NavButton({ item, activeNav, pulseToken, onClick }: NavButtonProps) {
           className={cn(
             'ml-auto h-3.5 w-3.5 shrink-0 transition-all duration-300',
             isActive
-              ? 'opacity-100 text-[var(--theme-primary-ink)]'
-              : 'opacity-0 -translate-x-1 text-neutral-400 group-hover:translate-x-0 group-hover:opacity-90 dark:text-neutral-500'
+              ? 'text-[var(--theme-primary-ink)] opacity-100'
+              : '-translate-x-1 text-neutral-400 opacity-0 group-hover:translate-x-0 group-hover:opacity-90 dark:text-neutral-500',
           )}
         />
       </span>
@@ -224,11 +223,11 @@ export function Sidebar() {
         <div className="relative overflow-hidden rounded-2xl border border-[var(--theme-primary-a24)] bg-[linear-gradient(138deg,var(--theme-primary-a24),var(--theme-primary-a08))] px-3 py-3 shadow-[0_12px_28px_-20px_rgba(30,41,59,0.42)]">
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--theme-primary-a24)] blur-xl"
+            className="pointer-events-none absolute -top-8 -right-8 h-20 w-20 rounded-full bg-[var(--theme-primary-a24)] blur-xl"
           />
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-white/30 dark:bg-neutral-800/30 blur-2xl"
+            className="pointer-events-none absolute -bottom-10 -left-10 h-24 w-24 rounded-full bg-white/30 blur-2xl dark:bg-neutral-800/30"
           />
 
           <div className="relative flex items-center gap-3">
@@ -239,9 +238,7 @@ export function Sidebar() {
               <h1 className="truncate text-sm font-semibold tracking-[0.02em] text-neutral-900 dark:text-neutral-100">
                 Telegram 云盘
               </h1>
-              <p className="truncate text-[11px] text-neutral-600 dark:text-neutral-300">
-                TG Cloud Drive
-              </p>
+              <p className="truncate text-[11px] text-neutral-600 dark:text-neutral-300">TG Cloud Drive</p>
             </div>
           </div>
         </div>
@@ -254,7 +251,7 @@ export function Sidebar() {
         <div className="space-y-4">
           {navSections.map((section) => (
             <section key={section.id} aria-label={section.label}>
-              <h2 className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500/90 dark:text-neutral-400/90">
+              <h2 className="mb-2 px-3 text-[11px] font-semibold tracking-[0.14em] text-neutral-500/90 uppercase dark:text-neutral-400/90">
                 {section.label}
               </h2>
               <div className="space-y-1">
@@ -280,11 +277,11 @@ export function Sidebar() {
       {/* 桌面端侧边栏 */}
       <aside
         className={cn(
-          'hidden lg:flex flex-col h-screen',
+          'hidden h-screen flex-col lg:flex',
           'w-64 flex-shrink-0',
           'glass-sidebar',
           'transition-all duration-300',
-          !sidebarOpen && 'lg:w-0 lg:opacity-0 lg:overflow-hidden'
+          !sidebarOpen && 'lg:w-0 lg:overflow-hidden lg:opacity-0',
         )}
       >
         {sidebarContent}
@@ -293,7 +290,7 @@ export function Sidebar() {
       {/* 移动端侧边栏遮罩 */}
       {mobileSidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-neutral-950/50 backdrop-blur-sm z-40"
+          className="fixed inset-0 z-40 bg-neutral-950/50 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileSidebarOpen(false)}
         />
       )}
@@ -301,20 +298,20 @@ export function Sidebar() {
       {/* 移动端侧边栏 */}
       <aside
         className={cn(
-          'lg:hidden fixed inset-y-0 left-0 z-50',
-          'w-72 flex flex-col',
+          'fixed inset-y-0 left-0 z-50 lg:hidden',
+          'flex w-72 flex-col',
           'glass-sidebar',
           'shadow-2xl',
           'transition-transform duration-300 ease-out',
-          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
         {/* 关闭按钮 */}
         <ActionIconButton
-          icon={<X className="w-5 h-5" />}
+          icon={<X className="h-5 w-5" />}
           label="关闭侧栏"
           onPress={() => setMobileSidebarOpen(false)}
-          className="absolute right-4 top-4 border border-neutral-200/75 bg-white/62 dark:border-neutral-700/80 dark:bg-neutral-900/72"
+          className="absolute top-4 right-4 border border-neutral-200/75 bg-white/62 dark:border-neutral-700/80 dark:bg-neutral-900/72"
         />
         {sidebarContent}
       </aside>

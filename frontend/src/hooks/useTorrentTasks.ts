@@ -113,9 +113,12 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
       return;
     }
 
-    const timer = window.setInterval(() => {
-      void loadTasks();
-    }, Math.max(2000, pollIntervalMs));
+    const timer = window.setInterval(
+      () => {
+        void loadTasks();
+      },
+      Math.max(2000, pollIntervalMs),
+    );
     return () => {
       window.clearInterval(timer);
     };
@@ -125,7 +128,7 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
     const torrentUrl = input.torrentUrl?.trim() || '';
     const torrentFile = input.torrentFile || null;
     const selectedFileIndexes = Array.from(
-      new Set((input.selectedFileIndexes || []).filter((idx) => Number.isInteger(idx) && idx >= 0))
+      new Set((input.selectedFileIndexes || []).filter((idx) => Number.isInteger(idx) && idx >= 0)),
     ).sort((a, b) => a - b);
     if (!torrentUrl && !torrentFile) {
       return { ok: false as const, reason: '请填写 Torrent URL 或选择种子文件' };

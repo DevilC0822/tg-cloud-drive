@@ -9,13 +9,7 @@ export interface FileGridProps {
   onContextMenu: (e: React.MouseEvent, file: FileItem) => void;
 }
 
-export function FileGrid({
-  files,
-  selectedIds,
-  onSelect,
-  onOpen,
-  onContextMenu,
-}: FileGridProps) {
+export function FileGrid({ files, selectedIds, onSelect, onOpen, onContextMenu }: FileGridProps) {
   if (files.length === 0) {
     return null;
   }

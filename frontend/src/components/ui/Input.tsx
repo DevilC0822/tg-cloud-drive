@@ -18,16 +18,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const autoId = useId();
     const inputId = id || autoId;
     const resolvedType = type || 'text';
-    const resolvedAutoComplete =
-      autoComplete || (resolvedType === 'password' ? 'new-password' : 'off');
+    const resolvedAutoComplete = autoComplete || (resolvedType === 'password' ? 'new-password' : 'off');
 
     return (
       <div className="w-full">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-200"
-          >
+          <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-200">
             {label}
           </label>
         )}
@@ -44,17 +40,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               'text-neutral-900 dark:text-neutral-100',
               'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
               'shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] transition-[border-color,box-shadow,background-color] duration-200',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-0',
+              'focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:outline-none',
               rightIcon && 'pr-10',
               error
-                ? 'border-red-300 dark:border-red-700 focus-visible:ring-red-500 focus-visible:border-red-500'
-                : 'border-neutral-200 dark:border-neutral-700 focus-visible:ring-[var(--theme-primary)] focus-visible:border-[var(--theme-primary)]',
-              className
+                ? 'border-red-300 focus-visible:border-red-500 focus-visible:ring-red-500 dark:border-red-700'
+                : 'border-neutral-200 focus-visible:border-[var(--theme-primary)] focus-visible:ring-[var(--theme-primary)] dark:border-neutral-700',
+              className,
             )}
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
+            <div className="absolute top-1/2 right-3 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
               {rightIcon}
             </div>
           )}
@@ -62,7 +58,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {error && <p className="mt-1.5 text-sm text-red-500">{error}</p>}
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = 'Input';

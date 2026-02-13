@@ -86,19 +86,15 @@ export function FileBrowser({
   return (
     <div className="flex h-full flex-col rounded-3xl border border-neutral-200/85 bg-[linear-gradient(165deg,rgba(255,255,255,0.6),rgba(246,240,232,0.82))] shadow-[0_28px_60px_-44px_rgba(62,47,34,0.65)] dark:border-neutral-700/80 dark:bg-[linear-gradient(165deg,rgba(39,31,27,0.74),rgba(22,18,16,0.8))]">
       {/* 面包屑导航 */}
-      <div className="border-b border-neutral-200/75 px-4 py-3 dark:border-neutral-700/70 lg:px-6">
+      <div className="border-b border-neutral-200/75 px-4 py-3 lg:px-6 dark:border-neutral-700/70">
         <Breadcrumb items={breadcrumbs} onNavigate={onNavigate} />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200/75 bg-white/40 px-4 py-2.5 dark:border-neutral-700/70 dark:bg-neutral-900/42 lg:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200/75 bg-white/40 px-4 py-2.5 lg:px-6 dark:border-neutral-700/70 dark:bg-neutral-900/42">
         <div className="flex flex-wrap items-center gap-1.5">
-          <ActionStatusPill tone={selectedCount > 0 ? 'brand' : 'neutral'}>
-            已选 {selectedCount}
-          </ActionStatusPill>
+          <ActionStatusPill tone={selectedCount > 0 ? 'brand' : 'neutral'}>已选 {selectedCount}</ActionStatusPill>
           <ActionStatusPill>共 {files.length} 项</ActionStatusPill>
-          <ActionStatusPill tone="warning">
-            {sortConfig.order === 'asc' ? '升序' : '降序'}
-          </ActionStatusPill>
+          <ActionStatusPill tone="warning">{sortConfig.order === 'asc' ? '升序' : '降序'}</ActionStatusPill>
         </div>
         <div className="flex items-center gap-1">
           <ActionIconButton
@@ -128,11 +124,9 @@ export function FileBrowser({
           /* 空状态 */
           <div className="flex h-full flex-col items-center justify-center px-6 py-20 text-center">
             <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-neutral-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.52)] dark:bg-neutral-800">
-              <FolderOpen className="w-10 h-10 text-[var(--theme-primary-muted)]" />
+              <FolderOpen className="h-10 w-10 text-[var(--theme-primary-muted)]" />
             </div>
-            <h3 className="mb-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-              当前目录暂无文件
-            </h3>
+            <h3 className="mb-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">当前目录暂无文件</h3>
             <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
               你可以拖拽文件到此处，或点击左侧“上传文件”开始。
             </p>
@@ -161,7 +155,7 @@ export function FileBrowser({
 
       {/* 分页 */}
       {pagination && pagination.totalCount > 0 && pagination.totalPages > 1 && (
-        <div className="border-t border-neutral-200/75 bg-white/42 px-4 py-3 dark:border-neutral-700/70 dark:bg-neutral-900/34 lg:px-6">
+        <div className="border-t border-neutral-200/75 bg-white/42 px-4 py-3 lg:px-6 dark:border-neutral-700/70 dark:bg-neutral-900/34">
           <Pagination
             page={pagination.page}
             pageSize={pagination.pageSize}

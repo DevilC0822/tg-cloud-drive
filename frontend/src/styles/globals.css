@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600;700&display=swap');
-@import "tailwindcss";
-@import "@heroui/styles";
+@import 'tailwindcss';
+@import '@heroui/styles';
 
 /* 深色模式使用 class 驱动（配合 html.dark），便于在应用内切换主题 */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* 告诉 Tailwind 扫描源文件 */
-@source "../**/*.{js,ts,jsx,tsx}";
+@source '../**/*.{js,ts,jsx,tsx}';
 
 /* 自定义主题 - 使用 hex 颜色覆盖 oklch */
 @theme {
@@ -92,7 +92,15 @@
   }
 
   html {
-    font-family: 'Manrope', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-family:
+      'Manrope',
+      'Noto Sans SC',
+      'PingFang SC',
+      'Microsoft YaHei',
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -103,8 +111,17 @@
     background-color: #f6f8fb;
     background-image:
       radial-gradient(circle at 14% 6%, var(--theme-primary-a20), transparent 28%),
-      radial-gradient(circle at 84% 8%, color-mix(in srgb, var(--theme-primary-soft) 28%, transparent), transparent 34%),
-      linear-gradient(142deg, rgba(255, 255, 255, 0.66) 0%, rgba(242, 246, 252, 0.94) 56%, rgba(233, 239, 247, 0.96) 100%);
+      radial-gradient(
+        circle at 84% 8%,
+        color-mix(in srgb, var(--theme-primary-soft) 28%, transparent),
+        transparent 34%
+      ),
+      linear-gradient(
+        142deg,
+        rgba(255, 255, 255, 0.66) 0%,
+        rgba(242, 246, 252, 0.94) 56%,
+        rgba(233, 239, 247, 0.96) 100%
+      );
     color: #1f2937;
     min-height: 100vh;
     line-height: 1.5;
@@ -148,7 +165,11 @@
         transparent 1px,
         transparent 4px
       ),
-      radial-gradient(circle at 78% 22%, color-mix(in srgb, var(--theme-primary-soft) 13%, transparent), transparent 32%);
+      radial-gradient(
+        circle at 78% 22%,
+        color-mix(in srgb, var(--theme-primary-soft) 13%, transparent),
+        transparent 32%
+      );
     mix-blend-mode: screen;
   }
 
@@ -214,24 +235,20 @@
   /* 玻璃态效果 */
   .glass {
     background:
-      linear-gradient(165deg, rgba(255, 255, 255, 0.62) 0%, rgba(244, 248, 252, 0.72) 100%),
-      rgba(242, 246, 251, 0.66);
+      linear-gradient(165deg, rgba(255, 255, 255, 0.62) 0%, rgba(244, 248, 252, 0.72) 100%), rgba(242, 246, 251, 0.66);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid rgba(148, 163, 184, 0.3);
   }
 
   .dark .glass {
-    background:
-      linear-gradient(165deg, rgba(30, 41, 59, 0.72) 0%, rgba(15, 23, 42, 0.84) 100%),
-      rgba(15, 23, 42, 0.72);
+    background: linear-gradient(165deg, rgba(30, 41, 59, 0.72) 0%, rgba(15, 23, 42, 0.84) 100%), rgba(15, 23, 42, 0.72);
     border-color: rgba(100, 116, 139, 0.48);
   }
 
   .glass-card {
     background:
-      linear-gradient(160deg, rgba(255, 255, 255, 0.68) 0%, rgba(243, 248, 252, 0.84) 100%),
-      rgba(247, 250, 253, 0.9);
+      linear-gradient(160deg, rgba(255, 255, 255, 0.68) 0%, rgba(243, 248, 252, 0.84) 100%), rgba(247, 250, 253, 0.9);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(148, 163, 184, 0.28);
@@ -242,9 +259,7 @@
   }
 
   .dark .glass-card {
-    background:
-      linear-gradient(160deg, rgba(30, 41, 59, 0.72) 0%, rgba(15, 23, 42, 0.84) 100%),
-      rgba(15, 23, 42, 0.76);
+    background: linear-gradient(160deg, rgba(30, 41, 59, 0.72) 0%, rgba(15, 23, 42, 0.84) 100%), rgba(15, 23, 42, 0.76);
     border-color: rgba(100, 116, 139, 0.44);
     box-shadow:
       0 22px 56px -36px rgba(4, 2, 1, 0.86),
@@ -253,33 +268,27 @@
 
   .glass-sidebar {
     background:
-      linear-gradient(170deg, rgba(250, 252, 255, 0.92) 0%, rgba(240, 246, 252, 0.9) 100%),
-      rgba(245, 249, 253, 0.9);
+      linear-gradient(170deg, rgba(250, 252, 255, 0.92) 0%, rgba(240, 246, 252, 0.9) 100%), rgba(245, 249, 253, 0.9);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-right: 1px solid rgba(148, 163, 184, 0.32);
   }
 
   .dark .glass-sidebar {
-    background:
-      linear-gradient(170deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.92) 100%),
-      rgba(15, 23, 42, 0.9);
+    background: linear-gradient(170deg, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.92) 100%), rgba(15, 23, 42, 0.9);
     border-color: rgba(100, 116, 139, 0.5);
   }
 
   .glass-header {
     background:
-      linear-gradient(168deg, rgba(255, 255, 255, 0.58) 0%, rgba(243, 248, 252, 0.74) 100%),
-      rgba(247, 250, 253, 0.72);
+      linear-gradient(168deg, rgba(255, 255, 255, 0.58) 0%, rgba(243, 248, 252, 0.74) 100%), rgba(247, 250, 253, 0.72);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid rgba(148, 163, 184, 0.3);
   }
 
   .dark .glass-header {
-    background:
-      linear-gradient(168deg, rgba(30, 41, 59, 0.74) 0%, rgba(15, 23, 42, 0.82) 100%),
-      rgba(15, 23, 42, 0.76);
+    background: linear-gradient(168deg, rgba(30, 41, 59, 0.74) 0%, rgba(15, 23, 42, 0.82) 100%), rgba(15, 23, 42, 0.76);
     border-color: rgba(100, 116, 139, 0.46);
   }
 
@@ -291,7 +300,10 @@
     border-radius: 0.75rem;
     padding: 0.55rem 1rem;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.16s ease, box-shadow 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      transform 0.16s ease,
+      box-shadow 0.2s ease;
   }
 
   .btn-gold:hover {
@@ -305,7 +317,9 @@
 
   /* 悬浮效果 */
   .hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
     cursor: pointer;
   }
 
@@ -323,8 +337,12 @@
 
 /* 动画 */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {

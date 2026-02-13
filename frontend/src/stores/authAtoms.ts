@@ -5,4 +5,3 @@ export const authCheckedAtom = atom<boolean>(false);
 
 /* 是否已登录（Cookie 鉴权） */
 export const authenticatedAtom = atom<boolean>(false);
-

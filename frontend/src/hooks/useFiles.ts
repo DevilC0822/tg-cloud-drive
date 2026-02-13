@@ -148,7 +148,7 @@ export function useFiles() {
       const folder = folders.find((f) => f.type === 'folder' && f.path === folderPath);
       return folder?.id ?? null;
     },
-    [folders]
+    [folders],
   );
 
   const applyRouteFromPathname = useCallback(
@@ -170,7 +170,7 @@ export function useFiles() {
       setCurrentFolderId(null);
       return true;
     },
-    [folders.length, resolveFolderIdByPath, setActiveNav, setCurrentFolderId]
+    [folders.length, resolveFolderIdByPath, setActiveNav, setCurrentFolderId],
   );
 
   // 首次加载：从 URL 恢复视图和目录
@@ -228,9 +228,7 @@ export function useFiles() {
     } else if (activeNav === 'vault') {
       nextPathname = '/vault';
     } else {
-      const folder = currentFolderId
-        ? folders.find((f) => f.id === currentFolderId && f.type === 'folder')
-        : null;
+      const folder = currentFolderId ? folders.find((f) => f.id === currentFolderId && f.type === 'folder') : null;
       nextPathname = folder ? encodeFolderPathToRoute(folder.path) : '/files';
     }
 
@@ -385,7 +383,7 @@ export function useFiles() {
         return newSet;
       });
     },
-    [setSelectedIds]
+    [setSelectedIds],
   );
 
   const clearSelection = useCallback(() => {
@@ -418,7 +416,7 @@ export function useFiles() {
         setPreviewModal({ visible: true, file });
       }
     },
-    [activeNav, clearSelection, setActiveNav, setCurrentFolderId, setPreviewModal]
+    [activeNav, clearSelection, setActiveNav, setCurrentFolderId, setPreviewModal],
   );
 
   const navigateTo = useCallback(
@@ -429,7 +427,7 @@ export function useFiles() {
       setCurrentFolderId(breadcrumb.id === 'root' ? null : breadcrumb.id);
       clearSelection();
     },
-    [activeNav, clearSelection, setActiveNav, setCurrentFolderId]
+    [activeNav, clearSelection, setActiveNav, setCurrentFolderId],
   );
 
   const createFolder = useCallback(
@@ -447,7 +445,7 @@ export function useFiles() {
       await refreshItems();
       return dtoToFileItem(res.item);
     },
-    [currentFolderId, refreshFolders, refreshItems]
+    [currentFolderId, refreshFolders, refreshItems],
   );
 
   const renameFile = useCallback(
@@ -464,7 +462,7 @@ export function useFiles() {
       await refreshFolders();
       await refreshItems();
     },
-    [refreshFolders, refreshItems]
+    [refreshFolders, refreshItems],
   );
 
   const moveItem = useCallback(
@@ -485,7 +483,7 @@ export function useFiles() {
         return { ok: false as const, reason: (err as ApiError)?.message || '移动失败' };
       }
     },
-    [refreshFolders, refreshItems, setAuthenticated]
+    [refreshFolders, refreshItems, setAuthenticated],
   );
 
   const copyItem = useCallback(
@@ -505,28 +503,32 @@ export function useFiles() {
         return { ok: false as const, reason: (err as ApiError)?.message || '复制失败', idPairs: [] as const };
       }
     },
-    [refreshFolders, refreshItems, setAuthenticated]
+    [refreshFolders, refreshItems, setAuthenticated],
   );
 
   const trashFiles = useCallback(
     async (fileIds: string[]) => {
       if (fileIds.length === 0) return;
-      await Promise.all(fileIds.map((id) => apiFetchJson<{ ok: boolean }>(`/api/items/${id}/trash`, { method: 'POST' })));
+      await Promise.all(
+        fileIds.map((id) => apiFetchJson<{ ok: boolean }>(`/api/items/${id}/trash`, { method: 'POST' })),
+      );
       clearSelection();
       await refreshFolders();
       await refreshItems();
     },
-    [clearSelection, refreshFolders, refreshItems]
+    [clearSelection, refreshFolders, refreshItems],
   );
 
   const restoreFiles = useCallback(
     async (fileIds: string[]) => {
       if (fileIds.length === 0) return;
-      await Promise.all(fileIds.map((id) => apiFetchJson<{ ok: boolean }>(`/api/items/${id}/restore`, { method: 'POST' })));
+      await Promise.all(
+        fileIds.map((id) => apiFetchJson<{ ok: boolean }>(`/api/items/${id}/restore`, { method: 'POST' })),
+      );
       await refreshFolders();
       await refreshItems();
     },
-    [refreshFolders, refreshItems]
+    [refreshFolders, refreshItems],
   );
 
   const deleteFilesPermanently = useCallback(
@@ -541,8 +543,8 @@ export function useFiles() {
               deleted: number;
               failed: number;
             };
-          }>(`/api/items/${id}`, { method: 'DELETE' })
-        )
+          }>(`/api/items/${id}`, { method: 'DELETE' }),
+        ),
       );
       clearSelection();
       await refreshFolders();
@@ -553,7 +555,7 @@ export function useFiles() {
       }, 0);
       return { telegramCleanupFailed };
     },
-    [clearSelection, refreshFolders, refreshItems]
+    [clearSelection, refreshFolders, refreshItems],
   );
 
   const toggleFavorite = useCallback(
@@ -569,7 +571,7 @@ export function useFiles() {
 
       await refreshItems();
     },
-    [items, refreshItems]
+    [items, refreshItems],
   );
 
   const toggleSort = useCallback(
@@ -582,7 +584,7 @@ export function useFiles() {
       });
       setCurrentPage(1);
     },
-    [setCurrentPage, setSortConfig]
+    [setCurrentPage, setSortConfig],
   );
 
   const changePage = useCallback(
@@ -590,7 +592,7 @@ export function useFiles() {
       const nextPage = Math.min(Math.max(1, page), pagination.totalPages);
       setCurrentPage(nextPage);
     },
-    [pagination.totalPages, setCurrentPage]
+    [pagination.totalPages, setCurrentPage],
   );
 
   const changePageSize = useCallback(
@@ -599,14 +601,14 @@ export function useFiles() {
       setPageSize(nextSize);
       setCurrentPage(1);
     },
-    [setCurrentPage, setPageSize]
+    [setCurrentPage, setPageSize],
   );
 
   const openPreview = useCallback(
     (file: FileItem) => {
       setPreviewModal({ visible: true, file });
     },
-    [setPreviewModal]
+    [setPreviewModal],
   );
 
   const shareItem = useCallback(
@@ -617,7 +619,7 @@ export function useFiles() {
       await refreshItems();
       return res;
     },
-    [refreshItems]
+    [refreshItems],
   );
 
   const unshareItem = useCallback(
@@ -625,7 +627,7 @@ export function useFiles() {
       await apiFetchJson<{ ok: boolean }>(`/api/items/${fileId}/share`, { method: 'DELETE' });
       await refreshItems();
     },
-    [refreshItems]
+    [refreshItems],
   );
 
   const toggleVault = useCallback(
@@ -646,7 +648,7 @@ export function useFiles() {
         spoilerEligible: !!res.spoilerEligible,
       };
     },
-    [refreshItems]
+    [refreshItems],
   );
 
   return {

@@ -1,14 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
-import {
-  Archive,
-  Code,
-  File,
-  FileText,
-  Folder,
-  Image,
-  Music,
-  Video,
-} from 'lucide-react';
+import { Archive, Code, File, FileText, Folder, Image, Music, Video } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { FileItem, FileType } from '@/types';
@@ -69,10 +60,7 @@ function buildPreviewSrc(file: FileItem): string | undefined {
 export function FileThumbnail({ file, size = 'card' }: FileThumbnailProps) {
   const Icon = fileIcons[file.type];
   const iconColor = fileColors[file.type];
-  const previewSrc = useMemo(
-    () => buildPreviewSrc(file),
-    [file.id, file.type, new Date(file.updatedAt).getTime()]
-  );
+  const previewSrc = useMemo(() => buildPreviewSrc(file), [file.id, file.type, new Date(file.updatedAt).getTime()]);
   const [mediaError, setMediaError] = useState(false);
   const [mediaLoaded, setMediaLoaded] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -94,12 +82,7 @@ export function FileThumbnail({ file, size = 'card' }: FileThumbnailProps) {
 
   if (previewSrc && !mediaError && (file.type === 'image' || file.type === 'video')) {
     return (
-      <div
-        className={cn(
-          wrapperSizeClass(size),
-          'relative overflow-hidden bg-neutral-100 dark:bg-neutral-800'
-        )}
-      >
+      <div className={cn(wrapperSizeClass(size), 'relative overflow-hidden bg-neutral-100 dark:bg-neutral-800')}>
         <div className="absolute inset-0 flex items-center justify-center">
           <Icon className={cn(iconSizeClass(size), iconColor)} />
         </div>
@@ -109,8 +92,8 @@ export function FileThumbnail({ file, size = 'card' }: FileThumbnailProps) {
           alt={file.name}
           loading="lazy"
           className={cn(
-            'absolute inset-0 w-full h-full object-cover transition-opacity duration-200',
-            mediaLoaded ? 'opacity-100' : 'opacity-0'
+            'absolute inset-0 h-full w-full object-cover transition-opacity duration-200',
+            mediaLoaded ? 'opacity-100' : 'opacity-0',
           )}
           onLoad={() => setMediaLoaded(true)}
           onError={() => {
@@ -123,12 +106,7 @@ export function FileThumbnail({ file, size = 'card' }: FileThumbnailProps) {
   }
 
   return (
-    <div
-      className={cn(
-        wrapperSizeClass(size),
-        'flex items-center justify-center bg-neutral-100 dark:bg-neutral-800'
-      )}
-    >
+    <div className={cn(wrapperSizeClass(size), 'flex items-center justify-center bg-neutral-100 dark:bg-neutral-800')}>
       <Icon className={cn(iconSizeClass(size), iconColor)} />
     </div>
   );

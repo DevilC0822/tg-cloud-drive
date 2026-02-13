@@ -52,8 +52,8 @@ export function FileList({
           onPress={() => onSort('name')}
           trailingIcon={<SortIcon column="name" />}
           className={cn(
-            'flex-1 justify-start text-[11px] uppercase tracking-[0.08em]',
-            sortBy !== 'name' && 'text-neutral-500 dark:text-neutral-400'
+            'flex-1 justify-start text-[11px] tracking-[0.08em] uppercase',
+            sortBy !== 'name' && 'text-neutral-500 dark:text-neutral-400',
           )}
         >
           文件名
@@ -64,8 +64,8 @@ export function FileList({
           onPress={() => onSort('size')}
           trailingIcon={<SortIcon column="size" />}
           className={cn(
-            'hidden w-24 justify-end text-[11px] uppercase tracking-[0.08em] sm:inline-flex',
-            sortBy !== 'size' && 'text-neutral-500 dark:text-neutral-400'
+            'hidden w-24 justify-end text-[11px] tracking-[0.08em] uppercase sm:inline-flex',
+            sortBy !== 'size' && 'text-neutral-500 dark:text-neutral-400',
           )}
         >
           大小
@@ -76,8 +76,8 @@ export function FileList({
           onPress={() => onSort('date')}
           trailingIcon={<SortIcon column="date" />}
           className={cn(
-            'hidden w-32 justify-end text-[11px] uppercase tracking-[0.08em] md:inline-flex',
-            sortBy !== 'date' && 'text-neutral-500 dark:text-neutral-400'
+            'hidden w-32 justify-end text-[11px] tracking-[0.08em] uppercase md:inline-flex',
+            sortBy !== 'date' && 'text-neutral-500 dark:text-neutral-400',
           )}
         >
           更新时间
