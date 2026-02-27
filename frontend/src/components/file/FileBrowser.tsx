@@ -1,5 +1,5 @@
-import { useAtomValue } from 'jotai';
-import { Clock3, FolderOpen, HardDrive, Text } from 'lucide-react';
+import { useAtom, useAtomValue } from 'jotai';
+import { Clock3, FolderOpen, Grid3X3, HardDrive, List, Text } from 'lucide-react';
 import { viewModeAtom, contextMenuAtom } from '@/stores/uiAtoms';
 import { breadcrumbsAtom, sortConfigAtom } from '@/stores/fileAtoms';
 import { FileGrid } from './FileGrid';
@@ -43,6 +43,7 @@ export interface FileBrowserProps {
   };
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  showViewModeToggle?: boolean;
 }
 
 export function FileBrowser({
@@ -72,12 +73,17 @@ export function FileBrowser({
   pagination,
   onPageChange,
   onPageSizeChange,
+  showViewModeToggle = false,
 }: FileBrowserProps) {
-  const viewMode = useAtomValue(viewModeAtom);
+  const [viewMode, setViewMode] = useAtom(viewModeAtom);
   const breadcrumbs = useAtomValue(breadcrumbsAtom);
   const sortConfig = useAtomValue(sortConfigAtom);
   const contextMenu = useAtomValue(contextMenuAtom);
   const selectedCount = selectedIds.size;
+  const sortFieldText = sortConfig.by === 'name' ? '名称' : sortConfig.by === 'size' ? '大小' : '时间';
+  const sortOrderText = sortConfig.order === 'asc' ? '升序' : '降序';
+  const showGridSortActions = viewMode === 'grid';
+  const showToolbarActions = showViewModeToggle || showGridSortActions;
 
   const handleSort = (by: SortBy) => {
     onSort(by);
@@ -94,28 +100,52 @@ export function FileBrowser({
         <div className="flex flex-wrap items-center gap-1.5">
           <ActionStatusPill tone={selectedCount > 0 ? 'brand' : 'neutral'}>已选 {selectedCount}</ActionStatusPill>
           <ActionStatusPill>共 {files.length} 项</ActionStatusPill>
-          <ActionStatusPill tone="warning">{sortConfig.order === 'asc' ? '升序' : '降序'}</ActionStatusPill>
+          <ActionStatusPill tone="warning">[{sortFieldText}]{sortOrderText}</ActionStatusPill>
         </div>
-        <div className="flex items-center gap-1">
-          <ActionIconButton
-            icon={<Text className="h-4 w-4" />}
-            label="按名称排序"
-            tone={sortConfig.by === 'name' ? 'brand' : 'neutral'}
-            onPress={() => handleSort('name')}
-          />
-          <ActionIconButton
-            icon={<HardDrive className="h-4 w-4" />}
-            label="按大小排序"
-            tone={sortConfig.by === 'size' ? 'brand' : 'neutral'}
-            onPress={() => handleSort('size')}
-          />
-          <ActionIconButton
-            icon={<Clock3 className="h-4 w-4" />}
-            label="按更新时间排序"
-            tone={sortConfig.by === 'date' ? 'brand' : 'neutral'}
-            onPress={() => handleSort('date')}
-          />
-        </div>
+        {showToolbarActions ? (
+          <div className="flex items-center gap-2">
+            {showViewModeToggle ? (
+              <div className="flex h-9 items-center overflow-hidden rounded-xl border border-neutral-200/80 bg-white/72 px-0.5 py-0.5 dark:border-neutral-700/80 dark:bg-neutral-900/68">
+                <ActionIconButton
+                  icon={<Grid3X3 className="h-4 w-4" />}
+                  label="网格视图"
+                  tone={viewMode === 'grid' ? 'brand' : 'neutral'}
+                  onPress={() => setViewMode('grid')}
+                  className={viewMode === 'grid' ? 'border-transparent bg-white/95 dark:bg-neutral-700' : 'border-transparent bg-transparent'}
+                />
+                <ActionIconButton
+                  icon={<List className="h-4 w-4" />}
+                  label="列表视图"
+                  tone={viewMode === 'list' ? 'brand' : 'neutral'}
+                  onPress={() => setViewMode('list')}
+                  className={viewMode === 'list' ? 'border-transparent bg-white/95 dark:bg-neutral-700' : 'border-transparent bg-transparent'}
+                />
+              </div>
+            ) : null}
+            {showGridSortActions ? (
+              <div className="flex items-center gap-1">
+                <ActionIconButton
+                  icon={<Text className="h-4 w-4" />}
+                  label="按名称排序"
+                  tone={sortConfig.by === 'name' ? 'brand' : 'neutral'}
+                  onPress={() => handleSort('name')}
+                />
+                <ActionIconButton
+                  icon={<HardDrive className="h-4 w-4" />}
+                  label="按大小排序"
+                  tone={sortConfig.by === 'size' ? 'brand' : 'neutral'}
+                  onPress={() => handleSort('size')}
+                />
+                <ActionIconButton
+                  icon={<Clock3 className="h-4 w-4" />}
+                  label="按更新时间排序"
+                  tone={sortConfig.by === 'date' ? 'brand' : 'neutral'}
+                  onPress={() => handleSort('date')}
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {/* 文件区域 */}

@@ -11,13 +11,13 @@
 /* 自定义主题 - 使用 hex 颜色覆盖 oklch */
 @theme {
   /* 主题主色（唯一硬编码） */
-  --theme-primary: #006fee;
+  --theme-primary: #f4a48d;
 
   /* 基于主题主色自动计算出的语义色 */
   --theme-primary-strong: color-mix(in srgb, var(--theme-primary) 82%, black);
   --theme-primary-deep: color-mix(in srgb, var(--theme-primary) 70%, black);
-  --theme-primary-ink: color-mix(in srgb, var(--theme-primary) 40%, black);
-  --theme-primary-ink-strong: color-mix(in srgb, var(--theme-primary) 30%, black);
+  --theme-primary-ink: color-mix(in srgb, var(--theme-primary) 58%, black);
+  --theme-primary-ink-strong: color-mix(in srgb, var(--theme-primary) 48%, black);
   --theme-primary-muted: color-mix(in srgb, var(--theme-primary) 70%, white);
   --theme-primary-soft: color-mix(in srgb, var(--theme-primary) 78%, white);
   --theme-primary-soft-hover: color-mix(in srgb, var(--theme-primary) 72%, white);
@@ -108,12 +108,21 @@
 
   body {
     position: relative;
-    background-color: #f0f4f8;
+    background-color: #f6f8fb;
     background-image:
-      radial-gradient(circle at 10% 5%, color-mix(in srgb, var(--theme-primary) 12%, transparent), transparent 30%),
-      radial-gradient(circle at 90% 10%, rgba(180, 210, 255, 0.4), transparent 35%),
-      linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(240, 246, 255, 0.9) 50%, rgba(230, 240, 255, 0.95) 100%);
-    color: #0f172a;
+      radial-gradient(circle at 14% 6%, var(--theme-primary-a20), transparent 28%),
+      radial-gradient(
+        circle at 84% 8%,
+        color-mix(in srgb, var(--theme-primary-soft) 28%, transparent),
+        transparent 34%
+      ),
+      linear-gradient(
+        142deg,
+        rgba(255, 255, 255, 0.66) 0%,
+        rgba(242, 246, 252, 0.94) 56%,
+        rgba(233, 239, 247, 0.96) 100%
+      );
+    color: #1f2937;
     min-height: 100vh;
     line-height: 1.5;
   }
@@ -138,11 +147,11 @@
   }
 
   .dark body {
-    background-color: #060a14;
+    background-color: #0f1520;
     background-image:
-      radial-gradient(circle at 10% 5%, color-mix(in srgb, var(--theme-primary) 15%, transparent), transparent 30%),
-      radial-gradient(circle at 90% 10%, rgba(30, 58, 138, 0.4), transparent 35%),
-      linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(9, 14, 25, 0.95) 60%, rgba(3, 5, 10, 1) 100%);
+      radial-gradient(circle at 12% 10%, color-mix(in srgb, var(--theme-primary) 18%, transparent), transparent 28%),
+      radial-gradient(circle at 88% 4%, rgba(51, 65, 85, 0.42), transparent 30%),
+      linear-gradient(142deg, rgba(17, 24, 39, 0.94) 0%, rgba(12, 18, 31, 0.98) 58%, rgba(8, 13, 23, 1) 100%);
     color: #f8fafc;
   }
 

@@ -114,6 +114,7 @@ interface SetupTestConnectionResponse {
 }
 
 const setupRoutePath = '/setup';
+const UPLOAD_CONFIRM_PREVIEW_LIMIT = 120;
 
 export default function App() {
   // 初始化主题
@@ -611,6 +612,20 @@ export default function App() {
       }));
     });
   }, [openFilePicker]);
+
+  const handleRemoveSelectedUploadFile = useCallback((targetIndex: number) => {
+    setUploadTargetModal((prev) => ({
+      ...prev,
+      files: prev.files.filter((_, index) => index !== targetIndex),
+    }));
+  }, []);
+
+  const handleClearSelectedUploadFiles = useCallback(() => {
+    setUploadTargetModal((prev) => ({
+      ...prev,
+      files: [],
+    }));
+  }, []);
 
   const handleSelectTorrentSeedFile = useCallback(() => {
     uploadTorrentFileInputRef.current?.click();
@@ -1209,6 +1224,38 @@ export default function App() {
     [uploadTargetModal.files],
   );
 
+  const uploadTargetConfirmPreviewFiles = useMemo(
+    () => uploadTargetModal.files.slice(0, UPLOAD_CONFIRM_PREVIEW_LIMIT),
+    [uploadTargetModal.files],
+  );
+
+  const uploadTargetConfirmHiddenCount =
+    uploadTargetModal.files.length - uploadTargetConfirmPreviewFiles.length;
+
+  const uploadTargetConfirmFileRows = useMemo(
+    () =>
+      uploadTargetConfirmPreviewFiles.map((file, index) => (
+        <div
+          key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+          className="flex items-center gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-800/58"
+        >
+          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--theme-primary-a20)] text-[11px] font-semibold text-[var(--theme-primary-ink)]">
+            {index + 1}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-sm text-neutral-700 dark:text-neutral-300">{file.name}</span>
+          <span className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">{formatFileSize(file.size)}</span>
+          <ActionTextButton
+            density="cozy"
+            className="h-7 px-2 text-xs text-neutral-500 dark:text-neutral-400"
+            onPress={() => handleRemoveSelectedUploadFile(index)}
+          >
+            删除
+          </ActionTextButton>
+        </div>
+      )),
+    [handleRemoveSelectedUploadFile, uploadTargetConfirmPreviewFiles],
+  );
+
   const handleConfirmUploadTarget = useCallback(() => {
     const destinationFolderId = uploadTargetFolderId === 'root' ? null : uploadTargetFolderId;
 
@@ -1732,6 +1779,7 @@ export default function App() {
               pagination={pagination}
               onPageChange={changePage}
               onPageSizeChange={changePageSize}
+              showViewModeToggle={false}
             />
           </PasswordVaultPage>
         ) : (
@@ -1762,6 +1810,7 @@ export default function App() {
             pagination={pagination}
             onPageChange={changePage}
             onPageSizeChange={changePageSize}
+            showViewModeToggle={activeNav === 'files'}
           />
         )}
       </MainLayout>
@@ -1910,6 +1959,7 @@ export default function App() {
         title="上传文件"
         description="支持本地文件上传或创建 Torrent 下载任务。"
         size="3xl"
+        scroll="outside"
         closeOnOverlayClick={false}
         closeOnEscape={false}
         footer={
@@ -2026,9 +2076,18 @@ export default function App() {
 
                 {uploadTargetModal.files.length > 0 ? (
                   <div className="rounded-xl border border-neutral-200/75 bg-white/82 p-3 dark:border-neutral-700/75 dark:bg-neutral-900/62">
-                    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                      已选择 {uploadTargetModal.files.length} 个文件（{formatFileSize(uploadTargetTotalBytes)}）
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                        已选择 {uploadTargetModal.files.length} 个文件（{formatFileSize(uploadTargetTotalBytes)}）
+                      </p>
+                      <ActionTextButton
+                        density="cozy"
+                        className="h-7 px-2 text-xs text-neutral-500 dark:text-neutral-400"
+                        onPress={handleClearSelectedUploadFiles}
+                      >
+                        清空
+                      </ActionTextButton>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -2098,26 +2157,11 @@ export default function App() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {uploadTargetModal.files.slice(0, 6).map((file, index) => (
-                    <div
-                      key={`${file.name}-${file.size}-${index}`}
-                      className="flex items-center gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-800/58"
-                    >
-                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--theme-primary-a20)] text-[11px] font-semibold text-[var(--theme-primary-ink)]">
-                        {index + 1}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-sm text-neutral-700 dark:text-neutral-300">
-                        {file.name}
-                      </span>
-                      <span className="shrink-0 text-xs text-neutral-500 dark:text-neutral-400">
-                        {formatFileSize(file.size)}
-                      </span>
+                  <div className="space-y-2">{uploadTargetConfirmFileRows}</div>
+                  {uploadTargetConfirmHiddenCount > 0 ? (
+                    <div className="rounded-xl border border-neutral-200/75 bg-neutral-50/75 px-3 py-2 text-xs text-neutral-600 dark:border-neutral-700/75 dark:bg-neutral-800/55 dark:text-neutral-300">
+                      已省略显示 {uploadTargetConfirmHiddenCount} 个文件，避免大量节点导致弹窗渲染异常；上传时仍会处理全部已选文件。
                     </div>
-                  ))}
-                  {uploadTargetModal.files.length > 6 ? (
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      其余 {uploadTargetModal.files.length - 6} 个文件将在上传队列中处理
-                    </p>
                   ) : null}
                   {uploadTargetModal.files.length > 1 ? (
                     <div className="rounded-xl border border-[var(--theme-primary-a24)] bg-[linear-gradient(138deg,var(--theme-primary-a12),var(--theme-primary-a08))] p-3">

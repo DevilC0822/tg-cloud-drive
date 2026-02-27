@@ -1,8 +1,6 @@
 import { useAtom, useSetAtom } from 'jotai';
 import {
   Menu,
-  Grid3X3,
-  List,
   Sun,
   Moon,
   Monitor,
@@ -30,7 +28,7 @@ import {
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Dropdown as HeroDropdown, Label as HeroLabel } from '@heroui/react';
-import { viewModeAtom, mobileSidebarOpenAtom } from '@/stores/uiAtoms';
+import { mobileSidebarOpenAtom } from '@/stores/uiAtoms';
 import { searchQueryAtom } from '@/stores/fileAtoms';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Modal } from '@/components/ui/Modal';
@@ -210,7 +208,6 @@ export interface HeaderProps {
 }
 
 export function Header({ onNewFolder, onUpload }: HeaderProps) {
-  const [viewMode, setViewMode] = useAtom(viewModeAtom);
   const [searchQuery, setSearchQuery] = useAtom(searchQueryAtom);
   const setMobileSidebarOpen = useSetAtom(mobileSidebarOpenAtom);
   const setAuthenticated = useSetAtom(authenticatedAtom);
@@ -448,36 +445,6 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
               <div className="w-full max-w-xl lg:max-w-2xl">
                 <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="搜索文件和文件夹..." />
               </div>
-              <div
-                className={cn(
-                  'hidden items-center border border-neutral-200/80 bg-white/60 xl:flex dark:border-neutral-700/80 dark:bg-neutral-900/65',
-                  capsuleFrameClass,
-                  capsuleInnerGapClass,
-                )}
-              >
-                <ActionIconButton
-                  icon={<Grid3X3 className="h-4 w-4" />}
-                  label="网格视图"
-                  tone={viewMode === 'grid' ? 'brand' : 'neutral'}
-                  onPress={() => setViewMode('grid')}
-                  className={cn(
-                    'border-transparent bg-transparent',
-                    viewMode === 'grid' &&
-                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700',
-                  )}
-                />
-                <ActionIconButton
-                  icon={<List className="h-4 w-4" />}
-                  label="列表视图"
-                  tone={viewMode === 'list' ? 'brand' : 'neutral'}
-                  onPress={() => setViewMode('list')}
-                  className={cn(
-                    'border-transparent bg-transparent',
-                    viewMode === 'list' &&
-                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700',
-                  )}
-                />
-              </div>
             </div>
           </div>
 
@@ -529,38 +496,6 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
               >
                 切换服务
               </ActionTextButton>
-
-              <span className={cn(capsuleDividerClass, 'xl:hidden')} />
-
-              <div
-                className={cn(
-                  'flex h-8 items-center rounded-xl border border-neutral-200/80 bg-white/68 px-0.5 py-0.5 xl:hidden dark:border-neutral-700/80 dark:bg-neutral-800/75',
-                  capsuleInnerGapClass,
-                )}
-              >
-                <ActionIconButton
-                  icon={<Grid3X3 className="h-4 w-4" />}
-                  label="网格视图"
-                  tone={viewMode === 'grid' ? 'brand' : 'neutral'}
-                  onPress={() => setViewMode('grid')}
-                  className={cn(
-                    'border-transparent bg-transparent',
-                    viewMode === 'grid' &&
-                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700',
-                  )}
-                />
-                <ActionIconButton
-                  icon={<List className="h-4 w-4" />}
-                  label="列表视图"
-                  tone={viewMode === 'list' ? 'brand' : 'neutral'}
-                  onPress={() => setViewMode('list')}
-                  className={cn(
-                    'border-transparent bg-transparent',
-                    viewMode === 'list' &&
-                      'bg-white/95 shadow-[0_8px_16px_-12px_rgba(30,41,59,0.45)] dark:bg-neutral-700',
-                  )}
-                />
-              </div>
             </div>
 
             <div

@@ -12,6 +12,7 @@ export interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  scroll?: 'inside' | 'outside';
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
   showCloseButton?: boolean;
@@ -29,6 +30,7 @@ export function Modal({
   children,
   footer,
   size = 'md',
+  scroll = 'inside',
   closeOnOverlayClick = true,
   closeOnEscape = true,
   showCloseButton = true,
@@ -56,7 +58,7 @@ export function Modal({
         variant="blur"
         className="modal-backdrop-motion"
       >
-        <HeroModal.Container placement="auto" scroll="inside" className="px-4">
+        <HeroModal.Container placement="auto" scroll={scroll} className="px-4">
           <HeroModal.Dialog
             className={cn(
               'modal-dialog-motion w-full overflow-hidden rounded-3xl border border-neutral-200/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(250,248,245,0.96))] shadow-[0_28px_72px_-38px_rgba(15,23,42,0.72)]',
@@ -95,7 +97,7 @@ export function Modal({
             <HeroModal.Body className="p-5 sm:p-6">{children}</HeroModal.Body>
 
             {footer ? (
-              <HeroModal.Footer className="flex items-center justify-end gap-3 border-t border-neutral-200/70 bg-white/72 px-5 pt-4 pb-5 dark:border-neutral-700/70 dark:bg-neutral-900/62">
+              <HeroModal.Footer className="flex items-center justify-end gap-3 border-t border-neutral-200/70 px-5 pt-4 pb-5 dark:border-neutral-700/70">
                 {footer}
               </HeroModal.Footer>
             ) : null}

@@ -3,7 +3,7 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { FileItem } from '@/types';
 import { ActionIconButton } from '@/components/ui/HeroActionPrimitives';
-import { formatFileSize, truncateFilename } from '@/utils/formatters';
+import { formatFileSize } from '@/utils/formatters';
 import { FileThumbnail } from './FileThumbnail';
 
 function cn(...inputs: (string | undefined | null | boolean)[]) {
@@ -58,8 +58,11 @@ export function FileCard({ file, selected = false, onClick, onDoubleClick, onCon
 
       {/* 文件名 */}
       <div className="text-center">
-        <h3 className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100" title={file.name}>
-          {truncateFilename(file.name, 18)}
+        <h3
+          className="min-h-10 overflow-hidden text-sm leading-5 font-medium text-neutral-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] break-words dark:text-neutral-100"
+          title={file.name}
+        >
+          {file.name}
         </h3>
         <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
           {file.type === 'folder' ? '目录' : formatFileSize(file.size)}

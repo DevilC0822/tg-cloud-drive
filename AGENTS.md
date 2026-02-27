@@ -10,11 +10,11 @@ This repository is split into two apps plus deployment assets.
 ## Build, Test, and Development Commands
 Run from repository root unless noted.
 - `docker compose up --build`: start full stack (Postgres, bot-api, backend, frontend).
+- `docker compose up --build frontend`: preferred frontend build check after completing frontend changes.
 - `cd backend && go run ./cmd/server`: run backend locally.
 - `cd backend && go build ./cmd/server`: compile backend binary.
 - `cd backend && go test ./...`: run backend/unit tests.
 - `cd frontend && npm install && npm run dev`: start Vite dev server.
-- `cd frontend && npm run build`: type-check and build frontend.
 - `cd frontend && npm run lint`: run ESLint checks.
 
 ## Coding Style & Naming Conventions
@@ -28,6 +28,7 @@ Run from repository root unless noted.
 - Prefer table-driven tests for parsing/decision logic.
 - Add/adjust tests when touching upload routing, Telegram client behavior, or range/download logic.
 - Frontend currently has lint/type checks but no dedicated test runner in scripts.
+- For post-change frontend build validation, use `docker compose up --build frontend` instead of `cd frontend && npm run build`.
 
 ## Commit & Pull Request Guidelines
 - Current branch has no historical commits yet; adopt Conventional Commits (e.g., `feat:`, `fix:`, `docs:`).
