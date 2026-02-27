@@ -5,11 +5,9 @@ import {
   Pencil,
   FolderInput,
   Copy,
-  Star,
   Trash2,
   Share2,
   Info,
-  RotateCcw,
   Lock,
   LockOpen,
 } from 'lucide-react';
@@ -47,13 +45,10 @@ export interface FileContextMenuProps {
   onRename?: (file: FileItem) => void | Promise<void>;
   onMove?: (file: FileItem) => void | Promise<void>;
   onCopy?: (file: FileItem) => void | Promise<void>;
-  onToggleFavorite?: (file: FileItem) => void | Promise<void>;
   onShare?: (file: FileItem) => void | Promise<void>;
   onUnshare?: (file: FileItem) => void | Promise<void>;
   onDelete?: (file: FileItem) => void | Promise<void>;
   onInfo?: (file: FileItem) => void | Promise<void>;
-  onRestore?: (file: FileItem) => void | Promise<void>;
-  onDeletePermanently?: (file: FileItem) => void | Promise<void>;
   onVaultIn?: (file: FileItem) => void | Promise<void>;
   onVaultOut?: (file: FileItem) => void | Promise<void>;
 }
@@ -68,13 +63,10 @@ export function FileContextMenu({
   onRename,
   onMove,
   onCopy,
-  onToggleFavorite,
   onShare,
   onUnshare,
   onDelete,
   onInfo,
-  onRestore,
-  onDeletePermanently,
   onVaultIn,
   onVaultOut,
 }: FileContextMenuProps) {
@@ -82,62 +74,6 @@ export function FileContextMenu({
 
   const menuItems: FileMenuItem[] = useMemo(() => {
     if (!file) return [];
-
-    if (file.trashedAt) {
-      return [
-        {
-          id: 'restore',
-          label: '还原',
-          icon: RotateCcw,
-          onClick: () => {
-            onRestore?.(file);
-            onClose();
-          },
-        },
-        { divider: true },
-        {
-          id: 'preview',
-          label: file.type === 'folder' ? '打开' : '预览',
-          icon: Eye,
-          onClick: () => {
-            onPreview?.(file);
-            onClose();
-          },
-        },
-        {
-          id: 'download',
-          label: '下载',
-          icon: Download,
-          disabled: file.type === 'folder',
-          onClick: () => {
-            onDownload?.(file);
-            onClose();
-          },
-        },
-        { divider: true },
-        {
-          id: 'info',
-          label: '详细信息',
-          icon: Info,
-          onClick: () => {
-            onInfo?.(file);
-            onClose();
-          },
-        },
-        { divider: true },
-        {
-          id: 'delete-permanent',
-          label: '永久删除',
-          icon: Trash2,
-          danger: true,
-          shortcut: 'Del',
-          onClick: () => {
-            onDeletePermanently?.(file);
-            onClose();
-          },
-        },
-      ];
-    }
 
     return [
       {
@@ -214,16 +150,6 @@ export function FileContextMenu({
           onClose();
         },
       },
-      { divider: true },
-      {
-        id: 'favorite',
-        label: file.isFavorite ? '取消收藏' : '添加收藏',
-        icon: Star,
-        onClick: () => {
-          onToggleFavorite?.(file);
-          onClose();
-        },
-      },
       {
         id: file.isVaulted ? 'vault-out' : 'vault-in',
         label: file.isVaulted ? '移出密码箱' : '移入密码箱',
@@ -260,32 +186,18 @@ export function FileContextMenu({
           onClose();
         },
       },
-      {
-        id: 'delete-permanent-direct',
-        label: '彻底删除',
-        icon: Trash2,
-        danger: true,
-        shortcut: 'Shift+Del',
-        onClick: () => {
-          onDeletePermanently?.(file);
-          onClose();
-        },
-      },
     ];
   }, [
     file,
     onClose,
     onCopy,
     onDelete,
-    onDeletePermanently,
     onDownload,
     onInfo,
     onMove,
     onPreview,
     onRename,
-    onRestore,
     onShare,
-    onToggleFavorite,
     onUnshare,
     onVaultIn,
     onVaultOut,

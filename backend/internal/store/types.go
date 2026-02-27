@@ -27,9 +27,7 @@ type Item struct {
 	Path           string
 	Size           int64
 	MimeType       *string
-	IsFavorite     bool
 	InVault        bool
-	TrashedAt      *time.Time
 	LastAccessedAt *time.Time
 	SharedCode     *string
 	SharedEnabled  bool
@@ -195,11 +193,8 @@ type TelegramDeleteFailure struct {
 type View string
 
 const (
-	ViewFiles     View = "files"
-	ViewFavorites View = "favorites"
-	ViewRecent    View = "recent"
-	ViewTrash     View = "trash"
-	ViewVault     View = "vault"
+	ViewFiles View = "files"
+	ViewVault View = "vault"
 )
 
 type SortBy string

@@ -15,7 +15,7 @@ import { authCheckedAtom, authenticatedAtom } from '@/stores/authAtoms';
 import type { FileItem, SortBy, BreadcrumbItem } from '@/types';
 import { apiFetchJson, dtoToFileItem, ApiError, type ItemDTO } from '@/utils/api';
 
-type RouteView = 'files' | 'favorites' | 'recent' | 'trash' | 'settings' | 'transfers' | 'vault';
+type RouteView = 'files' | 'settings' | 'transfers' | 'vault';
 
 type PaginationState = {
   page: number;
@@ -65,9 +65,6 @@ function viewFromPathname(pathname: string): RouteView {
   if (normalized === '/transfers') return 'transfers';
   if (normalized === '/settings') return 'settings';
   if (normalized === '/vault') return 'vault';
-  if (normalized === '/favorites') return 'favorites';
-  if (normalized === '/recent') return 'recent';
-  if (normalized === '/trash') return 'trash';
   return 'files';
 }
 
@@ -135,12 +132,7 @@ export function useFiles() {
   });
   const isVaultView = activeNav === 'vault';
   const isVaultDataReady = !isVaultView || (vaultStatusChecked && vaultUnlocked);
-  const isDataView =
-    activeNav === 'files' ||
-    activeNav === 'favorites' ||
-    activeNav === 'recent' ||
-    activeNav === 'trash' ||
-    (activeNav === 'vault' && isVaultDataReady);
+  const isDataView = activeNav === 'files' || (activeNav === 'vault' && isVaultDataReady);
 
   const resolveFolderIdByPath = useCallback(
     (folderPath: string) => {
@@ -215,13 +207,7 @@ export function useFiles() {
 
     let nextPathname = '/files';
 
-    if (activeNav === 'favorites') {
-      nextPathname = '/favorites';
-    } else if (activeNav === 'recent') {
-      nextPathname = '/recent';
-    } else if (activeNav === 'trash') {
-      nextPathname = '/trash';
-    } else if (activeNav === 'transfers') {
+    if (activeNav === 'transfers') {
       nextPathname = '/transfers';
     } else if (activeNav === 'settings') {
       nextPathname = '/settings';
@@ -336,7 +322,7 @@ export function useFiles() {
     });
   }, [authChecked, authenticated, refreshFolders, setAuthenticated]);
 
-  // 如果当前目录在 folder 索引中已不存在（比如被移入回收站），自动回到根目录
+  // 如果当前目录在 folder 索引中已不存在，自动回到根目录
   useEffect(() => {
     if (!currentFolderId) return;
     if (folders.some((f) => f.id === currentFolderId)) return;
@@ -506,31 +492,6 @@ export function useFiles() {
     [refreshFolders, refreshItems, setAuthenticated],
   );
 
-  const trashFiles = useCallback(
-    async (fileIds: string[]) => {
-      if (fileIds.length === 0) return;
-      await Promise.all(
-        fileIds.map((id) => apiFetchJson<{ ok: boolean }>(`/api/items/${id}/trash`, { method: 'POST' })),
-      );
-      clearSelection();
-      await refreshFolders();
-      await refreshItems();
-    },
-    [clearSelection, refreshFolders, refreshItems],
-  );
-
-  const restoreFiles = useCallback(
-    async (fileIds: string[]) => {
-      if (fileIds.length === 0) return;
-      await Promise.all(
-        fileIds.map((id) => apiFetchJson<{ ok: boolean }>(`/api/items/${id}/restore`, { method: 'POST' })),
-      );
-      await refreshFolders();
-      await refreshItems();
-    },
-    [refreshFolders, refreshItems],
-  );
-
   const deleteFilesPermanently = useCallback(
     async (fileIds: string[]) => {
       if (fileIds.length === 0) return;
@@ -556,22 +517,6 @@ export function useFiles() {
       return { telegramCleanupFailed };
     },
     [clearSelection, refreshFolders, refreshItems],
-  );
-
-  const toggleFavorite = useCallback(
-    async (fileId: string) => {
-      const target = items.find((f) => f.id === fileId);
-      const next = !target?.isFavorite;
-
-      await apiFetchJson<{ item: ItemDTO }>(`/api/items/${fileId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isFavorite: next }),
-      });
-
-      await refreshItems();
-    },
-    [items, refreshItems],
   );
 
   const toggleSort = useCallback(
@@ -659,16 +604,14 @@ export function useFiles() {
     displayFiles: items,
     pagination,
     selectFile,
+    clearSelection,
     openFile,
     navigateTo,
     createFolder,
     renameFile,
     moveItem,
     copyItem,
-    trashFiles,
-    restoreFiles,
     deleteFilesPermanently,
-    toggleFavorite,
     toggleVault,
     toggleSort,
     changePage,

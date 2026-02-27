@@ -118,10 +118,6 @@ func (s *Server) handleCopyItem(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询失败")
 		return
 	}
-	if src.TrashedAt != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "回收站内文件不支持复制，请先还原")
-		return
-	}
 
 	// destinationParentId: 缺省=原父目录；null=根目录；uuid=目标目录
 	destParent := src.ParentID
@@ -155,7 +151,7 @@ func (s *Server) handleCopyItem(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, "internal_error", "查询失败")
 			return
 		}
-		if parent.TrashedAt != nil || parent.Type != store.ItemTypeFolder {
+		if parent.Type != store.ItemTypeFolder {
 			writeError(w, http.StatusBadRequest, "bad_request", "目标目录不可用")
 			return
 		}

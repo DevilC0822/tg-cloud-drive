@@ -38,9 +38,9 @@ func (s *Store) CreateFolder(ctx context.Context, parentID *uuid.UUID, desiredNa
 	}
 
 	const q = `
-INSERT INTO items(id, type, name, parent_id, path, size, mime_type, is_favorite, trashed_at, last_accessed_at,
+INSERT INTO items(id, type, name, parent_id, path, size, mime_type, last_accessed_at,
   shared_code, shared_enabled, created_at, updated_at)
-VALUES ($1, 'folder', $2, $3, $4, 0, NULL, FALSE, NULL, NULL, NULL, FALSE, $5, $5)
+VALUES ($1, 'folder', $2, $3, $4, 0, NULL, NULL, NULL, FALSE, $5, $5)
 `
 	_, err = s.db.Exec(ctx, q, id, uniqueName, parent, newPath, now)
 	if err != nil {
@@ -78,9 +78,9 @@ func (s *Store) CreateFileItem(ctx context.Context, parentID *uuid.UUID, itemTyp
 	}
 
 	const q = `
-INSERT INTO items(id, type, name, parent_id, path, size, mime_type, is_favorite, trashed_at, last_accessed_at,
+INSERT INTO items(id, type, name, parent_id, path, size, mime_type, last_accessed_at,
   shared_code, shared_enabled, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, NULL, NULL, NULL, FALSE, $8, $8)
+VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NULL, FALSE, $8, $8)
 `
 	_, err = s.db.Exec(ctx, q, id, string(itemType), uniqueName, parent, newPath, size, mimeType, now)
 	if err != nil {
@@ -135,17 +135,6 @@ func (s *Store) UpdateItemSize(ctx context.Context, id uuid.UUID, size int64, no
 	return nil
 }
 
-func (s *Store) UpdateItemFavorite(ctx context.Context, id uuid.UUID, favorite bool, now time.Time) (Item, error) {
-	ct, err := s.db.Exec(ctx, `UPDATE items SET is_favorite = $2, updated_at = $3 WHERE id = $1`, id, favorite, now)
-	if err != nil {
-		return Item{}, err
-	}
-	if ct.RowsAffected() == 0 {
-		return Item{}, ErrNotFound
-	}
-	return s.GetItem(ctx, id)
-}
-
 func (s *Store) UpdateItemVault(ctx context.Context, id uuid.UUID, inVault bool, now time.Time) (Item, error) {
 	ct, err := s.db.Exec(ctx, `UPDATE items SET in_vault = $2, updated_at = $3 WHERE id = $1`, id, inVault, now)
 	if err != nil {
@@ -195,14 +184,14 @@ func (s *Store) PatchItemMoveRename(ctx context.Context, id uuid.UUID, input Pat
 
 	var current Item
 	err = tx.QueryRow(ctx, `
-SELECT id, type, name, parent_id, path, size, mime_type, is_favorite, in_vault, trashed_at, last_accessed_at,
+SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
 FROM items
 WHERE id = $1
 FOR UPDATE
 `, id).Scan(
-		&current.ID, &current.Type, &current.Name, &current.ParentID, &current.Path, &current.Size, &current.MimeType, &current.IsFavorite, &current.InVault,
-		&current.TrashedAt, &current.LastAccessedAt, &current.SharedCode, &current.SharedEnabled, &current.CreatedAt, &current.UpdatedAt,
+		&current.ID, &current.Type, &current.Name, &current.ParentID, &current.Path, &current.Size, &current.MimeType, &current.InVault,
+		&current.LastAccessedAt, &current.SharedCode, &current.SharedEnabled, &current.CreatedAt, &current.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -233,7 +222,7 @@ FOR UPDATE
 	// 目录移动：禁止移入自身/子目录
 	if current.Type == ItemTypeFolder && newParentID != nil {
 		var destPath string
-		err := tx.QueryRow(ctx, `SELECT path FROM items WHERE id = $1 AND type = 'folder' AND trashed_at IS NULL`, *newParentID).Scan(&destPath)
+		err := tx.QueryRow(ctx, `SELECT path FROM items WHERE id = $1 AND type = 'folder'`, *newParentID).Scan(&destPath)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return Item{}, ErrBadInput
@@ -285,30 +274,6 @@ WHERE path LIKE $1
 	return s.GetItem(ctx, id)
 }
 
-func (s *Store) TrashByPathPrefix(ctx context.Context, prefix string, now time.Time) error {
-	if prefix == "" || prefix[0] != '/' {
-		return ErrBadInput
-	}
-	_, err := s.db.Exec(ctx, `
-UPDATE items
-SET trashed_at = $2, updated_at = $2
-WHERE path = $1 OR path LIKE $1 || '/%'
-`, prefix, now)
-	return err
-}
-
-func (s *Store) RestoreByPathPrefix(ctx context.Context, prefix string, now time.Time) error {
-	if prefix == "" || prefix[0] != '/' {
-		return ErrBadInput
-	}
-	_, err := s.db.Exec(ctx, `
-UPDATE items
-SET trashed_at = NULL, updated_at = $2
-WHERE path = $1 OR path LIKE $1 || '/%'
-`, prefix, now)
-	return err
-}
-
 func (s *Store) DeleteItemsByPathPrefix(ctx context.Context, prefix string) error {
 	if prefix == "" || prefix[0] != '/' {
 		return ErrBadInput
@@ -330,7 +295,7 @@ func (s *Store) resolveParentPath(ctx context.Context, parentID *uuid.UUID) (str
 		return "/", nil
 	}
 	var p string
-	err := s.db.QueryRow(ctx, `SELECT path FROM items WHERE id = $1 AND type = 'folder' AND trashed_at IS NULL`, *parentID).Scan(&p)
+	err := s.db.QueryRow(ctx, `SELECT path FROM items WHERE id = $1 AND type = 'folder'`, *parentID).Scan(&p)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", ErrBadInput
@@ -345,7 +310,7 @@ func resolveParentPathTx(ctx context.Context, tx pgx.Tx, parentID *uuid.UUID) (s
 		return "/", nil
 	}
 	var p string
-	err := tx.QueryRow(ctx, `SELECT path FROM items WHERE id = $1 AND type = 'folder' AND trashed_at IS NULL`, *parentID).Scan(&p)
+	err := tx.QueryRow(ctx, `SELECT path FROM items WHERE id = $1 AND type = 'folder'`, *parentID).Scan(&p)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", ErrBadInput
@@ -442,7 +407,6 @@ func nameExistsTx(ctx context.Context, tx pgx.Tx, parentID *uuid.UUID, name stri
 SELECT 1
 FROM items
 WHERE parent_id IS NOT DISTINCT FROM $1
-  AND trashed_at IS NULL
   AND name = $2
   AND ($3::uuid IS NULL OR id <> $3)
 LIMIT 1

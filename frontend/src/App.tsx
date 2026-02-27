@@ -144,18 +144,16 @@ export default function App() {
     selectedIds,
     activeNav,
     selectFile,
+    clearSelection,
     openFile,
     openPreview,
     navigateTo,
     createFolder,
     renameFile,
-    toggleFavorite,
     toggleVault,
     moveItem,
     copyItem,
-    restoreFiles,
     deleteFilesPermanently,
-    trashFiles,
     toggleSort,
     changePage,
     changePageSize,
@@ -168,6 +166,22 @@ export default function App() {
     unshareItem,
   } = useFiles();
   const torrentTasksEnabled = transferCenterEnabled && activeNav === 'transfers';
+
+  useEffect(() => {
+    if (selectedIds.size === 0) return;
+
+    const handleGlobalPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest('[data-file-item="true"]')) return;
+      clearSelection();
+    };
+
+    document.addEventListener('pointerdown', handleGlobalPointerDown, true);
+    return () => {
+      document.removeEventListener('pointerdown', handleGlobalPointerDown, true);
+    };
+  }, [clearSelection, selectedIds.size]);
 
   const {
     uploadFiles,
@@ -261,14 +275,6 @@ export default function App() {
   const torrentPreviewRequestSeqRef = useRef(0);
   const lastTorrentSelectionCountRef = useRef(0);
   const [infoFile, setInfoFile] = useState<FileItem | null>(null);
-  const [permanentDeleteModal, setPermanentDeleteModal] = useState<{
-    visible: boolean;
-    file: FileItem | null;
-  }>({
-    visible: false,
-    file: null,
-  });
-  const [permanentDeleteLoading, setPermanentDeleteLoading] = useState(false);
 
   // 登录表单
   const [loginPassword, setLoginPassword] = useState('');
@@ -708,7 +714,7 @@ export default function App() {
     }
   }, [pushToast, renameFile, renameModal.file, renameValue, setRenameModal]);
 
-  // 处理删除（移入回收站）
+  // 处理删除（不可恢复）
   const handleDelete = useCallback(
     (file: FileItem) => {
       setDeleteModal({ visible: true, files: [file] });
@@ -720,14 +726,23 @@ export default function App() {
     if (deleteModal.files.length === 0) return;
 
     try {
-      await trashFiles(deleteModal.files.map((f) => f.id));
+      const result = await deleteFilesPermanently(deleteModal.files.map((f) => f.id));
+      const failedCount = result?.telegramCleanupFailed ?? 0;
       setDeleteModal({ visible: false, files: [] });
-      pushToast({ type: 'success', message: '已移入回收站' });
+      if (failedCount > 0) {
+        pushToast({
+          type: 'info',
+          message: `已删除，但有 ${failedCount} 个 Telegram 分片未删除，已记录失败项`,
+          durationMs: 4500,
+        });
+      } else {
+        pushToast({ type: 'success', message: '删除成功' });
+      }
     } catch (err: unknown) {
       const e = err as ApiError;
       pushToast({ type: 'error', message: e?.message || '删除失败' });
     }
-  }, [deleteModal.files, pushToast, setDeleteModal, trashFiles]);
+  }, [deleteFilesPermanently, deleteModal.files, pushToast, setDeleteModal]);
 
   // 处理排序
   const handleSort = useCallback(
@@ -1214,8 +1229,7 @@ export default function App() {
   }, [previewTorrent, uploadTargetModal.visible, uploadTargetMode, uploadTorrentFile, uploadTorrentURL]);
 
   const uploadTargetFolders = useMemo(
-    () =>
-      folders.filter((f) => f.type === 'folder' && !f.trashedAt).sort((a, b) => a.path.localeCompare(b.path, 'zh-CN')),
+    () => folders.filter((f) => f.type === 'folder').sort((a, b) => a.path.localeCompare(b.path, 'zh-CN')),
     [folders],
   );
 
@@ -1423,63 +1437,6 @@ export default function App() {
     pushToast({ type: 'success', message: '复制成功' });
     closeMoveModal();
   }, [closeMoveModal, copyItem, moveItem, moveModal.action, moveModal.file, moveTargetFolderId, pushToast]);
-
-  const handleRestore = useCallback(
-    async (file: FileItem) => {
-      try {
-        await restoreFiles([file.id]);
-        pushToast({ type: 'success', message: `已还原 ${file.name}` });
-      } catch (err: unknown) {
-        const e = err as ApiError;
-        pushToast({ type: 'error', message: e?.message || '还原失败' });
-      }
-    },
-    [pushToast, restoreFiles],
-  );
-
-  const closePermanentDeleteModal = useCallback(() => {
-    if (permanentDeleteLoading) return;
-    setPermanentDeleteModal({
-      visible: false,
-      file: null,
-    });
-  }, [permanentDeleteLoading]);
-
-  const handleDeletePermanently = useCallback((file: FileItem) => {
-    setPermanentDeleteModal({
-      visible: true,
-      file,
-    });
-  }, []);
-
-  const handleConfirmPermanentDelete = useCallback(async () => {
-    const target = permanentDeleteModal.file;
-    if (!target || permanentDeleteLoading) return;
-
-    setPermanentDeleteLoading(true);
-    try {
-      const result = await deleteFilesPermanently([target.id]);
-      const failedCount = result?.telegramCleanupFailed ?? 0;
-      if (failedCount > 0) {
-        pushToast({
-          type: 'info',
-          message: `已永久删除 ${target.name}，但有 ${failedCount} 个 Telegram 分片未删除，已记录失败项`,
-          durationMs: 4500,
-        });
-      } else {
-        pushToast({ type: 'success', message: `已永久删除 ${target.name}` });
-      }
-      setPermanentDeleteModal({
-        visible: false,
-        file: null,
-      });
-    } catch (err: unknown) {
-      const e = err as ApiError;
-      pushToast({ type: 'error', message: e?.message || '永久删除失败' });
-    } finally {
-      setPermanentDeleteLoading(false);
-    }
-  }, [deleteFilesPermanently, permanentDeleteLoading, permanentDeleteModal.file, pushToast]);
 
   const handleInfo = useCallback((file: FileItem) => {
     setInfoFile(file);
@@ -1756,9 +1713,9 @@ export default function App() {
               files={displayFiles}
               selectedIds={selectedIds}
               onSelect={selectFile}
+              onClearSelection={clearSelection}
               onOpen={openFile}
               onNavigate={handleNavigate}
-              onToggleFavorite={toggleFavorite}
               onSort={handleSort}
               onContextMenu={handleContextMenu}
               onCloseContextMenu={handleCloseContextMenu}
@@ -1772,8 +1729,6 @@ export default function App() {
               onShare={handleShare}
               onUnshare={handleUnshare}
               onInfo={handleInfo}
-              onRestore={handleRestore}
-              onDeletePermanently={handleDeletePermanently}
               onVaultIn={handleVaultIn}
               onVaultOut={handleVaultOut}
               pagination={pagination}
@@ -1787,9 +1742,9 @@ export default function App() {
             files={displayFiles}
             selectedIds={selectedIds}
             onSelect={selectFile}
+            onClearSelection={clearSelection}
             onOpen={openFile}
             onNavigate={handleNavigate}
-            onToggleFavorite={toggleFavorite}
             onSort={handleSort}
             onContextMenu={handleContextMenu}
             onCloseContextMenu={handleCloseContextMenu}
@@ -1803,8 +1758,6 @@ export default function App() {
             onShare={handleShare}
             onUnshare={handleUnshare}
             onInfo={handleInfo}
-            onRestore={handleRestore}
-            onDeletePermanently={handleDeletePermanently}
             onVaultIn={handleVaultIn}
             onVaultOut={handleVaultOut}
             pagination={pagination}
@@ -1927,7 +1880,7 @@ export default function App() {
         open={deleteModal.visible}
         onClose={() => setDeleteModal({ visible: false, files: [] })}
         title="确认删除"
-        description="删除后文件将进入回收站，可在回收站中恢复。"
+        description="该操作不可逆，且会尝试同步清理 Telegram 分片消息。"
         size="sm"
         footer={
           <>
@@ -2455,41 +2408,6 @@ export default function App() {
         )}
       </Modal>
 
-      <Modal
-        open={permanentDeleteModal.visible}
-        onClose={closePermanentDeleteModal}
-        title="永久删除确认"
-        description="该操作不可逆，且会尝试同步清理 Telegram 分片消息。"
-        size="sm"
-        closeOnOverlayClick={!permanentDeleteLoading}
-        closeOnEscape={!permanentDeleteLoading}
-        showCloseButton={!permanentDeleteLoading}
-        footer={
-          <>
-            <ActionTextButton
-              onPress={closePermanentDeleteModal}
-              isDisabled={permanentDeleteLoading}
-              className="min-w-[96px] justify-center"
-            >
-              取消
-            </ActionTextButton>
-            <ActionTextButton
-              tone="danger"
-              onPress={handleConfirmPermanentDelete}
-              isDisabled={permanentDeleteLoading}
-              className="min-w-[132px] justify-center"
-            >
-              {permanentDeleteLoading ? '删除中...' : '确认永久删除'}
-            </ActionTextButton>
-          </>
-        }
-      >
-        <div className="rounded-xl border border-red-200 bg-red-50/80 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-300">
-          确定要永久删除 <span className="font-semibold">{permanentDeleteModal.file?.name}</span> 吗？
-          <p className="mt-1 text-xs text-red-600/90 dark:text-red-300/90">删除后无法恢复，请确认你已完成备份。</p>
-        </div>
-      </Modal>
-
       {/* 移动/复制 模态框 */}
       <Modal
         open={moveModal.visible}
@@ -2592,25 +2510,11 @@ export default function App() {
               </span>
             </div>
             <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
-              <span className="text-neutral-500 dark:text-neutral-400">收藏</span>
-              <span className="text-right text-neutral-900 dark:text-neutral-100">
-                {infoFile.isFavorite ? '是' : '否'}
-              </span>
-            </div>
-            <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
               <span className="text-neutral-500 dark:text-neutral-400">分享</span>
               <span className="text-right text-neutral-900 dark:text-neutral-100">
                 {infoFile.isShared ? '是' : '否'}
               </span>
             </div>
-            {infoFile.trashedAt && (
-              <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 rounded-xl border border-neutral-200/75 bg-neutral-50/70 px-3 py-2.5 dark:border-neutral-700/75 dark:bg-neutral-900/55">
-                <span className="text-neutral-500 dark:text-neutral-400">回收站时间</span>
-                <span className="text-right text-neutral-900 dark:text-neutral-100">
-                  {formatDateTime(infoFile.trashedAt)}
-                </span>
-              </div>
-            )}
           </div>
         )}
       </Modal>

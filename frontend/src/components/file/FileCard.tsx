@@ -21,6 +21,7 @@ export interface FileCardProps {
 export function FileCard({ file, selected = false, onClick, onDoubleClick, onContextMenu }: FileCardProps) {
   return (
     <div
+      data-file-item="true"
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}

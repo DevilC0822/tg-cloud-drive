@@ -55,13 +55,11 @@ export interface ItemDTO {
   path: string;
   size: number;
   mimeType?: string | null;
-  isFavorite: boolean;
   isVaulted?: boolean;
   isShared: boolean;
   sharedCode?: string | null;
   createdAt: string;
   updatedAt: string;
-  trashedAt?: string | null;
   lastAccessedAt?: string | null;
 }
 
@@ -78,10 +76,8 @@ export function dtoToFileItem(dto: ItemDTO): FileItem {
     lastAccessedAt: dto.lastAccessedAt ? new Date(dto.lastAccessedAt) : null,
     parentId: dto.parentId ?? null,
     path: dto.path,
-    isFavorite: !!dto.isFavorite,
     isVaulted: !!dto.isVaulted,
     isShared: !!dto.isShared,
     shareCode: dto.sharedCode ?? null,
-    trashedAt: dto.trashedAt ? new Date(dto.trashedAt) : null,
   };
 }

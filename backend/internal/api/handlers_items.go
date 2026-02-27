@@ -165,7 +165,6 @@ func (s *Server) handlePatchItem(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name      *string          `json:"name"`
 		ParentRaw *json.RawMessage `json:"parentId"`
-		Favorite  *bool            `json:"isFavorite"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "bad_request", "请求体不是合法 JSON")
@@ -235,71 +234,7 @@ func (s *Server) handlePatchItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 再处理收藏
-	if req.Favorite != nil {
-		updated, err = st.UpdateItemFavorite(r.Context(), id, *req.Favorite, now)
-		if err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				writeError(w, http.StatusNotFound, "not_found", "文件不存在")
-				return
-			}
-			s.logger.Error("update favorite failed", "error", err.Error())
-			writeError(w, http.StatusInternalServerError, "internal_error", "更新失败")
-			return
-		}
-	}
-
 	writeJSON(w, http.StatusOK, map[string]any{"item": toItemDTO(updated)})
-}
-
-func (s *Server) handleTrashItem(w http.ResponseWriter, r *http.Request) {
-	id, err := parseUUIDParam(chi.URLParam(r, "id"))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "id 非法")
-		return
-	}
-	st := store.New(s.db)
-	it, err := st.GetItem(r.Context(), id)
-	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "文件不存在")
-			return
-		}
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询失败")
-		return
-	}
-	now := time.Now()
-	if err := st.TrashByPathPrefix(r.Context(), it.Path, now); err != nil {
-		s.logger.Error("trash failed", "error", err.Error())
-		writeError(w, http.StatusInternalServerError, "internal_error", "删除失败")
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
-}
-
-func (s *Server) handleRestoreItem(w http.ResponseWriter, r *http.Request) {
-	id, err := parseUUIDParam(chi.URLParam(r, "id"))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "id 非法")
-		return
-	}
-	st := store.New(s.db)
-	it, err := st.GetItem(r.Context(), id)
-	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "文件不存在")
-			return
-		}
-		writeError(w, http.StatusInternalServerError, "internal_error", "查询失败")
-		return
-	}
-	now := time.Now()
-	if err := st.RestoreByPathPrefix(r.Context(), it.Path, now); err != nil {
-		s.logger.Error("restore failed", "error", err.Error())
-		writeError(w, http.StatusInternalServerError, "internal_error", "还原失败")
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 func (s *Server) handleShareItem(w http.ResponseWriter, r *http.Request) {
@@ -419,10 +354,6 @@ func (s *Server) handleSetItemVault(w http.ResponseWriter, r *http.Request) {
 	}
 	if it.Type == store.ItemTypeFolder {
 		writeError(w, http.StatusBadRequest, "bad_request", "目录暂不支持移入密码箱")
-		return
-	}
-	if it.TrashedAt != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "回收站内文件不支持密码箱操作")
 		return
 	}
 

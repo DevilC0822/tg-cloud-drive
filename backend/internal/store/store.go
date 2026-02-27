@@ -22,15 +22,15 @@ func New(db *pgxpool.Pool) *Store {
 
 func (s *Store) GetItem(ctx context.Context, id uuid.UUID) (Item, error) {
 	const q = `
-SELECT id, type, name, parent_id, path, size, mime_type, is_favorite, in_vault, trashed_at, last_accessed_at,
+SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
 FROM items
 WHERE id = $1
 `
 	var it Item
 	err := s.db.QueryRow(ctx, q, id).Scan(
-		&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.IsFavorite, &it.InVault,
-		&it.TrashedAt, &it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
+		&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault,
+		&it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -43,15 +43,15 @@ WHERE id = $1
 
 func (s *Store) GetItemByShareCode(ctx context.Context, code string) (Item, error) {
 	const q = `
-SELECT id, type, name, parent_id, path, size, mime_type, is_favorite, in_vault, trashed_at, last_accessed_at,
+SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
 FROM items
 WHERE shared_enabled = TRUE AND shared_code = $1
 `
 	var it Item
 	err := s.db.QueryRow(ctx, q, code).Scan(
-		&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.IsFavorite, &it.InVault,
-		&it.TrashedAt, &it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
+		&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault,
+		&it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -64,10 +64,10 @@ WHERE shared_enabled = TRUE AND shared_code = $1
 
 func (s *Store) ListFolders(ctx context.Context) ([]Item, error) {
 	const q = `
-SELECT id, type, name, parent_id, path, size, mime_type, is_favorite, in_vault, trashed_at, last_accessed_at,
+SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
 FROM items
-WHERE type = 'folder' AND trashed_at IS NULL AND in_vault = FALSE
+WHERE type = 'folder' AND in_vault = FALSE
 ORDER BY path ASC
 `
 	rows, err := s.db.Query(ctx, q)
@@ -80,8 +80,8 @@ ORDER BY path ASC
 	for rows.Next() {
 		var it Item
 		if err := rows.Scan(
-			&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.IsFavorite, &it.InVault,
-			&it.TrashedAt, &it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
+			&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault,
+			&it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -118,18 +118,9 @@ func (s *Store) ListItems(ctx context.Context, p ListParams) ([]Item, int64, err
 		where = append(where, fmt.Sprintf(cond, len(args)))
 	}
 
-	// trash 视图展示已删除；其他视图隐藏已删除
-	if view == ViewTrash {
-		where = append(where, "trashed_at IS NOT NULL")
-	} else {
-		where = append(where, "trashed_at IS NULL")
-	}
-
-	// 仅 vault 视图展示密码箱文件；普通视图隐藏密码箱文件；回收站视图不过滤，避免文件“消失”无法恢复。
+	// 仅 vault 视图展示密码箱文件；普通视图隐藏密码箱文件。
 	if view == ViewVault {
 		where = append(where, "in_vault = TRUE")
-	} else if view == ViewTrash {
-		// 不追加 in_vault 过滤
 	} else {
 		where = append(where, "in_vault = FALSE")
 	}
@@ -141,12 +132,6 @@ func (s *Store) ListItems(ctx context.Context, p ListParams) ([]Item, int64, err
 		} else {
 			add("parent_id = $%d", *p.ParentID)
 		}
-	case ViewFavorites:
-		where = append(where, "is_favorite = TRUE")
-	case ViewRecent:
-		// 最近访问不额外过滤（与前端一致：按 last_accessed_at/updated_at 排序即可）
-	case ViewTrash:
-		// 已在上方处理 trashed 过滤
 	case ViewVault:
 		// 已在上方处理 in_vault 过滤
 	default:
@@ -173,11 +158,7 @@ func (s *Store) ListItems(ctx context.Context, p ListParams) ([]Item, int64, err
 	case SortByType:
 		sortExpr = "type"
 	case SortByDate:
-		if view == ViewRecent {
-			sortExpr = "COALESCE(last_accessed_at, updated_at)"
-		} else {
-			sortExpr = "updated_at"
-		}
+		sortExpr = "updated_at"
 	default:
 		sortExpr = "name"
 	}
@@ -189,7 +170,7 @@ func (s *Store) ListItems(ctx context.Context, p ListParams) ([]Item, int64, err
 	offsetArg := len(args)
 
 	query := fmt.Sprintf(`
-SELECT id, type, name, parent_id, path, size, mime_type, is_favorite, in_vault, trashed_at, last_accessed_at,
+SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
 FROM items
 WHERE %s
@@ -211,8 +192,8 @@ LIMIT $%d OFFSET $%d
 	for rows.Next() {
 		var it Item
 		if err := rows.Scan(
-			&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.IsFavorite, &it.InVault,
-			&it.TrashedAt, &it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
+			&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault,
+			&it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
 		); err != nil {
 			return nil, 0, err
 		}

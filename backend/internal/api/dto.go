@@ -14,13 +14,11 @@ type ItemDTO struct {
 	Path           string     `json:"path"`
 	Size           int64      `json:"size"`
 	MimeType       *string    `json:"mimeType"`
-	IsFavorite     bool       `json:"isFavorite"`
 	IsVaulted      bool       `json:"isVaulted"`
 	IsShared       bool       `json:"isShared"`
 	SharedCode     *string    `json:"sharedCode"`
 	CreatedAt      time.Time  `json:"createdAt"`
 	UpdatedAt      time.Time  `json:"updatedAt"`
-	TrashedAt      *time.Time `json:"trashedAt"`
 	LastAccessedAt *time.Time `json:"lastAccessedAt"`
 }
 
@@ -39,13 +37,11 @@ func toItemDTO(it store.Item) ItemDTO {
 		Path:           it.Path,
 		Size:           it.Size,
 		MimeType:       it.MimeType,
-		IsFavorite:     it.IsFavorite,
 		IsVaulted:      it.InVault,
 		IsShared:       it.IsShared(),
 		SharedCode:     it.SharedCode,
 		CreatedAt:      it.CreatedAt,
 		UpdatedAt:      it.UpdatedAt,
-		TrashedAt:      it.TrashedAt,
 		LastAccessedAt: it.LastAccessedAt,
 	}
 }

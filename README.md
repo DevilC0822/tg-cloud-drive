@@ -6,7 +6,7 @@ API），并由后端代理下载/预览，避免在浏览器暴露 Bot Token。
 
 ## 项目特性
 
-- 完整文件管理：目录、重命名、移动、复制、收藏、回收站、分享
+- 完整文件管理：目录、重命名、移动、复制、分享
 - 初始化向导：首次访问进入 `/setup`，完成 Telegram 与管理员配置
 - 双接入模式：
   - `official_bot_api`（官方 Bot API）
@@ -278,7 +278,6 @@ docker compose up -d --build backend
 - 公开分享下载：`GET|HEAD /d/{shareCode}`
 - `Range`：仅支持单段 Range
 - 分享限制：
-  - 回收站文件不可分享下载
   - 密码箱文件不可分享下载
   - 文件夹不支持分享下载
 - 视频缩略图接口：`GET /api/items/{id}/thumbnail`

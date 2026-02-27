@@ -57,7 +57,7 @@ internal/db/migrations/      → SQL 迁移文件（embed.FS 嵌入，自动版�
 
 关键处理器文件：
 - `handlers_upload.go` / `handlers_upload_sessions.go` — 上传（会话分片 + 断点续传）
-- `handlers_items.go` — 文件/目录 CRUD、回收站、收藏、密码箱
+- `handlers_items.go` — 文件/目录 CRUD、密码箱
 - `handlers_download.go` — 下载与预览（支持 Range）
 - `handlers_settings.go` — 设置与接入模式热切换
 - `handlers_thumbnail.go` — ffmpeg 视频缩略图（按需生成 + LRU 缓存）

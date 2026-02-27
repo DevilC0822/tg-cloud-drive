@@ -10,55 +10,83 @@ function cn(...inputs: (string | undefined | null | boolean)[]) {
   return twMerge(clsx(inputs));
 }
 
+const FILE_TYPE_LABELS: Record<FileItem['type'], string> = {
+  folder: '目录',
+  image: '图片',
+  video: '视频',
+  audio: '音频',
+  document: '文档',
+  archive: '压缩包',
+  code: '代码',
+  other: '其他',
+};
+
 export interface FileRowProps {
   file: FileItem;
   selected?: boolean;
+  columnsClassName?: string;
   onClick?: (e: React.MouseEvent) => void;
   onDoubleClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-export function FileRow({ file, selected = false, onClick, onDoubleClick, onContextMenu }: FileRowProps) {
+export function FileRow({
+  file,
+  selected = false,
+  columnsClassName,
+  onClick,
+  onDoubleClick,
+  onContextMenu,
+}: FileRowProps) {
+  const typeLabel = FILE_TYPE_LABELS[file.type];
+
   return (
     <div
+      data-file-item="true"
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'group flex cursor-pointer items-center gap-4 border-b border-white/20 px-4 py-3 dark:border-white/5',
+        'group grid cursor-pointer items-center gap-4 border-b border-white/20 px-4 py-3 dark:border-white/5',
         'transition-colors duration-200 hover:bg-white/30 dark:hover:bg-white/5',
         selected && 'bg-[var(--theme-primary-a12)] hover:bg-[var(--theme-primary-a16)]',
+        columnsClassName,
       )}
     >
       {/* 文件图标 */}
-      <div className="flex-shrink-0">
+      <div className="flex h-10 w-10 items-center justify-center">
         <FileThumbnail file={file} size="row" />
       </div>
 
       {/* 文件名 */}
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100" title={file.name}>
+      <div className="min-w-0">
+        <h3
+          className="overflow-hidden text-sm leading-5 font-medium text-neutral-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] break-words dark:text-neutral-100"
+          title={file.name}
+        >
           {file.name}
         </h3>
-        <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
-          {file.type === 'folder' ? '目录' : file.mimeType || '文件'}
-        </p>
+      </div>
+
+      {/* 类型 */}
+      <div className="hidden min-w-0 md:block">
+        <span className="truncate text-sm text-neutral-500 dark:text-neutral-400">{typeLabel}</span>
       </div>
 
       {/* 文件大小 */}
-      <div className="hidden w-24 text-right sm:block">
+      <div className="hidden min-w-0 text-right md:block">
         <span className="text-sm text-neutral-500 dark:text-neutral-400">
           {file.type === 'folder' ? '-' : formatFileSize(file.size)}
         </span>
       </div>
 
       {/* 修改日期 */}
-      <div className="hidden w-32 text-right md:block">
+      <div className="hidden min-w-0 text-right md:block">
         <span className="text-sm text-neutral-500 dark:text-neutral-400">{formatDate(file.updatedAt)}</span>
       </div>
 
       {/* 操作按钮 */}
-      <div className="flex w-16 justify-end">
+      <div className="flex w-12 justify-end">
         <ActionIconButton
           icon={<MoreVertical className="h-4 w-4" />}
           label="更多操作"

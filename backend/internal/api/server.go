@@ -135,8 +135,6 @@ func (s *Server) Router() http.Handler {
 
 			pr.Patch("/items/{id}", s.handlePatchItem)
 			pr.Post("/items/{id}/vault", s.handleSetItemVault)
-			pr.Post("/items/{id}/trash", s.handleTrashItem)
-			pr.Post("/items/{id}/restore", s.handleRestoreItem)
 			pr.Delete("/items/{id}", s.handleDeleteItemPermanently)
 			pr.Post("/items/{id}/copy", s.handleCopyItem)
 

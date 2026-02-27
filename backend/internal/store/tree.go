@@ -17,11 +17,10 @@ func (s *Store) ListSubtreeItems(ctx context.Context, prefix string) ([]Item, er
 	}
 
 	const q = `
-SELECT id, type, name, parent_id, path, size, mime_type, is_favorite, in_vault, trashed_at, last_accessed_at,
+SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
 FROM items
-WHERE trashed_at IS NULL
-  AND (path = $1 OR path LIKE $1 || '/%')
+WHERE path = $1 OR path LIKE $1 || '/%'
 ORDER BY path ASC, id ASC
 `
 	rows, err := s.db.Query(ctx, q, prefix)
@@ -34,8 +33,8 @@ ORDER BY path ASC, id ASC
 	for rows.Next() {
 		var it Item
 		if err := rows.Scan(
-			&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.IsFavorite, &it.InVault,
-			&it.TrashedAt, &it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
+			&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault,
+			&it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -119,9 +118,9 @@ func (s *Store) InsertItemRaw(ctx context.Context, in InsertItemRawInput) error 
 
 	const q = `
 INSERT INTO items(
-  id, type, name, parent_id, path, size, mime_type, is_favorite, trashed_at, last_accessed_at,
+  id, type, name, parent_id, path, size, mime_type, last_accessed_at,
   shared_code, shared_enabled, created_at, updated_at
-) VALUES ($1,$2,$3,$4,$5,$6,$7,FALSE,NULL,NULL,NULL,FALSE,$8,$9)
+) VALUES ($1,$2,$3,$4,$5,$6,$7,NULL,NULL,FALSE,$8,$9)
 `
 	_, err := s.db.Exec(ctx, q, in.ID, string(in.Type), strings.TrimSpace(in.Name), parent, strings.TrimSpace(in.Path), in.Size, in.MimeType, in.CreatedAt, in.UpdatedAt)
 	if err != nil {

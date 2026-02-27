@@ -107,10 +107,6 @@ func (s *Server) handleSharedDownload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询失败")
 		return
 	}
-	if it.TrashedAt != nil {
-		writeError(w, http.StatusNotFound, "not_found", "链接无效或已失效")
-		return
-	}
 	if it.InVault {
 		writeError(w, http.StatusNotFound, "not_found", "链接无效或已失效")
 		return

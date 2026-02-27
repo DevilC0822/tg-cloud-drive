@@ -2,9 +2,6 @@ import { useAtom, useAtomValue } from 'jotai';
 import { useEffect, useRef, useState } from 'react';
 import {
   FolderClosed,
-  Clock,
-  Star,
-  Trash2,
   Settings,
   KeyRound,
   ArrowLeftRight,
@@ -22,7 +19,7 @@ function cn(...inputs: (string | undefined | null | boolean)[]) {
   return twMerge(clsx(inputs));
 }
 
-type SidebarNavId = 'files' | 'recent' | 'favorites' | 'trash' | 'transfers' | 'settings' | 'vault';
+type SidebarNavId = 'files' | 'transfers' | 'settings' | 'vault';
 
 type SidebarNavItem = {
   id: SidebarNavId;
@@ -43,8 +40,6 @@ const navSections: SidebarNavSection[] = [
     label: '文件',
     items: [
       { id: 'files', label: '全部文件', subtitle: '按目录浏览文件', icon: FolderClosed },
-      { id: 'recent', label: '最近访问', subtitle: '最近打开的内容', icon: Clock },
-      { id: 'favorites', label: '收藏', subtitle: '常用文件快捷入口', icon: Star },
     ],
   },
   {
@@ -52,7 +47,6 @@ const navSections: SidebarNavSection[] = [
     label: '任务',
     items: [
       { id: 'transfers', label: '传输中心', subtitle: '实时任务与历史记录', icon: ArrowLeftRight },
-      { id: 'trash', label: '回收站', subtitle: '恢复或彻底删除', icon: Trash2 },
     ],
   },
   {

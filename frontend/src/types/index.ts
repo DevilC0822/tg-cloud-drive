@@ -11,15 +11,13 @@ export interface FileItem {
   extension?: string;
   createdAt: Date;
   updatedAt: Date;
-  lastAccessedAt?: Date | null; // 最近访问时间（用于“最近访问”视图）
+  lastAccessedAt?: Date | null; // 最近访问时间
   parentId: string | null; // null 表示根目录
   path: string; // 完整路径
-  isFavorite: boolean;
   isVaulted: boolean;
   isShared: boolean;
   shareCode?: string | null; // 分享短码（仅当已分享时可能有值）
   thumbnail?: string; // 缩略图 URL
-  trashedAt?: Date | null; // 回收站时间（有值表示已移入回收站）
 }
 
 /* 面包屑项 */
