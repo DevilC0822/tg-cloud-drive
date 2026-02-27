@@ -72,11 +72,16 @@ export function HistorySection({
   onRequestDeleteTorrentTask,
 }: HistorySectionProps) {
   return (
-    <section id="transfer-history" className="glass-card scroll-mt-[var(--transfer-sticky-offset)] px-4 py-4 md:scroll-mt-24 md:px-5">
+    <section
+      id="transfer-history"
+      className="glass-card scroll-mt-[var(--transfer-sticky-offset)] px-4 py-4 md:scroll-mt-24 md:px-5"
+    >
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <div className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">传输历史</div>
-          <div className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">文件历史支持分页；种子任务来自完整任务列表。</div>
+          <div className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+            文件历史支持分页；种子任务来自完整任务列表。
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -90,7 +95,11 @@ export function HistorySection({
         <ActionTextButton active={tab === 'files'} onPress={() => onTabChange('files')} className="justify-center">
           文件
         </ActionTextButton>
-        <ActionTextButton active={tab === 'torrents'} onPress={() => onTabChange('torrents')} className="justify-center">
+        <ActionTextButton
+          active={tab === 'torrents'}
+          onPress={() => onTabChange('torrents')}
+          className="justify-center"
+        >
           种子
         </ActionTextButton>
       </div>

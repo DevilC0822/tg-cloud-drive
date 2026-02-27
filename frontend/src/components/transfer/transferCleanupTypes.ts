@@ -13,4 +13,3 @@ export type TransferCleanupAction =
   | { type: 'clear-history-by-days'; days: number }
   | { type: 'remove-history-item'; id: string }
   | { type: 'delete-torrent-task'; id: string };
-

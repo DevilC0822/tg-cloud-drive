@@ -25,9 +25,10 @@ export function FileCard({ file, selected = false, onClick, onDoubleClick, onCon
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'group relative cursor-pointer rounded-2xl border border-neutral-200/70 bg-white/92 p-4 dark:border-neutral-700/70 dark:bg-neutral-900/78',
-        'shadow-[0_12px_28px_-24px_rgba(15,23,42,0.7)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-24px_rgba(15,23,42,0.55)]',
-        selected && 'ring-2 ring-[var(--theme-primary)] ring-offset-2 dark:ring-offset-neutral-950',
+        'group relative cursor-pointer rounded-2xl border border-white/50 bg-white/40 p-4 backdrop-blur-md dark:border-white/10 dark:bg-black/30',
+        'shadow-[0_8px_24px_-12px_rgba(15,23,42,0.15)] transition-all duration-300 hover:-translate-y-1 hover:bg-white/60 hover:shadow-xl dark:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)] dark:hover:bg-white/10',
+        selected &&
+          'bg-white/60 ring-2 ring-[var(--theme-primary)] ring-offset-2 ring-offset-transparent dark:bg-white/10 dark:ring-offset-transparent',
       )}
     >
       {/* 更多操作按钮 */}

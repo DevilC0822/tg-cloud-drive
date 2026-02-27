@@ -337,7 +337,7 @@ export function FilePreview({
               <HeroDropdown.Trigger>
                 <ActionIconButton icon={<MoreVertical className="h-5 w-5" />} label="更多操作" surface="dark" />
               </HeroDropdown.Trigger>
-              <HeroDropdown.Popover className="w-44">
+              <HeroDropdown.Popover className="w-44 rounded-2xl border border-white/50 bg-white/40 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-black/40 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5)]">
                 <HeroDropdown.Menu
                   aria-label="文件预览操作"
                   onAction={(key) => {
@@ -349,11 +349,21 @@ export function FilePreview({
                     }
                   }}
                 >
-                  <HeroDropdown.Item id="download" textValue="下载文件" isDisabled={!onDownload}>
+                  <HeroDropdown.Item
+                    id="download"
+                    textValue="下载文件"
+                    isDisabled={!onDownload}
+                    className="rounded-xl transition-colors duration-200 data-[hover=true]:bg-white/60 data-[hover=true]:text-neutral-900 dark:data-[hover=true]:bg-white/10 dark:data-[hover=true]:text-white"
+                  >
                     <Download className="h-4 w-4 text-current" />
                     <HeroLabel>下载文件</HeroLabel>
                   </HeroDropdown.Item>
-                  <HeroDropdown.Item id="share" textValue="分享文件" isDisabled={!onShare}>
+                  <HeroDropdown.Item
+                    id="share"
+                    textValue="分享文件"
+                    isDisabled={!onShare}
+                    className="rounded-xl transition-colors duration-200 data-[hover=true]:bg-white/60 data-[hover=true]:text-neutral-900 dark:data-[hover=true]:bg-white/10 dark:data-[hover=true]:text-white"
+                  >
                     <Share2 className="h-4 w-4 text-current" />
                     <HeroLabel>分享文件</HeroLabel>
                   </HeroDropdown.Item>

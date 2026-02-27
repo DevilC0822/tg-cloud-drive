@@ -27,13 +27,25 @@ export function HistoryFilters({
     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-col gap-2 md:flex-row md:items-center">
         <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-neutral-200/80 bg-white/70 p-1.5 dark:border-neutral-700/80 dark:bg-neutral-900/50">
-          <ActionTextButton active={direction === 'all'} onPress={() => onDirectionChange('all')} className="justify-center">
+          <ActionTextButton
+            active={direction === 'all'}
+            onPress={() => onDirectionChange('all')}
+            className="justify-center"
+          >
             全部
           </ActionTextButton>
-          <ActionTextButton active={direction === 'upload'} onPress={() => onDirectionChange('upload')} className="justify-center">
+          <ActionTextButton
+            active={direction === 'upload'}
+            onPress={() => onDirectionChange('upload')}
+            className="justify-center"
+          >
             上传
           </ActionTextButton>
-          <ActionTextButton active={direction === 'download'} onPress={() => onDirectionChange('download')} className="justify-center">
+          <ActionTextButton
+            active={direction === 'download'}
+            onPress={() => onDirectionChange('download')}
+            className="justify-center"
+          >
             下载
           </ActionTextButton>
         </div>
@@ -42,13 +54,25 @@ export function HistoryFilters({
           <ActionTextButton active={status === 'all'} onPress={() => onStatusChange('all')} className="justify-center">
             全部
           </ActionTextButton>
-          <ActionTextButton active={status === 'completed'} onPress={() => onStatusChange('completed')} className="justify-center">
+          <ActionTextButton
+            active={status === 'completed'}
+            onPress={() => onStatusChange('completed')}
+            className="justify-center"
+          >
             完成
           </ActionTextButton>
-          <ActionTextButton active={status === 'error'} onPress={() => onStatusChange('error')} className="justify-center">
+          <ActionTextButton
+            active={status === 'error'}
+            onPress={() => onStatusChange('error')}
+            className="justify-center"
+          >
             失败
           </ActionTextButton>
-          <ActionTextButton active={status === 'canceled'} onPress={() => onStatusChange('canceled')} className="justify-center">
+          <ActionTextButton
+            active={status === 'canceled'}
+            onPress={() => onStatusChange('canceled')}
+            className="justify-center"
+          >
             取消
           </ActionTextButton>
         </div>
@@ -63,4 +87,3 @@ export function HistoryFilters({
     </div>
   );
 }
-

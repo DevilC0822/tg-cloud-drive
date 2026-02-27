@@ -1,5 +1,16 @@
 import { useMemo } from 'react';
-import { AlertTriangle, ChevronDown, ChevronUp, Download, Magnet, RotateCcw, Send, Trash2, Upload, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  Magnet,
+  RotateCcw,
+  Send,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
 import type { DownloadTask, TorrentTask, UploadTask } from '@/types';
 import { ActionIconButton, ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 import { includesQuery, normalizeQuery } from '@/components/transfer/transferUtils';
@@ -52,7 +63,8 @@ export function AttentionBanner({
   onRetryTorrentTask,
   onRequestDeleteTorrentTask,
 }: AttentionBannerProps) {
-  const totalCount = failedUploads.length + failedDownloads.length + awaitingSelectionTasks.length + failedTorrentTasks.length;
+  const totalCount =
+    failedUploads.length + failedDownloads.length + awaitingSelectionTasks.length + failedTorrentTasks.length;
   const errorCount = failedUploads.length + failedDownloads.length + failedTorrentTasks.length;
   const queryNorm = useMemo(() => normalizeQuery(query), [query]);
 

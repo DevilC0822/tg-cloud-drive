@@ -24,7 +24,7 @@ export function TransferSearchField({
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-2xl border border-neutral-200/80 bg-white/90 py-2.5 pr-10 pl-10 text-sm text-neutral-900 shadow-[0_12px_26px_-22px_rgba(15,23,42,0.55)] outline-none transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-neutral-400 focus:border-[var(--theme-primary-a55)] focus:shadow-[0_18px_44px_-26px_rgba(244,164,141,0.55)] dark:border-neutral-700/80 dark:bg-neutral-900/70 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-[var(--theme-primary-a35)]"
+          className="w-full rounded-2xl border border-neutral-200/80 bg-white/90 py-2.5 pr-10 pl-10 text-sm text-neutral-900 shadow-[0_12px_26px_-22px_rgba(15,23,42,0.55)] transition-[border-color,box-shadow,background-color] duration-200 outline-none placeholder:text-neutral-400 focus:border-[var(--theme-primary-a55)] focus:shadow-[0_18px_44px_-26px_rgba(244,164,141,0.55)] dark:border-neutral-700/80 dark:bg-neutral-900/70 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-[var(--theme-primary-a35)]"
         />
         {value.trim().length > 0 ? (
           <button

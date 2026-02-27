@@ -13,7 +13,7 @@ RUN npm ci
 COPY . .
 
 # 提高构建阶段 Node 堆上限，避免在资源较紧的机器上 vite build OOM
-ARG NODE_OPTIONS="--max_old_space_size=2048"
+ARG NODE_OPTIONS="--max_old_space_size=4096"
 
 # 构建应用
 RUN NODE_OPTIONS="${NODE_OPTIONS}" npm run build

@@ -189,4 +189,3 @@ export function formatInfoHashShort(infoHash: string): string {
   const tail = raw.slice(-4);
   return `${head}...${tail}`;
 }
-

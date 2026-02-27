@@ -308,7 +308,10 @@ export function FileContextMenu({
       >
         <span className="sr-only">右键菜单锚点</span>
       </HeroDropdown.Trigger>
-      <HeroDropdown.Popover placement="bottom start" className="min-w-[220px]">
+      <HeroDropdown.Popover
+        placement="bottom start"
+        className="min-w-[220px] rounded-2xl border border-white/50 bg-white/40 p-1 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-black/40 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5)]"
+      >
         <HeroDropdown.Menu
           aria-label="文件右键菜单"
           className="max-h-[70vh] overflow-y-auto"
@@ -320,7 +323,7 @@ export function FileContextMenu({
         >
           {menuItems.map((item, index) => {
             if (isMenuDivider(item)) {
-              return <HeroSeparator key={`divider-${index}`} />;
+              return <HeroSeparator key={`divider-${index}`} className="my-1 bg-white/30 dark:bg-white/10" />;
             }
 
             const Icon = item.icon;

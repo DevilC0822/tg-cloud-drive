@@ -39,8 +39,8 @@ export function TransferHeader({
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 md:gap-x-3">
-            <h1 className="inline-flex items-center gap-2 text-base font-semibold text-neutral-900 dark:text-neutral-100 md:text-lg">
-              <ArrowLeftRight className="h-4 w-4 text-neutral-500 dark:text-neutral-400 md:h-5 md:w-5" />
+            <h1 className="inline-flex items-center gap-2 text-base font-semibold text-neutral-900 md:text-lg dark:text-neutral-100">
+              <ArrowLeftRight className="h-4 w-4 text-neutral-500 md:h-5 md:w-5 dark:text-neutral-400" />
               传输中心
             </h1>
 
@@ -61,7 +61,9 @@ export function TransferHeader({
                   issueCount === 0 ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
                 }`}
               >
-                <ActionStatusPill tone={issueTone}>{issueCount > 0 ? `待处理 ${issueCount}` : '暂无待处理'}</ActionStatusPill>
+                <ActionStatusPill tone={issueTone}>
+                  {issueCount > 0 ? `待处理 ${issueCount}` : '暂无待处理'}
+                </ActionStatusPill>
               </button>
             </div>
           </div>

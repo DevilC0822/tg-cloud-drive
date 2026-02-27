@@ -124,26 +124,26 @@ export function ActionTextButton({
     neutral: {
       idle: '',
       active:
-        'border-neutral-800 bg-neutral-800 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900',
+        'border-neutral-300/80 bg-neutral-100 text-neutral-900 dark:border-neutral-600/80 dark:bg-neutral-800 dark:text-white',
     },
     brand: {
       idle: 'text-[var(--theme-primary-ink)] dark:text-[var(--theme-primary-soft-hover)]',
       active:
-        'border-[var(--theme-primary)] bg-[var(--theme-primary)] text-neutral-900 dark:border-[var(--theme-primary)] dark:bg-[var(--theme-primary)] dark:text-neutral-900',
+        'border-[var(--theme-primary-a35)] bg-[var(--theme-primary-a16)] text-[var(--theme-primary-ink-strong)] dark:border-[var(--theme-primary-a35)] dark:bg-[var(--theme-primary-a20)] dark:text-[var(--theme-primary-soft)]',
     },
     danger: {
       idle: 'text-red-500 dark:text-red-400',
-      active: 'border-red-500 bg-red-500 text-white dark:border-red-400 dark:bg-red-400 dark:text-neutral-900',
+      active: 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-900/30 dark:text-red-300',
     },
     success: {
       idle: 'text-emerald-500 dark:text-emerald-400',
       active:
-        'border-emerald-500 bg-emerald-500 text-white dark:border-emerald-400 dark:bg-emerald-400 dark:text-neutral-900',
+        'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/30 dark:text-emerald-300',
     },
     warning: {
       idle: 'text-orange-500 dark:text-orange-400',
       active:
-        'border-orange-500 bg-orange-500 text-white dark:border-orange-400 dark:bg-orange-400 dark:text-neutral-900',
+        'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/60 dark:bg-orange-900/30 dark:text-orange-300',
     },
   };
 

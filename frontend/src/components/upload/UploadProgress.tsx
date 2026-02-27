@@ -143,7 +143,7 @@ export function UploadProgress() {
               <HeroDropdown.Trigger>
                 <ActionIconButton icon={<SlidersHorizontal className="h-4 w-4" />} label="任务操作" tone="brand" />
               </HeroDropdown.Trigger>
-              <HeroDropdown.Popover className="w-48">
+              <HeroDropdown.Popover className="w-48 rounded-2xl border border-white/50 bg-white/40 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-black/40 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5)]">
                 <HeroDropdown.Menu
                   aria-label="上传任务操作"
                   onAction={(key) => {
@@ -155,11 +155,21 @@ export function UploadProgress() {
                     }
                   }}
                 >
-                  <HeroDropdown.Item id="clear-completed" textValue="清除已完成任务" isDisabled={completedCount === 0}>
+                  <HeroDropdown.Item
+                    id="clear-completed"
+                    textValue="清除已完成任务"
+                    isDisabled={completedCount === 0}
+                    className="rounded-xl transition-colors duration-200 data-[hover=true]:bg-white/60 data-[hover=true]:text-neutral-900 dark:data-[hover=true]:bg-white/10 dark:data-[hover=true]:text-white"
+                  >
                     <Check className="h-4 w-4 text-current" />
                     <HeroLabel>清除已完成任务</HeroLabel>
                   </HeroDropdown.Item>
-                  <HeroDropdown.Item id="clear-all" textValue="清空任务列表" variant="danger">
+                  <HeroDropdown.Item
+                    id="clear-all"
+                    textValue="清空任务列表"
+                    variant="danger"
+                    className="rounded-xl transition-colors duration-200 data-[hover=true]:bg-white/60 data-[hover=true]:text-neutral-900 dark:data-[hover=true]:bg-white/10 dark:data-[hover=true]:text-white"
+                  >
                     <Trash2 className="h-4 w-4 text-current" />
                     <HeroLabel>清空任务列表</HeroLabel>
                   </HeroDropdown.Item>

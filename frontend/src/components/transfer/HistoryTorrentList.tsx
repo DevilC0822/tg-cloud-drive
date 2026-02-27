@@ -3,7 +3,13 @@ import type { TorrentTask } from '@/types';
 import type { TorrentCleanupFilter, TorrentStatusFilter } from '@/components/transfer/transferHistoryTypes';
 import { ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
 import { HistoryTorrentItem } from '@/components/transfer/HistoryTorrentItem';
-import { includesQuery, isActiveTorrentTask, normalizeQuery, parseDateMs, parseDueAt } from '@/components/transfer/transferUtils';
+import {
+  includesQuery,
+  isActiveTorrentTask,
+  normalizeQuery,
+  parseDateMs,
+  parseDueAt,
+} from '@/components/transfer/transferUtils';
 
 export interface HistoryTorrentListProps {
   tasks: TorrentTask[];
@@ -77,31 +83,63 @@ export function HistoryTorrentList({
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-2 md:flex-row md:items-center">
           <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-neutral-200/80 bg-white/70 p-1.5 dark:border-neutral-700/80 dark:bg-neutral-900/50">
-            <ActionTextButton active={statusFilter === 'all'} onPress={() => onStatusFilterChange('all')} className="justify-center">
+            <ActionTextButton
+              active={statusFilter === 'all'}
+              onPress={() => onStatusFilterChange('all')}
+              className="justify-center"
+            >
               全部
             </ActionTextButton>
-            <ActionTextButton active={statusFilter === 'active'} onPress={() => onStatusFilterChange('active')} className="justify-center">
+            <ActionTextButton
+              active={statusFilter === 'active'}
+              onPress={() => onStatusFilterChange('active')}
+              className="justify-center"
+            >
               进行中
             </ActionTextButton>
-            <ActionTextButton active={statusFilter === 'awaiting_selection'} onPress={() => onStatusFilterChange('awaiting_selection')} className="justify-center">
+            <ActionTextButton
+              active={statusFilter === 'awaiting_selection'}
+              onPress={() => onStatusFilterChange('awaiting_selection')}
+              className="justify-center"
+            >
               待选择
             </ActionTextButton>
-            <ActionTextButton active={statusFilter === 'error'} onPress={() => onStatusFilterChange('error')} className="justify-center">
+            <ActionTextButton
+              active={statusFilter === 'error'}
+              onPress={() => onStatusFilterChange('error')}
+              className="justify-center"
+            >
               失败
             </ActionTextButton>
-            <ActionTextButton active={statusFilter === 'completed'} onPress={() => onStatusFilterChange('completed')} className="justify-center">
+            <ActionTextButton
+              active={statusFilter === 'completed'}
+              onPress={() => onStatusFilterChange('completed')}
+              className="justify-center"
+            >
               已完成
             </ActionTextButton>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-neutral-200/80 bg-white/70 p-1.5 dark:border-neutral-700/80 dark:bg-neutral-900/50">
-            <ActionTextButton active={cleanupFilter === 'all'} onPress={() => onCleanupFilterChange('all')} className="justify-center">
+            <ActionTextButton
+              active={cleanupFilter === 'all'}
+              onPress={() => onCleanupFilterChange('all')}
+              className="justify-center"
+            >
               全部
             </ActionTextButton>
-            <ActionTextButton active={cleanupFilter === 'pending'} onPress={() => onCleanupFilterChange('pending')} className="justify-center">
+            <ActionTextButton
+              active={cleanupFilter === 'pending'}
+              onPress={() => onCleanupFilterChange('pending')}
+              className="justify-center"
+            >
               待清理
             </ActionTextButton>
-            <ActionTextButton active={cleanupFilter === 'cleaned'} onPress={() => onCleanupFilterChange('cleaned')} className="justify-center">
+            <ActionTextButton
+              active={cleanupFilter === 'cleaned'}
+              onPress={() => onCleanupFilterChange('cleaned')}
+              className="justify-center"
+            >
               已清理
             </ActionTextButton>
           </div>
@@ -118,7 +156,7 @@ export function HistoryTorrentList({
           <div className="px-4 py-8 text-sm text-neutral-500 dark:text-neutral-400">{emptyText}</div>
         ) : (
           <>
-            <div className="hidden border-b border-neutral-200/80 px-4 py-2.5 text-[11px] font-medium text-neutral-500 dark:border-neutral-700/80 dark:text-neutral-400 md:grid md:grid-cols-[minmax(0,1fr)_160px_150px_150px_auto] md:items-center">
+            <div className="hidden border-b border-neutral-200/80 px-4 py-2.5 text-[11px] font-medium text-neutral-500 md:grid md:grid-cols-[minmax(0,1fr)_160px_150px_150px_auto] md:items-center dark:border-neutral-700/80 dark:text-neutral-400">
               <span>任务</span>
               <span>大小 / 进度</span>
               <span>状态 / 清理</span>
@@ -143,4 +181,3 @@ export function HistoryTorrentList({
     </div>
   );
 }
-

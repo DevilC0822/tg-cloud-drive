@@ -34,7 +34,10 @@ export function HistoryTorrentItem({
   onRequestDelete,
 }: HistoryTorrentItemProps) {
   const title = task.torrentName || task.infoHash;
-  const progressPct = Math.min(100, Math.max(0, Math.round(((task.status === 'completed' ? 1 : task.progress) || 0) * 100)));
+  const progressPct = Math.min(
+    100,
+    Math.max(0, Math.round(((task.status === 'completed' ? 1 : task.progress) || 0) * 100)),
+  );
 
   const cleanup = useMemo(() => torrentCleanupStatus(task), [task]);
   const cleanupDueLabel = useMemo(() => {
@@ -49,7 +52,7 @@ export function HistoryTorrentItem({
   const showRetryAction = task.status === 'error';
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-t border-neutral-200/80 px-4 py-3 first:border-t-0 dark:border-neutral-700/80 md:grid-cols-[minmax(0,1fr)_160px_150px_150px_auto] md:items-center">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-t border-neutral-200/80 px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,1fr)_160px_150px_150px_auto] md:items-center dark:border-neutral-700/80">
       <div className="min-w-0">
         <div className="flex items-start gap-2">
           <Magnet className="mt-0.5 h-4 w-4 shrink-0 text-orange-600 dark:text-orange-300" />
@@ -74,10 +77,14 @@ export function HistoryTorrentItem({
               ) : null}
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2 md:hidden">
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${torrentStatusColor(task.status)}`}>
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${torrentStatusColor(task.status)}`}
+              >
                 {torrentStatusLabel(task.status)}
               </span>
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cleanup.className}`}>
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cleanup.className}`}
+              >
                 {cleanup.label}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
@@ -97,18 +104,24 @@ export function HistoryTorrentItem({
       </div>
 
       <div className="hidden md:block">
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${torrentStatusColor(task.status)}`}>
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${torrentStatusColor(task.status)}`}
+        >
           {torrentStatusLabel(task.status)}
         </span>
         <div className="mt-1.5 flex flex-col gap-1">
-          <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cleanup.className}`}>
+          <span
+            className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cleanup.className}`}
+          >
             {cleanup.label}
           </span>
           <span className="text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">{cleanupDueLabel}</span>
         </div>
       </div>
 
-      <div className="hidden text-xs text-neutral-700 dark:text-neutral-200 md:block">{formatFileSize(task.downloadedBytes || 0)}</div>
+      <div className="hidden text-xs text-neutral-700 md:block dark:text-neutral-200">
+        {formatFileSize(task.downloadedBytes || 0)}
+      </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         {showRetryAction ? (
@@ -142,4 +155,3 @@ export function HistoryTorrentItem({
     </div>
   );
 }
-

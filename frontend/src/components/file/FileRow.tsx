@@ -25,9 +25,9 @@ export function FileRow({ file, selected = false, onClick, onDoubleClick, onCont
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'group flex cursor-pointer items-center gap-4 border-b border-neutral-100 px-4 py-3 dark:border-neutral-800',
-        'transition-colors duration-150 hover:bg-neutral-50 dark:hover:bg-neutral-800/45',
-        selected && 'bg-[var(--theme-primary-a08)] hover:bg-[var(--theme-primary-a12)]',
+        'group flex cursor-pointer items-center gap-4 border-b border-white/20 px-4 py-3 dark:border-white/5',
+        'transition-colors duration-200 hover:bg-white/30 dark:hover:bg-white/5',
+        selected && 'bg-[var(--theme-primary-a12)] hover:bg-[var(--theme-primary-a16)]',
       )}
     >
       {/* 文件图标 */}

@@ -277,7 +277,7 @@ export function Sidebar() {
       {/* 桌面端侧边栏 */}
       <aside
         className={cn(
-          'hidden h-screen flex-col lg:flex',
+          'hidden h-full flex-col overflow-hidden rounded-3xl lg:flex',
           'w-64 flex-shrink-0',
           'glass-sidebar',
           'transition-all duration-300',

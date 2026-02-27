@@ -3,7 +3,12 @@ import type { DownloadTask, TorrentTask, UploadTask } from '@/types';
 import { formatFileSize } from '@/utils/formatters';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ActionTextButton } from '@/components/ui/HeroActionPrimitives';
-import { downloadTaskStatusLabel, isActiveTorrentTask, torrentStatusLabel, uploadTaskStatusLabel } from './transferUtils';
+import {
+  downloadTaskStatusLabel,
+  isActiveTorrentTask,
+  torrentStatusLabel,
+  uploadTaskStatusLabel,
+} from './transferUtils';
 
 export type ActiveTaskRow =
   | { kind: 'upload'; task: UploadTask }
@@ -50,7 +55,10 @@ function taskStatus(row: ActiveTaskRow): { label: string; tone: 'gold' | 'succes
 }
 
 function leadingIcon(row: ActiveTaskRow) {
-  if (row.kind === 'upload') return <ArrowUpFromLine className="h-4 w-4 text-[var(--theme-primary-ink)] dark:text-[var(--theme-primary-soft)]" />;
+  if (row.kind === 'upload')
+    return (
+      <ArrowUpFromLine className="h-4 w-4 text-[var(--theme-primary-ink)] dark:text-[var(--theme-primary-soft)]" />
+    );
   if (row.kind === 'download') return <ArrowDownToLine className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />;
   return <Magnet className="h-4 w-4 text-orange-600 dark:text-orange-300" />;
 }
@@ -95,13 +103,7 @@ export function ActiveTaskItem({ row, onCancelDownload }: ActiveTaskItemProps) {
         </div>
       </div>
 
-      <ProgressBar
-        className="mt-2.5"
-        value={percent}
-        size="sm"
-        color={status.tone}
-      />
+      <ProgressBar className="mt-2.5" value={percent} size="sm" color={status.tone} />
     </div>
   );
 }
-

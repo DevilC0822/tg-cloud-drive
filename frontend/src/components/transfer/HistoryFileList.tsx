@@ -50,7 +50,7 @@ export function HistoryFileList({
         <div className="px-4 py-8 text-sm text-neutral-500 dark:text-neutral-400">{emptyText}</div>
       ) : (
         <div>
-          <div className="hidden border-b border-neutral-200/80 px-4 py-2.5 text-[11px] font-medium text-neutral-500 dark:border-neutral-700/80 dark:text-neutral-400 md:grid md:grid-cols-[minmax(0,1fr)_110px_90px_90px_180px_auto] md:items-center">
+          <div className="hidden border-b border-neutral-200/80 px-4 py-2.5 text-[11px] font-medium text-neutral-500 md:grid md:grid-cols-[minmax(0,1fr)_110px_90px_90px_180px_auto] md:items-center dark:border-neutral-700/80 dark:text-neutral-400">
             <span>文件名</span>
             <span>大小</span>
             <span>耗时</span>
@@ -66,7 +66,9 @@ export function HistoryFileList({
 
       <div className="border-t border-neutral-200/80 px-4 py-4 dark:border-neutral-700/80">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-          <span>本页匹配 {filtered.length} / {items.length}</span>
+          <span>
+            本页匹配 {filtered.length} / {items.length}
+          </span>
           <span>总计 {pagination.totalCount} 条</span>
         </div>
         <Pagination
@@ -81,4 +83,3 @@ export function HistoryFileList({
     </div>
   );
 }
-
