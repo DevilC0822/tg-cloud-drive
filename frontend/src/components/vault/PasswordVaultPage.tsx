@@ -161,7 +161,7 @@ export function PasswordVaultPage({ children, onUnlocked, onLocked }: PasswordVa
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6 md:py-8">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:px-6 md:py-8">
         <div className="rounded-3xl border border-neutral-200/80 bg-white/92 p-6 shadow-[0_24px_52px_-44px_rgba(15,23,42,0.75)] md:p-8 dark:border-neutral-700/80 dark:bg-neutral-900/70">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">

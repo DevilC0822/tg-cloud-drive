@@ -15,7 +15,7 @@ export function FileGrid({ files, selectedIds, onSelect, onOpen, onContextMenu }
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 md:grid-cols-4 md:gap-4 lg:grid-cols-5 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-2.5 p-3 sm:grid-cols-3 sm:p-4 md:grid-cols-4 md:gap-4 lg:grid-cols-5 xl:grid-cols-6">
       {files.map((file) => (
         <FileCard
           key={file.id}

@@ -48,9 +48,9 @@ export function CleanupMenu({
       </HeroDropdown.Trigger>
       <HeroDropdown.Popover
         placement="bottom end"
-        className="z-50 w-[min(340px,calc(100svw-24px))] !max-w-[calc(100svw-24px)] overflow-hidden rounded-3xl border border-white/50 bg-white/40 p-0 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-black/40 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5)]"
+        className="popover-warm z-50 w-[min(340px,calc(100svw-24px))] !max-w-[calc(100svw-24px)] overflow-hidden rounded-3xl p-0"
       >
-        <div className="border-b border-neutral-200/80 bg-white/60 px-4 py-3 dark:border-white/10 dark:bg-black/40">
+        <div className="border-b border-[var(--theme-primary-a16)] bg-[var(--theme-primary-a08)] px-4 py-3 dark:border-white/6 dark:bg-white/4">
           <div className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-neutral-100">
             <ShieldAlert className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
             管理操作

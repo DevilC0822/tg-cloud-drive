@@ -580,6 +580,12 @@ func (s *Server) scheduleTorrentTaskSourceCleanup(
 		mode = torrentSourceDeleteModeImmediate
 	}
 
+	// 永不清理模式：不调度任何清理任务
+	if mode == torrentSourceDeleteModeNever {
+		s.logger.Info("torrent source cleanup skipped (never mode)", "task_id", task.ID.String())
+		return
+	}
+
 	dueAt := resolveTorrentSourceCleanupDueAt(settings, time.Now())
 	if mode == torrentSourceDeleteModeImmediate {
 		cleaned := s.executeTorrentTaskSourceCleanup(ctx, st, task)

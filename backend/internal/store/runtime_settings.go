@@ -78,7 +78,8 @@ func (s *Store) ensureRuntimeSettingsRow(ctx context.Context, defaults RuntimeSe
 	if defaults.TorrentSourceDeleteMode == "" {
 		defaults.TorrentSourceDeleteMode = "immediate"
 	}
-	if defaults.TorrentSourceDeleteMode != "immediate" &&
+	if defaults.TorrentSourceDeleteMode != "never" &&
+		defaults.TorrentSourceDeleteMode != "immediate" &&
 		defaults.TorrentSourceDeleteMode != "fixed" &&
 		defaults.TorrentSourceDeleteMode != "random" {
 		defaults.TorrentSourceDeleteMode = "immediate"

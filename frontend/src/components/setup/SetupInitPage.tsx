@@ -134,7 +134,7 @@ export function SetupInitPage({
   const [showAdminPasswordConfirm, setShowAdminPasswordConfirm] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--color-brand-50)] via-white to-stone-100 px-4 py-8 md:px-6 md:py-12 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--color-brand-50)] via-white to-stone-100 px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] md:px-6 md:py-12 dark:from-neutral-950 dark:via-neutral-950 dark:to-neutral-900">
       <div className="mx-auto w-full max-w-4xl">
         <div className="rounded-3xl border border-[var(--theme-primary-a35)] bg-white/92 p-6 shadow-[0_24px_48px_-34px_var(--theme-primary-a24)] backdrop-blur-xl md:p-8 dark:border-neutral-700 dark:bg-neutral-900/85 dark:shadow-black/30">
           <div className="flex flex-wrap items-center justify-between gap-4">

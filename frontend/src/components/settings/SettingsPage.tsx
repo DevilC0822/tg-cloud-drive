@@ -62,7 +62,7 @@ type RuntimeSettingsDTO = {
   vaultSessionTtlMinutes: number;
   vaultPasswordEnabled: boolean;
   torrentQbtPasswordConfigured: boolean;
-  torrentSourceDeleteMode: 'immediate' | 'fixed' | 'random';
+  torrentSourceDeleteMode: 'never' | 'immediate' | 'fixed' | 'random';
   torrentSourceDeleteFixedMinutes: number;
   torrentSourceDeleteRandomMinMinutes: number;
   torrentSourceDeleteRandomMaxMinutes: number;
@@ -142,7 +142,7 @@ export function SettingsPage() {
   const [vaultSessionTtlMinutes, setVaultSessionTtlMinutes] = useState(60);
   const [vaultPasswordEnabled, setVaultPasswordEnabled] = useState(false);
   const [torrentQbtPasswordConfigured, setTorrentQbtPasswordConfigured] = useState(false);
-  const [torrentSourceDeleteMode, setTorrentSourceDeleteMode] = useState<'immediate' | 'fixed' | 'random'>('immediate');
+  const [torrentSourceDeleteMode, setTorrentSourceDeleteMode] = useState<'never' | 'immediate' | 'fixed' | 'random'>('immediate');
   const [torrentSourceDeleteFixedMinutes, setTorrentSourceDeleteFixedMinutes] = useState(30);
   const [torrentSourceDeleteRandomMinMinutes, setTorrentSourceDeleteRandomMinMinutes] = useState(30);
   const [torrentSourceDeleteRandomMaxMinutes, setTorrentSourceDeleteRandomMaxMinutes] = useState(120);
@@ -160,7 +160,7 @@ export function SettingsPage() {
   const [vaultPasswordInput, setVaultPasswordInput] = useState('');
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [torrentQbtPasswordInput, setTorrentQbtPasswordInput] = useState('');
-  const [torrentSourceDeleteModeInput, setTorrentSourceDeleteModeInput] = useState<'immediate' | 'fixed' | 'random'>(
+  const [torrentSourceDeleteModeInput, setTorrentSourceDeleteModeInput] = useState<'never' | 'immediate' | 'fixed' | 'random'>(
     'immediate',
   );
   const [torrentSourceDeleteFixedMinutesInput, setTorrentSourceDeleteFixedMinutesInput] = useState('30');
@@ -501,7 +501,7 @@ export function SettingsPage() {
       <div className="mt-6 space-y-8">
         {/* 横向 Tabs：分类切换 */}
         <div className="rounded-2xl border border-neutral-200/80 bg-white/80 p-1 backdrop-blur-xl dark:border-neutral-700/80 dark:bg-neutral-900/55">
-          <div className="flex w-full gap-1 overflow-x-auto" aria-label="设置分类">
+          <div className="flex w-full gap-1 overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="设置分类">
             {SETTINGS_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -693,7 +693,7 @@ export function SettingsPage() {
                 <HeroSelect
                   aria-label="源文件清理策略"
                   value={torrentSourceDeleteModeInput}
-                  onChange={(value) => setTorrentSourceDeleteModeInput(value as 'immediate' | 'fixed' | 'random')}
+                  onChange={(value) => setTorrentSourceDeleteModeInput(value as 'never' | 'immediate' | 'fixed' | 'random')}
                   variant="secondary"
                   className="w-full"
                 >
@@ -703,6 +703,10 @@ export function SettingsPage() {
                   </HeroSelect.Trigger>
                   <HeroSelect.Popover className="min-w-[var(--trigger-width)]">
                     <HeroListBox>
+                      <HeroListBox.Item id="never" textValue="永不清理">
+                        <HeroLabel>永不清理</HeroLabel>
+                        <HeroListBox.ItemIndicator />
+                      </HeroListBox.Item>
                       <HeroListBox.Item id="immediate" textValue="直接删除">
                         <HeroLabel>直接删除</HeroLabel>
                         <HeroListBox.ItemIndicator />
@@ -803,7 +807,7 @@ export function SettingsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex flex-col-reverse gap-2.5 pb-[env(safe-area-inset-bottom)] sm:flex-row sm:items-center sm:justify-end">
           <ActionTextButton onPress={handleReset} isDisabled={saving || loading} className="justify-center">
             重置编辑
           </ActionTextButton>

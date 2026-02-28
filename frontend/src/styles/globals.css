@@ -89,6 +89,7 @@
 @layer base {
   * {
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
   }
 
   html {
@@ -104,6 +105,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    touch-action: manipulation;
   }
 
   body {
@@ -183,6 +185,8 @@
     min-height: 100vh;
     position: relative;
     z-index: 1;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
   h1,
@@ -233,6 +237,17 @@
 
   .dark ::-webkit-scrollbar-thumb:hover {
     background-color: rgba(148, 163, 184, 0.78);
+  }
+
+  /* 触屏设备：隐藏自定义滚动条，使用系统原生滚动 */
+  @media (pointer: coarse) {
+    ::-webkit-scrollbar {
+      display: none;
+    }
+
+    * {
+      scrollbar-width: none;
+    }
   }
 }
 
@@ -346,16 +361,18 @@
       box-shadow 0.2s ease;
   }
 
-  .btn-gold:hover {
-    background-color: var(--theme-primary-strong);
-    box-shadow: 0 12px 28px -18px rgba(30, 41, 59, 0.42);
+  @media (hover: hover) {
+    .btn-gold:hover {
+      background-color: var(--theme-primary-strong);
+      box-shadow: 0 12px 28px -18px rgba(30, 41, 59, 0.42);
+    }
   }
 
   .btn-gold:active {
     transform: translateY(1px);
   }
 
-  /* 悬浮效果 */
+  /* 悬浮效果：仅在支持 hover 的设备上生效 */
   .hover-lift {
     transition:
       transform 0.2s ease,
@@ -363,15 +380,64 @@
     cursor: pointer;
   }
 
-  .hover-lift:hover {
-    box-shadow: 0 18px 34px -24px rgba(15, 23, 42, 0.35);
-    transform: translateY(-1px);
+  @media (hover: hover) {
+    .hover-lift:hover {
+      box-shadow: 0 18px 34px -24px rgba(15, 23, 42, 0.35);
+      transform: translateY(-1px);
+    }
+  }
+
+  /* 触屏设备：降低 backdrop-filter 复杂度 */
+  @media (pointer: coarse) {
+    .glass {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .glass-sidebar {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .glass-header {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .glass-card {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  }
+
+  /* 移动端简化 body::before 纹理 */
+  @media (max-width: 767px) {
+    body::before {
+      opacity: 0.12;
+    }
   }
 
   /* 拖拽区域激活 */
   .dropzone-active {
     border-color: var(--theme-primary);
     background-color: var(--theme-primary-a16);
+  }
+
+  /* 弹出菜单暖色实体背景（替代透明玻璃） */
+  .popover-warm {
+    background: linear-gradient(160deg, #fffbf7 0%, #faf4ee 100%);
+    border: 1px solid var(--theme-primary-a24);
+    box-shadow:
+      0 20px 48px -16px rgba(62, 47, 34, 0.22),
+      0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  }
+
+  .dark .popover-warm {
+    background: linear-gradient(160deg, #201a15 0%, #181310 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 20px 48px -16px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 255, 255, 0.04) inset;
   }
 }
 

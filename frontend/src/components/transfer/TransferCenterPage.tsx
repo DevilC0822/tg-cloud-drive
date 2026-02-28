@@ -297,7 +297,7 @@ export function TransferCenterPage({
   }, [activeDownloads, onCancelDownload]);
 
   return (
-    <div ref={rootRef} style={containerStyle} className="mx-auto w-full max-w-[90rem] px-3 pt-0 pb-5 md:px-5 md:py-7">
+    <div ref={rootRef} style={containerStyle} className="mx-auto w-full max-w-[90rem] px-3 pt-0 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:px-5 md:py-7">
       <div className="space-y-5 md:space-y-6">
         <div
           ref={headerWrapRef}

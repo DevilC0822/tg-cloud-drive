@@ -235,7 +235,7 @@ export function FilePreview({
             <div className="flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)]">
               <Music2 className="h-11 w-11 text-neutral-900" />
             </div>
-            <audio src={previewUrl} controls className="w-80">
+            <audio src={previewUrl} controls className="w-full max-w-80">
               您的浏览器不支持音频播放
             </audio>
           </div>
@@ -290,26 +290,26 @@ export function FilePreview({
         className={cn('relative flex h-full flex-col', isClosing ? 'animate-modalPanelOut' : 'animate-modalPanelIn')}
       >
         {/* 顶部工具栏 */}
-        <div className="flex items-center justify-between border-b border-white/10 bg-slate-900/65 px-4 py-3 backdrop-blur">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between border-b border-white/10 bg-slate-900/65 px-3 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur sm:px-4 sm:py-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <ActionIconButton
               icon={<X className="h-5 w-5" />}
               label="关闭预览"
               surface="dark"
               onPress={onClose}
-              className="rounded-lg"
+              className="shrink-0 rounded-lg"
             />
-            <div>
-              <h2 className="font-medium text-white">{file.name}</h2>
-              <p className="text-sm text-neutral-400">
+            <div className="min-w-0">
+              <h2 className="truncate font-medium text-white">{file.name}</h2>
+              <p className="truncate text-sm text-neutral-400">
                 {formatFileSize(file.size)} · {formatDateTime(file.updatedAt)}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {file.type === 'image' && (
-              <>
+              <div className="hidden items-center gap-2 sm:flex">
                 <ActionIconButton
                   icon={<ZoomOut className="h-5 w-5" />}
                   label="缩小"
@@ -330,14 +330,14 @@ export function FilePreview({
                   onPress={() => setRotation((r) => r + 90)}
                 />
                 <div className="mx-2 h-6 w-px bg-white/20" />
-              </>
+              </div>
             )}
 
             <HeroDropdown>
               <HeroDropdown.Trigger>
                 <ActionIconButton icon={<MoreVertical className="h-5 w-5" />} label="更多操作" surface="dark" />
               </HeroDropdown.Trigger>
-              <HeroDropdown.Popover className="w-44 rounded-2xl border border-white/50 bg-white/40 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-black/40 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5)]">
+              <HeroDropdown.Popover className="popover-warm w-44 rounded-2xl">
                 <HeroDropdown.Menu
                   aria-label="文件预览操作"
                   onAction={(key) => {
@@ -379,7 +379,7 @@ export function FilePreview({
         {/* 导航按钮 */}
         {files.length > 1 && (
           <>
-            <div className="absolute top-1/2 left-4 -translate-y-1/2">
+            <div className="absolute top-1/2 left-2 -translate-y-1/2 sm:left-4">
               <ActionIconButton
                 icon={<ChevronLeft className="h-6 w-6" />}
                 label="上一个文件"
@@ -390,7 +390,7 @@ export function FilePreview({
                 className={cn('rounded-full bg-slate-900/65 backdrop-blur', !hasPrev && 'opacity-40')}
               />
             </div>
-            <div className="absolute top-1/2 right-4 -translate-y-1/2">
+            <div className="absolute top-1/2 right-2 -translate-y-1/2 sm:right-4">
               <ActionIconButton
                 icon={<ChevronRight className="h-6 w-6" />}
                 label="下一个文件"

@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	torrentSourceDeleteModeNever     = "never"
 	torrentSourceDeleteModeImmediate = "immediate"
 	torrentSourceDeleteModeFixed     = "fixed"
 	torrentSourceDeleteModeRandom    = "random"
@@ -23,20 +24,26 @@ func normalizeTorrentSourceDeleteMode(raw string) (string, error) {
 	switch mode {
 	case "", torrentSourceDeleteModeImmediate:
 		return torrentSourceDeleteModeImmediate, nil
+	case torrentSourceDeleteModeNever:
+		return torrentSourceDeleteModeNever, nil
 	case torrentSourceDeleteModeFixed:
 		return torrentSourceDeleteModeFixed, nil
 	case torrentSourceDeleteModeRandom:
 		return torrentSourceDeleteModeRandom, nil
 	default:
-		return "", fmt.Errorf("源文件清理模式非法，仅支持 immediate/fixed/random")
+		return "", fmt.Errorf("源文件清理模式非法，仅支持 never/immediate/fixed/random")
 	}
 }
 
 func validateTorrentSourceDeletePolicy(mode string, fixedMin int, randomMin int, randomMax int) error {
-	if mode != torrentSourceDeleteModeImmediate &&
+	if mode != torrentSourceDeleteModeNever &&
+		mode != torrentSourceDeleteModeImmediate &&
 		mode != torrentSourceDeleteModeFixed &&
 		mode != torrentSourceDeleteModeRandom {
-		return fmt.Errorf("源文件清理模式非法，仅支持 immediate/fixed/random")
+		return fmt.Errorf("源文件清理模式非法，仅支持 never/immediate/fixed/random")
+	}
+	if mode == torrentSourceDeleteModeNever || mode == torrentSourceDeleteModeImmediate {
+		return nil
 	}
 	if fixedMin < torrentSourceDeleteMinMinutes || fixedMin > torrentSourceDeleteMaxMinutes {
 		return fmt.Errorf("固定清理延迟范围应为 %d~%d 分钟", torrentSourceDeleteMinMinutes, torrentSourceDeleteMaxMinutes)

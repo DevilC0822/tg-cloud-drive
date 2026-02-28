@@ -90,13 +90,13 @@ export function FileBrowser({
   };
 
   return (
-    <div className="flex h-full flex-col rounded-3xl border border-neutral-200/85 bg-[linear-gradient(165deg,rgba(255,255,255,0.6),rgba(246,240,232,0.82))] shadow-[0_28px_60px_-44px_rgba(62,47,34,0.65)] dark:border-neutral-700/80 dark:bg-[linear-gradient(165deg,rgba(39,31,27,0.74),rgba(22,18,16,0.8))]">
+    <div className="flex h-full flex-col rounded-none border border-neutral-200/85 bg-[linear-gradient(165deg,rgba(255,255,255,0.6),rgba(246,240,232,0.82))] shadow-[0_28px_60px_-44px_rgba(62,47,34,0.65)] sm:rounded-3xl dark:border-neutral-700/80 dark:bg-[linear-gradient(165deg,rgba(39,31,27,0.74),rgba(22,18,16,0.8))]">
       {/* 面包屑导航 */}
       <div className="border-b border-neutral-200/75 px-4 py-3 lg:px-6 dark:border-neutral-700/70">
         <Breadcrumb items={breadcrumbs} onNavigate={onNavigate} />
       </div>
 
-      <div className="flex min-h-14 items-center justify-between gap-2 border-b border-neutral-200/75 bg-white/40 px-4 py-2.5 lg:px-6 dark:border-neutral-700/70 dark:bg-neutral-900/42">
+      <div className="flex min-h-14 items-center justify-between gap-2 border-b border-neutral-200/75 bg-white/40 px-3 py-2.5 lg:px-6 dark:border-neutral-700/70 dark:bg-neutral-900/42">
         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pr-1">
           <ActionStatusPill tone={selectedCount > 0 ? 'brand' : 'neutral'}>已选 {selectedCount}</ActionStatusPill>
           <ActionStatusPill>共 {files.length} 项</ActionStatusPill>
@@ -194,7 +194,7 @@ export function FileBrowser({
 
       {/* 分页 */}
       {pagination && pagination.totalCount > 0 && pagination.totalPages > 1 && (
-        <div className="border-t border-neutral-200/75 bg-white/42 px-4 py-3 lg:px-6 dark:border-neutral-700/70 dark:bg-neutral-900/34">
+        <div className="border-t border-neutral-200/75 bg-white/42 px-3 py-3 lg:px-6 dark:border-neutral-700/70 dark:bg-neutral-900/34">
           <Pagination
             page={pagination.page}
             pageSize={pagination.pageSize}

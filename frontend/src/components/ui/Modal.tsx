@@ -58,11 +58,12 @@ export function Modal({
         variant="blur"
         className="modal-backdrop-motion"
       >
-        <HeroModal.Container placement="auto" scroll={scroll} className="px-4">
+        <HeroModal.Container placement="auto" scroll={scroll} className="px-0 sm:px-4">
           <HeroModal.Dialog
             className={cn(
-              'modal-dialog-motion w-full overflow-hidden rounded-3xl border border-neutral-200/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(250,248,245,0.96))] shadow-[0_28px_72px_-38px_rgba(15,23,42,0.72)]',
+              'modal-dialog-motion w-full overflow-hidden rounded-none border border-neutral-200/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(250,248,245,0.96))] shadow-[0_28px_72px_-38px_rgba(15,23,42,0.72)] sm:rounded-3xl',
               'dark:border-neutral-700/80 dark:bg-[linear-gradient(160deg,rgba(23,23,23,0.96),rgba(15,23,42,0.94))]',
+              'max-sm:min-h-svh max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]',
               sizes[size],
             )}
           >

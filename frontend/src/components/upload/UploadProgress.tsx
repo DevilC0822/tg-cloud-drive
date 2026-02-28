@@ -120,7 +120,7 @@ export function UploadProgress() {
     <>
       <div
         className={
-          'animate-slideUp fixed right-4 bottom-4 z-40 w-[22rem] overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/92 shadow-[0_24px_52px_-36px_rgba(15,23,42,0.55)] dark:border-neutral-700/80 dark:bg-neutral-900/88'
+          'animate-slideUp fixed right-2 bottom-[calc(0.5rem+env(safe-area-inset-bottom))] z-40 w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/92 shadow-[0_24px_52px_-36px_rgba(15,23,42,0.55)] sm:right-4 sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:w-[22rem] dark:border-neutral-700/80 dark:bg-neutral-900/88'
         }
       >
         <div className="flex items-center justify-between border-b border-neutral-200/80 bg-neutral-50/90 px-4 py-3 dark:border-neutral-700/80 dark:bg-neutral-800/90">
@@ -143,7 +143,7 @@ export function UploadProgress() {
               <HeroDropdown.Trigger>
                 <ActionIconButton icon={<SlidersHorizontal className="h-4 w-4" />} label="任务操作" tone="brand" />
               </HeroDropdown.Trigger>
-              <HeroDropdown.Popover className="w-48 rounded-2xl border border-white/50 bg-white/40 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-black/40 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5)]">
+              <HeroDropdown.Popover className="popover-warm w-48 rounded-2xl">
                 <HeroDropdown.Menu
                   aria-label="上传任务操作"
                   onAction={(key) => {

@@ -392,7 +392,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
 
   return (
     <>
-      <header className="glass-header relative z-30 rounded-3xl px-4 py-3 shadow-lg lg:px-6">
+      <header className="glass-header relative z-30 rounded-none px-3 py-2.5 shadow-lg sm:px-4 md:rounded-3xl lg:px-6">
         <div className={cn('flex items-center gap-2.5 xl:gap-3')}>
           <div
             className={cn(
@@ -442,7 +442,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
 
           <div className="min-w-0 flex-1">
             <div className={cn('flex items-center', capsuleGroupGapClass)}>
-              <div className="w-full max-w-xl lg:max-w-2xl">
+              <div className="w-full sm:max-w-xl lg:max-w-2xl">
                 <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="搜索文件和文件夹..." />
               </div>
             </div>
@@ -514,7 +514,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                     className="border-transparent bg-transparent"
                   />
                 </HeroDropdown.Trigger>
-                <HeroDropdown.Popover className="w-40 rounded-2xl border border-white/50 bg-white/40 p-1 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-black/40 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5)]">
+                <HeroDropdown.Popover className="popover-warm w-40 rounded-2xl p-1">
                   <HeroDropdown.Menu
                     aria-label="主题切换"
                     onAction={(key) => changeTheme(key as 'light' | 'dark' | 'system')}
@@ -567,7 +567,7 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                 </HeroDropdown.Trigger>
                 <HeroDropdown.Popover
                   placement="bottom end"
-                  className="w-[min(360px,calc(100svw-24px))] max-w-[calc(100svw-24px)] overflow-hidden rounded-3xl border border-white/50 bg-white/40 p-0 shadow-[0_16px_40px_-16px_rgba(15,23,42,0.2)] backdrop-blur-xl dark:border-white/10 dark:bg-black/40 dark:shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5)]"
+                  className="popover-warm w-[min(360px,calc(100svw-24px))] max-w-[calc(100svw-24px)] overflow-hidden rounded-3xl p-0"
                 >
                   <div className="border-b border-neutral-200/80 bg-gradient-to-r from-[var(--theme-primary-a20)] via-[var(--theme-primary-a08)] to-transparent px-4 py-3 dark:border-neutral-700/80 dark:to-transparent">
                     <div className="flex flex-wrap items-center gap-3">

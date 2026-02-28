@@ -241,7 +241,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="mt-2 flex-1 overflow-y-auto px-3 pb-4" aria-label="侧边导航">
+      <nav className="mt-2 flex-1 overflow-y-auto px-3 pb-[max(1rem,env(safe-area-inset-bottom))]" aria-label="侧边导航">
         <div className="space-y-4">
           {navSections.map((section) => (
             <section key={section.id} aria-label={section.label}>
