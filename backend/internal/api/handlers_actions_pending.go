@@ -82,12 +82,23 @@ func (s *Server) handleDeleteItemPermanently(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// 构建失败详情（用于前端展示）
+	failedDetails := make([]map[string]any, 0, len(failedDeletes))
+	for _, f := range failedDeletes {
+		failedDetails = append(failedDetails, map[string]any{
+			"chatId":    f.TGChatID,
+			"messageId": f.TGMessageID,
+			"error":     f.Error,
+		})
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok": true,
 		"telegramCleanup": map[string]any{
 			"attempted": len(refs),
 			"deleted":   len(refs) - len(failedDeletes),
 			"failed":    len(failedDeletes),
+			"errors":    failedDetails,
 		},
 	})
 }

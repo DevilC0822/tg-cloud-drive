@@ -15,7 +15,7 @@ import { authCheckedAtom, authenticatedAtom } from '@/stores/authAtoms';
 import type { FileItem, SortBy, BreadcrumbItem } from '@/types';
 import { apiFetchJson, dtoToFileItem, ApiError, type ItemDTO } from '@/utils/api';
 
-type RouteView = 'files' | 'settings' | 'transfers' | 'vault';
+type RouteView = 'files' | 'settings' | 'transfers' | 'vault' | 'local-storage';
 
 type PaginationState = {
   page: number;
@@ -65,6 +65,7 @@ function viewFromPathname(pathname: string): RouteView {
   if (normalized === '/transfers') return 'transfers';
   if (normalized === '/settings') return 'settings';
   if (normalized === '/vault') return 'vault';
+  if (normalized === '/local-storage') return 'local-storage';
   return 'files';
 }
 
@@ -213,6 +214,8 @@ export function useFiles() {
       nextPathname = '/settings';
     } else if (activeNav === 'vault') {
       nextPathname = '/vault';
+    } else if (activeNav === 'local-storage') {
+      nextPathname = '/local-storage';
     } else {
       const folder = currentFolderId ? folders.find((f) => f.id === currentFolderId && f.type === 'folder') : null;
       nextPathname = folder ? encodeFolderPathToRoute(folder.path) : '/files';
@@ -503,6 +506,7 @@ export function useFiles() {
               attempted: number;
               deleted: number;
               failed: number;
+              errors?: { chatId: string; messageId: number; error: string }[];
             };
           }>(`/api/items/${id}`, { method: 'DELETE' }),
         ),
@@ -514,7 +518,10 @@ export function useFiles() {
         const failed = item.telegramCleanup?.failed ?? 0;
         return sum + (Number.isFinite(failed) ? failed : 0);
       }, 0);
-      return { telegramCleanupFailed };
+      const telegramCleanupErrors = responses.flatMap(
+        (item) => item.telegramCleanup?.errors ?? [],
+      );
+      return { telegramCleanupFailed, telegramCleanupErrors };
     },
     [clearSelection, refreshFolders, refreshItems],
   );

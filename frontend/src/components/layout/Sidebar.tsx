@@ -3,23 +3,28 @@ import { useEffect, useRef, useState } from 'react';
 import {
   FolderClosed,
   Settings,
+  HardDrive,
   KeyRound,
   ArrowLeftRight,
   X,
   Cloud,
   ArrowUpRight,
+  Sun,
+  Moon,
+  Monitor,
   type LucideIcon,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { activeNavAtom, mobileSidebarOpenAtom, sidebarOpenAtom } from '@/stores/uiAtoms';
 import { ActionIconButton, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
+import { useTheme } from '@/hooks/useTheme';
 
 function cn(...inputs: (string | undefined | null | boolean)[]) {
   return twMerge(clsx(inputs));
 }
 
-type SidebarNavId = 'files' | 'transfers' | 'settings' | 'vault';
+type SidebarNavId = 'files' | 'transfers' | 'local-storage' | 'settings' | 'vault';
 
 type SidebarNavItem = {
   id: SidebarNavId;
@@ -54,6 +59,7 @@ const navSections: SidebarNavSection[] = [
     label: '系统',
     items: [
       { id: 'vault', label: '密码箱', subtitle: '受保护文件区', icon: KeyRound },
+      { id: 'local-storage', label: '本地存储', subtitle: '管理服务器残留文件', icon: HardDrive },
       { id: 'settings', label: '设置', subtitle: '运行参数与策略', icon: Settings },
     ],
   },
@@ -185,6 +191,7 @@ export function Sidebar() {
   const [pulseState, setPulseState] = useState<{ id: SidebarNavId; token: number } | null>(null);
   const pulseTokenRef = useRef(0);
   const pulseTimerRef = useRef<number | null>(null);
+  const { theme, changeTheme } = useTheme();
 
   useEffect(() => {
     return () => {
@@ -263,6 +270,51 @@ export function Sidebar() {
           ))}
         </div>
       </nav>
+
+      {/* 移动端快捷操作区 */}
+      <div className="border-t border-neutral-200/75 px-4 py-3 lg:hidden dark:border-neutral-700/70">
+        <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white/48 px-1 py-1 dark:border-neutral-700/80 dark:bg-neutral-800/52">
+            <button
+              type="button"
+              onClick={() => changeTheme('light')}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+                theme === 'light'
+                  ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink)]'
+                  : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+              )}
+            >
+              <Sun className="h-3.5 w-3.5" />
+              浅色
+            </button>
+            <button
+              type="button"
+              onClick={() => changeTheme('dark')}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+                theme === 'dark'
+                  ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink)]'
+                  : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+              )}
+            >
+              <Moon className="h-3.5 w-3.5" />
+              深色
+            </button>
+            <button
+              type="button"
+              onClick={() => changeTheme('system')}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+                theme === 'system'
+                  ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink)]'
+                  : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+              )}
+            >
+              <Monitor className="h-3.5 w-3.5" />
+              系统
+            </button>
+          </div>
+      </div>
     </>
   );
 
@@ -294,7 +346,7 @@ export function Sidebar() {
         className={cn(
           'fixed inset-y-0 left-0 z-50 lg:hidden',
           'flex w-72 flex-col',
-          'glass-sidebar',
+          'border-r border-neutral-200/80 bg-white dark:border-neutral-700/80 dark:bg-neutral-900',
           'shadow-2xl',
           'transition-transform duration-300 ease-out',
           mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full',

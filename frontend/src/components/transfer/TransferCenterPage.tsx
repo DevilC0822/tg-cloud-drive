@@ -301,7 +301,7 @@ export function TransferCenterPage({
       <div className="space-y-5 md:space-y-6">
         <div
           ref={headerWrapRef}
-          className={`transfer-header-surface sticky top-0 z-40 -mx-3 transition-[filter] duration-200 md:static md:mx-0 md:drop-shadow-none ${
+          className={`transfer-header-surface sticky top-0 z-10 -mx-3 transition-[filter] duration-200 md:static md:mx-0 md:drop-shadow-none ${
             headerElevated ? 'drop-shadow-[0_18px_30px_rgba(15,23,42,0.18)]' : 'drop-shadow-none'
           }`}
         >

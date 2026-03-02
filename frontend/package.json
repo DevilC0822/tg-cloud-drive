@@ -14,8 +14,8 @@
     "quality:copy": "npm run copy:audit:check && npm run build"
   },
   "dependencies": {
-    "@heroui/react": "^3.0.0-beta.6",
-    "@heroui/styles": "^3.0.0-beta.6",
+    "@heroui/react": "^3.0.0-beta.7",
+    "@heroui/styles": "^3.0.0-beta.7",
     "clsx": "^2.1.1",
     "jotai": "^2.10.0",
     "lucide-react": "^0.468.0",

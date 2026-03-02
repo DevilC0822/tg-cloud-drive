@@ -1,5 +1,6 @@
 import { useAtom, useAtomValue } from 'jotai';
-import { Clock3, FolderOpen, Grid3X3, HardDrive, List, Text } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Clock3, FileType, FolderOpen, Grid3X3, HardDrive, List, Text } from 'lucide-react';
+import { Dropdown as HeroDropdown } from '@heroui/react';
 import { viewModeAtom, contextMenuAtom } from '@/stores/uiAtoms';
 import { breadcrumbsAtom, sortConfigAtom } from '@/stores/fileAtoms';
 import { FileGrid } from './FileGrid';
@@ -8,8 +9,20 @@ import { FileContextMenu } from './FileContextMenu';
 import { Breadcrumb } from '@/components/navigation/Breadcrumb';
 import { DropZone } from '@/components/upload/DropZone';
 import { Pagination } from '@/components/ui/Pagination';
-import type { FileItem, SortBy, BreadcrumbItem } from '@/types';
+import type { FileItem, SortBy, SortOrder, BreadcrumbItem } from '@/types';
 import { ActionIconButton, ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
+
+const SORT_FIELD_OPTIONS: { key: SortBy; label: string; icon: React.ReactNode }[] = [
+  { key: 'name', label: '名称', icon: <Text className="h-3.5 w-3.5" /> },
+  { key: 'size', label: '大小', icon: <HardDrive className="h-3.5 w-3.5" /> },
+  { key: 'date', label: '时间', icon: <Clock3 className="h-3.5 w-3.5" /> },
+  { key: 'type', label: '类型', icon: <FileType className="h-3.5 w-3.5" /> },
+];
+
+const SORT_ORDER_OPTIONS: { key: SortOrder; label: string; icon: React.ReactNode }[] = [
+  { key: 'asc', label: '升序', icon: <ArrowUp className="h-3.5 w-3.5" /> },
+  { key: 'desc', label: '降序', icon: <ArrowDown className="h-3.5 w-3.5" /> },
+];
 
 export interface FileBrowserProps {
   files: FileItem[];
@@ -73,7 +86,7 @@ export function FileBrowser({
 }: FileBrowserProps) {
   const [viewMode, setViewMode] = useAtom(viewModeAtom);
   const breadcrumbs = useAtomValue(breadcrumbsAtom);
-  const sortConfig = useAtomValue(sortConfigAtom);
+  const [sortConfig, setSortConfig] = useAtom(sortConfigAtom);
   const contextMenu = useAtomValue(contextMenuAtom);
   const selectedCount = selectedIds.size;
   const showGridSortActions = viewMode === 'grid';
@@ -81,6 +94,13 @@ export function FileBrowser({
   const handleSort = (by: SortBy) => {
     onSort(by);
   };
+
+  const handleSortOrderChange = (order: SortOrder) => {
+    setSortConfig((prev) => ({ ...prev, order }));
+  };
+
+  const currentFieldOption = SORT_FIELD_OPTIONS.find((o) => o.key === sortConfig.by) ?? SORT_FIELD_OPTIONS[0];
+  const OrderIcon = sortConfig.order === 'asc' ? ArrowUp : ArrowDown;
 
   const handleContentClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!onClearSelection || selectedCount === 0) return;
@@ -101,42 +121,65 @@ export function FileBrowser({
           <ActionStatusPill tone={selectedCount > 0 ? 'brand' : 'neutral'}>已选 {selectedCount}</ActionStatusPill>
           <ActionStatusPill>共 {files.length} 项</ActionStatusPill>
           {showGridSortActions ? (
-            <>
-              <ActionTextButton
-                tone={sortConfig.by === 'name' ? 'brand' : 'neutral'}
-                active={sortConfig.by === 'name'}
-                density="compact"
-                leadingIcon={<Text className="h-3.5 w-3.5" />}
-                onPress={() => handleSort('name')}
-                className="h-8 shrink-0 rounded-full px-2.5 text-[11px] tracking-[0.06em] uppercase"
-              >
-                名称
-              </ActionTextButton>
-              <ActionTextButton
-                tone={sortConfig.by === 'size' ? 'brand' : 'neutral'}
-                active={sortConfig.by === 'size'}
-                density="compact"
-                leadingIcon={<HardDrive className="h-3.5 w-3.5" />}
-                onPress={() => handleSort('size')}
-                className="h-8 shrink-0 rounded-full px-2.5 text-[11px] tracking-[0.06em] uppercase"
-              >
-                大小
-              </ActionTextButton>
-              <ActionTextButton
-                tone={sortConfig.by === 'date' ? 'brand' : 'neutral'}
-                active={sortConfig.by === 'date'}
-                density="compact"
-                leadingIcon={<Clock3 className="h-3.5 w-3.5" />}
-                onPress={() => handleSort('date')}
-                className="h-8 shrink-0 rounded-full px-2.5 text-[11px] tracking-[0.06em] uppercase"
-              >
-                时间
-              </ActionTextButton>
-            </>
+            <HeroDropdown>
+              <HeroDropdown.Trigger>
+                <ActionTextButton
+                  tone="brand"
+                  density="compact"
+                  leadingIcon={<ArrowUpDown className="h-3.5 w-3.5" />}
+                  trailingIcon={<OrderIcon className="h-3 w-3" />}
+                  className="h-8 shrink-0 rounded-full px-2.5 text-[11px] tracking-[0.06em] uppercase"
+                >
+                  {currentFieldOption.label}
+                </ActionTextButton>
+              </HeroDropdown.Trigger>
+              <HeroDropdown.Popover className="popover-warm w-48 rounded-2xl p-3">
+                {/* 排序方式 */}
+                <div className="mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase dark:text-neutral-500">排序方式</div>
+                <div className="grid grid-cols-2 gap-1 rounded-xl border border-neutral-200/80 bg-white/48 p-1 dark:border-neutral-700/80 dark:bg-neutral-800/52">
+                  {SORT_FIELD_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => handleSort(opt.key)}
+                      className={[
+                        'flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+                        sortConfig.by === opt.key
+                          ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink)]'
+                          : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+                      ].join(' ')}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {/* 排序方向 */}
+                <div className="mt-3 mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase dark:text-neutral-500">排序方向</div>
+                <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white/48 px-1 py-1 dark:border-neutral-700/80 dark:bg-neutral-800/52">
+                  {SORT_ORDER_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => handleSortOrderChange(opt.key)}
+                      className={[
+                        'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+                        sortConfig.order === opt.key
+                          ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink)]'
+                          : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+                      ].join(' ')}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </HeroDropdown.Popover>
+            </HeroDropdown>
           ) : null}
         </div>
         {showViewModeToggle ? (
-          <div className="flex h-9 items-center overflow-hidden rounded-xl border border-neutral-200/80 bg-white/72 px-0.5 py-0.5 dark:border-neutral-700/80 dark:bg-neutral-900/68">
+          <div className="hidden h-9 items-center overflow-hidden rounded-xl border border-neutral-200/80 bg-white/72 px-0.5 py-0.5 sm:flex dark:border-neutral-700/80 dark:bg-neutral-900/68">
             <ActionIconButton
               icon={<Grid3X3 className="h-4 w-4" />}
               label="网格视图"

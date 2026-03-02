@@ -133,6 +133,29 @@ export interface TorrentTask {
   files?: TorrentTaskFile[];
 }
 
+export interface ResidualFile {
+  fileName: string;
+  fileSize: number;
+  existsOnDisk: boolean;
+}
+
+export interface ResidualTask {
+  taskId: string;
+  torrentName: string;
+  infoHash: string;
+  status: string;
+  finishedAt: string | null;
+  residualFiles: ResidualFile[];
+  totalResidualBytes: number;
+  totalResidualCount: number;
+}
+
+export interface ResidualSummary {
+  totalTasks: number;
+  totalResidualBytes: number;
+  qbtAvailable: boolean;
+}
+
 /* 视图模式 */
 export type ViewMode = 'grid' | 'list';
 

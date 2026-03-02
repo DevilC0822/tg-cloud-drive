@@ -115,6 +115,8 @@ func (s *Server) Router() http.Handler {
 			pr.Get("/settings", s.handleGetSettings)
 			pr.Get("/settings/access", s.handleGetServiceAccess)
 			pr.Get("/storage/stats", s.handleGetStorageStats)
+			pr.Get("/storage/local-residual", s.handleListLocalResidual)
+			pr.Post("/storage/local-residual/{id}/cleanup", s.handleCleanupLocalResidual)
 			pr.Get("/vault/status", s.handleVaultStatus)
 			pr.Get("/transfers/history", s.handleGetTransferHistory)
 			pr.Post("/folders", s.handleCreateFolder)

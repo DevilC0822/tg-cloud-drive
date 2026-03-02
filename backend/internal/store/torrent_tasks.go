@@ -529,6 +529,74 @@ LIMIT $%d OFFSET $%d
 	return items, total, nil
 }
 
+func (s *Store) ListUncleanedTorrentTasks(
+	ctx context.Context,
+	page int,
+	pageSize int,
+) ([]TorrentTask, int64, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 200 {
+		pageSize = 200
+	}
+
+	const whereSQL = `source_cleanup_done = FALSE AND status IN ('completed', 'uploading', 'error')`
+
+	var total int64
+	if err := s.db.QueryRow(
+		ctx,
+		`SELECT count(*) FROM torrent_tasks WHERE `+whereSQL,
+	).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	rows, err := s.db.Query(
+		ctx,
+		`SELECT id
+FROM torrent_tasks
+WHERE `+whereSQL+`
+ORDER BY finished_at DESC
+LIMIT $1 OFFSET $2`,
+		pageSize,
+		offset,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	ids := make([]uuid.UUID, 0, pageSize)
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, 0, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	items := make([]TorrentTask, 0, len(ids))
+	for _, id := range ids {
+		task, err := s.GetTorrentTask(ctx, id)
+		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				continue
+			}
+			return nil, 0, err
+		}
+		items = append(items, task)
+	}
+
+	return items, total, nil
+}
+
 func (s *Store) ClaimNextTorrentTask(
 	ctx context.Context,
 	fromStatuses []TorrentTaskStatus,

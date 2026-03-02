@@ -58,19 +58,18 @@ export function Modal({
         variant="blur"
         className="modal-backdrop-motion"
       >
-        <HeroModal.Container placement="auto" scroll={scroll} className="px-0 sm:px-4">
+        <HeroModal.Container placement="auto" scroll={scroll} className="px-4">
           <HeroModal.Dialog
             className={cn(
-              'modal-dialog-motion w-full overflow-hidden rounded-none border border-neutral-200/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(250,248,245,0.96))] shadow-[0_28px_72px_-38px_rgba(15,23,42,0.72)] sm:rounded-3xl',
+              'modal-dialog-motion !p-0 w-full overflow-hidden rounded-2xl border border-neutral-200/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(250,248,245,0.96))] shadow-[0_28px_72px_-38px_rgba(15,23,42,0.72)] sm:rounded-3xl',
               'dark:border-neutral-700/80 dark:bg-[linear-gradient(160deg,rgba(23,23,23,0.96),rgba(15,23,42,0.94))]',
-              'max-sm:min-h-svh max-sm:pt-[env(safe-area-inset-top)] max-sm:pb-[env(safe-area-inset-bottom)]',
               sizes[size],
             )}
           >
             {showCloseButton ? (
               <HeroModal.CloseTrigger
                 className={cn(
-                  'absolute top-5 right-5 z-20 rounded-full bg-transparent p-2',
+                  'absolute top-3.5 right-3.5 z-20 rounded-full bg-transparent p-2 sm:top-5 sm:right-5',
                   'text-neutral-500 transition-colors duration-200 hover:bg-[var(--theme-primary-a12)] hover:text-neutral-700',
                   'focus-visible:ring-2 focus-visible:ring-[var(--theme-primary-a24)] focus-visible:outline-none',
                   'dark:text-neutral-400 dark:hover:bg-white/10 dark:hover:text-neutral-200',
@@ -81,7 +80,7 @@ export function Modal({
             ) : null}
 
             {(title || description) && (
-              <HeroModal.Header className="mx-4 mt-4 rounded-2xl border border-[var(--theme-primary-a24)] bg-[linear-gradient(132deg,var(--theme-primary-a20),var(--theme-primary-a08))] px-5 py-4 pr-14 dark:border-[var(--theme-primary-a20)] dark:bg-[linear-gradient(132deg,var(--theme-primary-a24),rgba(15,23,42,0.35))]">
+              <HeroModal.Header className="mx-3 mt-3 rounded-2xl border border-[var(--theme-primary-a24)] bg-[linear-gradient(132deg,var(--theme-primary-a20),var(--theme-primary-a08))] px-4 py-3 pr-12 sm:mx-4 sm:mt-4 sm:px-5 sm:py-4 sm:pr-14 dark:border-[var(--theme-primary-a20)] dark:bg-[linear-gradient(132deg,var(--theme-primary-a24),rgba(15,23,42,0.35))]">
                 <div>
                   {title ? (
                     <HeroModal.Heading className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
@@ -95,10 +94,10 @@ export function Modal({
               </HeroModal.Header>
             )}
 
-            <HeroModal.Body className="p-5 sm:p-6">{children}</HeroModal.Body>
+            <HeroModal.Body className="!mt-0 p-3.5 sm:p-5">{children}</HeroModal.Body>
 
             {footer ? (
-              <HeroModal.Footer className="flex items-center justify-end gap-3 border-t border-neutral-200/70 px-5 pt-4 pb-5 dark:border-neutral-700/70">
+              <HeroModal.Footer className="!mt-0 flex items-center justify-end gap-3 border-t border-neutral-200/70 px-3.5 pt-3 pb-3.5 sm:px-5 sm:pt-4 sm:pb-5 dark:border-neutral-700/70">
                 {footer}
               </HeroModal.Footer>
             ) : null}

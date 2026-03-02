@@ -22,8 +22,6 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
-  Upload,
-  Plus,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -202,12 +200,9 @@ function isSetupConnectionTestDetails(value: unknown): value is SetupConnectionT
   );
 }
 
-export interface HeaderProps {
-  onNewFolder?: () => void;
-  onUpload?: () => void;
-}
+export interface HeaderProps {}
 
-export function Header({ onNewFolder, onUpload }: HeaderProps) {
+export function Header({}: HeaderProps) {
   const [searchQuery, setSearchQuery] = useAtom(searchQueryAtom);
   const setMobileSidebarOpen = useSetAtom(mobileSidebarOpenAtom);
   const setAuthenticated = useSetAtom(authenticatedAtom);
@@ -394,45 +389,6 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
     <>
       <header className="glass-header relative z-30 rounded-none px-3 py-2.5 shadow-lg sm:px-4 md:rounded-3xl lg:px-6">
         <div className={cn('flex items-center gap-2.5 xl:gap-3')}>
-          <div
-            className={cn(
-              'flex shrink-0 items-center border border-[var(--theme-primary-a24)] bg-[linear-gradient(132deg,var(--theme-primary-a24),var(--theme-primary-a08))] shadow-[0_10px_20px_-16px_rgba(30,41,59,0.42)]',
-              capsuleFrameClass,
-              capsuleInnerGapClass,
-            )}
-          >
-            <ActionIconButton
-              icon={<Upload className="h-3.5 w-3.5" />}
-              label="上传文件"
-              tone="brand"
-              onPress={onUpload}
-              className="sm:hidden"
-            />
-            <ActionIconButton
-              icon={<Plus className="h-3.5 w-3.5" />}
-              label="新建文件夹"
-              tone="neutral"
-              onPress={onNewFolder}
-              className="sm:hidden"
-            />
-            <ActionTextButton
-              tone="brand"
-              leadingIcon={<Upload className="h-3.5 w-3.5" />}
-              onPress={onUpload}
-              className="hidden border-transparent bg-white/78 text-[var(--theme-primary-ink)] shadow-[0_8px_16px_-14px_rgba(30,41,59,0.45)] sm:inline-flex dark:bg-neutral-900/70 dark:text-[var(--theme-primary-soft-hover)]"
-            >
-              上传文件
-            </ActionTextButton>
-            <ActionTextButton
-              tone="neutral"
-              leadingIcon={<Plus className="h-3.5 w-3.5" />}
-              onPress={onNewFolder}
-              className="hidden border-transparent bg-transparent text-neutral-700 sm:inline-flex dark:text-neutral-200"
-            >
-              新建文件夹
-            </ActionTextButton>
-          </div>
-
           <ActionIconButton
             icon={<Menu className="h-5 w-5" />}
             label="打开侧边栏"
@@ -449,22 +405,6 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
           </div>
 
           <div className={cn('ml-auto flex shrink-0 items-center', capsuleGroupGapClass)}>
-            <div
-              className={cn(
-                'flex items-center border border-neutral-200/80 bg-white/56 lg:hidden dark:border-neutral-700/80 dark:bg-neutral-900/62',
-                capsuleFrameClass,
-                capsuleInnerGapClass,
-              )}
-            >
-              <ActionIconButton
-                icon={<ArrowRightLeft className="h-3.5 w-3.5" />}
-                label="切换 Telegram 服务接入方式"
-                tone="brand"
-                onPress={openSwitchModal}
-                className="border-transparent bg-transparent"
-              />
-            </div>
-
             <div
               className={cn(
                 'hidden items-center border border-neutral-200/80 bg-white/56 lg:flex dark:border-neutral-700/80 dark:bg-neutral-900/62',
@@ -498,9 +438,10 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
               </ActionTextButton>
             </div>
 
+            {/* 桌面端：主题切换 + 用户头像胶囊 */}
             <div
               className={cn(
-                'flex items-center border border-neutral-200/80 bg-white/56 shadow-[0_10px_20px_-16px_rgba(30,41,59,0.42)] dark:border-neutral-700/80 dark:bg-neutral-900/62',
+                'hidden items-center border border-neutral-200/80 bg-white/56 shadow-[0_10px_20px_-16px_rgba(30,41,59,0.42)] lg:flex dark:border-neutral-700/80 dark:bg-neutral-900/62',
                 capsuleFrameClass,
                 capsuleInnerGapClass,
               )}
@@ -546,8 +487,10 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                   </HeroDropdown.Menu>
                 </HeroDropdown.Popover>
               </HeroDropdown>
+            </div>
 
-              <HeroDropdown isOpen={userMenuOpen} onOpenChange={setUserMenuOpen}>
+            {/* 用户头像（所有屏幕可见） */}
+            <HeroDropdown isOpen={userMenuOpen} onOpenChange={setUserMenuOpen}>
                 <HeroDropdown.Trigger>
                   <ActionIconButton
                     icon={<span className="text-sm leading-none font-semibold">U</span>}
@@ -662,11 +605,20 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                         void fetchStorageStats();
                         return;
                       }
+                      if (key === 'switch-service') {
+                        setUserMenuOpen(false);
+                        openSwitchModal();
+                        return;
+                      }
                       if (key === 'logout') {
                         void handleLogout();
                       }
                     }}
                   >
+                    <HeroDropdown.Item id="switch-service" textValue="切换服务">
+                      <ArrowRightLeft className="h-4 w-4 text-current" />
+                      <HeroLabel>切换服务</HeroLabel>
+                    </HeroDropdown.Item>
                     <HeroDropdown.Item id="refresh-storage" textValue="刷新存储概览" isDisabled={storageStatsLoading}>
                       <HardDrive className="h-4 w-4 text-current" />
                       <HeroLabel>刷新存储概览</HeroLabel>
@@ -678,7 +630,6 @@ export function Header({ onNewFolder, onUpload }: HeaderProps) {
                   </HeroDropdown.Menu>
                 </HeroDropdown.Popover>
               </HeroDropdown>
-            </div>
           </div>
         </div>
       </header>

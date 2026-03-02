@@ -16,6 +16,7 @@ import { SettingsPage } from '@/components/settings/SettingsPage';
 import { TransferCenterPage } from '@/components/transfer/TransferCenterPage';
 import type { TransferCleanupAction } from '@/components/transfer/transferCleanupTypes';
 import { PasswordVaultPage } from '@/components/vault/PasswordVaultPage';
+import { LocalStoragePage } from '@/components/storage/LocalStoragePage';
 import {
   SetupInitPage,
   type SetupAccessMethod,
@@ -231,6 +232,7 @@ export default function App() {
   const [newFolderName, setNewFolderName] = useState('');
   const [renameValue, setRenameValue] = useState('');
   const [renameError, setRenameError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [moveModal, setMoveModal] = useState<{
     visible: boolean;
     file: FileItem | null;
@@ -725,15 +727,19 @@ export default function App() {
   const handleConfirmDelete = useCallback(async () => {
     if (deleteModal.files.length === 0) return;
 
+    setDeleteLoading(true);
     try {
       const result = await deleteFilesPermanently(deleteModal.files.map((f) => f.id));
       const failedCount = result?.telegramCleanupFailed ?? 0;
+      const errors = result?.telegramCleanupErrors ?? [];
       setDeleteModal({ visible: false, files: [] });
       if (failedCount > 0) {
+        const errorDetail = errors.map((e) => `[msg:${e.messageId}] ${e.error}`).join('\n');
+        console.error('[TG 消息清理失败]', errorDetail);
         pushToast({
           type: 'info',
-          message: `已删除，但有 ${failedCount} 个 Telegram 分片未删除，已记录失败项`,
-          durationMs: 4500,
+          message: `文件已删除。${failedCount} 个 Telegram 消息清理失败（详情见控制台日志）`,
+          durationMs: 6000,
         });
       } else {
         pushToast({ type: 'success', message: '删除成功' });
@@ -741,6 +747,8 @@ export default function App() {
     } catch (err: unknown) {
       const e = err as ApiError;
       pushToast({ type: 'error', message: e?.message || '删除失败' });
+    } finally {
+      setDeleteLoading(false);
     }
   }, [deleteFilesPermanently, deleteModal.files, pushToast, setDeleteModal]);
 
@@ -1700,6 +1708,8 @@ export default function App() {
             onOpenTorrentSelection={handleOpenTorrentSelection}
             onRetryTorrentTask={handleRetryTorrentTask}
           />
+        ) : activeNav === 'local-storage' ? (
+          <LocalStoragePage />
         ) : activeNav === 'vault' ? (
           <PasswordVaultPage
             onUnlocked={() => {
@@ -1887,10 +1897,16 @@ export default function App() {
             <ActionTextButton
               onPress={() => setDeleteModal({ visible: false, files: [] })}
               className="min-w-[96px] justify-center"
+              isDisabled={deleteLoading}
             >
               取消
             </ActionTextButton>
-            <ActionTextButton tone="danger" onPress={handleConfirmDelete} className="min-w-[120px] justify-center">
+            <ActionTextButton
+              tone="danger"
+              onPress={handleConfirmDelete}
+              loading={deleteLoading}
+              className="min-w-[120px] justify-center"
+            >
               删除
             </ActionTextButton>
           </>

@@ -95,6 +95,7 @@ export interface ActionTextButtonProps extends Omit<HeroButtonProps, 'onPress' |
   tone?: ActionTone;
   density?: ActionDensity;
   active?: boolean;
+  loading?: boolean;
   leadingIcon?: ReactNode;
   trailingIcon?: ReactNode;
   onPress?: () => void;
@@ -106,6 +107,7 @@ export function ActionTextButton({
   tone = 'neutral',
   density = 'compact',
   active = false,
+  loading = false,
   leadingIcon,
   trailingIcon,
   onPress,
@@ -154,6 +156,7 @@ export function ActionTextButton({
       size="sm"
       variant="tertiary"
       onPress={onPress}
+      isDisabled={loading || props.isDisabled}
       className={cn(
         'rounded-xl font-medium tracking-[0.01em] transition-[background-color,border-color,color,box-shadow] duration-200',
         'focus-visible:ring-2 focus-visible:ring-[var(--theme-primary-a55)]',
@@ -164,9 +167,18 @@ export function ActionTextButton({
       )}
       {...props}
     >
-      {leadingIcon ? <span className="inline-flex h-4 w-4 items-center justify-center">{leadingIcon}</span> : null}
+      {loading ? (
+        <span className="inline-flex h-4 w-4 animate-spin items-center justify-center">
+          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+            <path d="M14.5 8a6.5 6.5 0 0 0-6.5-6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </span>
+      ) : leadingIcon ? (
+        <span className="inline-flex h-4 w-4 items-center justify-center">{leadingIcon}</span>
+      ) : null}
       <span>{children}</span>
-      {trailingIcon ? <span className="inline-flex h-4 w-4 items-center justify-center">{trailingIcon}</span> : null}
+      {!loading && trailingIcon ? <span className="inline-flex h-4 w-4 items-center justify-center">{trailingIcon}</span> : null}
     </HeroButton>
   );
 }
