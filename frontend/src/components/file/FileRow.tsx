@@ -26,7 +26,6 @@ export interface FileRowProps {
   selected?: boolean;
   columnsClassName?: string;
   onClick?: (e: React.MouseEvent) => void;
-  onDoubleClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
@@ -35,7 +34,6 @@ export function FileRow({
   selected = false,
   columnsClassName,
   onClick,
-  onDoubleClick,
   onContextMenu,
 }: FileRowProps) {
   const typeLabel = FILE_TYPE_LABELS[file.type];
@@ -46,7 +44,6 @@ export function FileRow({
       data-selected={selected ? 'true' : 'false'}
       aria-selected={selected}
       onClick={onClick}
-      onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       className={cn(
         'group relative grid cursor-pointer items-center gap-4 border-b border-white/20 px-4 py-3 dark:border-white/5',

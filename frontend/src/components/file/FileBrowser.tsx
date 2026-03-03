@@ -26,8 +26,8 @@ const SORT_ORDER_TABS: TabItem<SortOrder>[] = [
 ];
 
 const VIEW_MODE_TABS: TabItem<ViewMode>[] = [
-  { id: 'grid', label: '', icon: <Grid3X3 className="h-4 w-4" /> },
-  { id: 'list', label: '', icon: <List className="h-4 w-4" /> },
+  { id: 'grid', label: '', icon: <Grid3X3 className="h-3.5 w-3.5" /> },
+  { id: 'list', label: '', icon: <List className="h-3.5 w-3.5" /> },
 ];
 
 
@@ -175,7 +175,7 @@ export function FileBrowser({
             onChange={setViewMode}
             size="sm"
             layoutId="viewModeTabs"
-            className="hidden sm:flex bg-white/72 dark:bg-neutral-900/68 px-0.5 py-0.5"
+            className="flex shrink-0 bg-white/72 px-0.5 py-0.5 [&>button]:h-6 [&>button]:gap-0 [&>button]:px-1.5 sm:[&>button]:h-8 sm:[&>button]:gap-1 sm:[&>button]:px-2.5 dark:bg-neutral-900/68"
           />
         ) : null}
       </div>

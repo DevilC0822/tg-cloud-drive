@@ -16,11 +16,10 @@ export interface FileCardProps {
   file: FileItem;
   selected?: boolean;
   onClick?: (e: React.MouseEvent) => void;
-  onDoubleClick?: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-export function FileCard({ file, selected = false, onClick, onDoubleClick, onContextMenu }: FileCardProps) {
+export function FileCard({ file, selected = false, onClick, onContextMenu }: FileCardProps) {
   return (
     <motion.div
       layout
@@ -28,7 +27,6 @@ export function FileCard({ file, selected = false, onClick, onDoubleClick, onCon
       data-selected={selected ? 'true' : 'false'}
       aria-selected={selected}
       onClick={onClick}
-      onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       whileHover={
         selected
@@ -64,28 +62,25 @@ export function FileCard({ file, selected = false, onClick, onDoubleClick, onCon
       </AnimatePresence>
 
       {/* 更多操作按钮 */}
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8, x: 5 }}
-          whileHover={{ scale: 1.1 }}
-          className="absolute top-2.5 right-2.5 z-10"
-        >
-          <ActionIconButton
-            icon={<MoreVertical className="h-4 w-4" />}
-            label="更多操作"
-            onClick={(e) => {
-              e.stopPropagation();
-              onContextMenu?.(e);
-            }}
-            className={cn(
-              'rounded-xl border border-white/70 dark:border-neutral-700/80',
-              'bg-white/85 backdrop-blur dark:bg-neutral-900/80 shadow-sm',
-              'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
-              'opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200'
-            )}
-          />
-        </motion.div>
-      </AnimatePresence>
+      <div className="absolute top-2.5 right-2.5 z-10">
+        <ActionIconButton
+          icon={<MoreVertical className="h-4 w-4" />}
+          label="更多操作"
+          onClick={(e) => {
+            e.stopPropagation();
+            onContextMenu?.(e);
+          }}
+          className={cn(
+            'rounded-xl border border-white/70 dark:border-neutral-700/80',
+            'bg-white/85 backdrop-blur dark:bg-neutral-900/80 shadow-sm',
+            'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+            'transition-opacity duration-200',
+            selected
+              ? 'pointer-events-auto opacity-100'
+              : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100'
+          )}
+        />
+      </div>
 
       {/* 文件图标/缩略图 */}
       <div className="mb-3 flex h-24 items-center justify-center">
@@ -107,4 +102,3 @@ export function FileCard({ file, selected = false, onClick, onDoubleClick, onCon
     </motion.div>
   );
 }
-

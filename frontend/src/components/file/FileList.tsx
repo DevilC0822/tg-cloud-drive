@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -10,6 +11,7 @@ function cn(...inputs: (string | undefined | null | boolean)[]) {
 
 const FILE_LIST_COLUMNS_CLASS =
   'grid-cols-[2.5rem_minmax(0,1fr)_3rem] md:grid-cols-[2.5rem_minmax(0,5fr)_minmax(0,2fr)_minmax(0,1fr)_minmax(0,2fr)_3rem]';
+const DOUBLE_TAP_OPEN_INTERVAL_MS = 420;
 
 interface SortHeaderCellProps {
   column: SortBy;
@@ -73,6 +75,25 @@ export function FileList({
   onContextMenu,
   onSort,
 }: FileListProps) {
+  const lastActivateRef = useRef<{ fileId: string; time: number }>({ fileId: '', time: 0 });
+
+  const handleRowClick = (event: React.MouseEvent, file: FileItem) => {
+    const multiSelect = event.ctrlKey || event.metaKey;
+    onSelect(file.id, multiSelect);
+    if (multiSelect || event.shiftKey || event.button !== 0) {
+      return;
+    }
+
+    const now = Date.now();
+    const { fileId, time } = lastActivateRef.current;
+    if (fileId === file.id && now - time <= DOUBLE_TAP_OPEN_INTERVAL_MS) {
+      onOpen(file);
+      lastActivateRef.current = { fileId: '', time: 0 };
+      return;
+    }
+    lastActivateRef.current = { fileId: file.id, time: now };
+  };
+
   if (files.length === 0) {
     return null;
   }
@@ -124,8 +145,7 @@ export function FileList({
             file={file}
             selected={selectedIds.has(file.id)}
             columnsClassName={FILE_LIST_COLUMNS_CLASS}
-            onClick={(e) => onSelect(file.id, e.ctrlKey || e.metaKey)}
-            onDoubleClick={() => onOpen(file)}
+            onClick={(e) => handleRowClick(e, file)}
             onContextMenu={(e) => onContextMenu(e, file)}
           />
         ))}
