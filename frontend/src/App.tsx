@@ -1934,7 +1934,7 @@ export default function App() {
           </>
         }
       >
-        <div className="space-y-4">
+        <div className="max-h-[72vh] space-y-4 overflow-y-auto pr-1">
           <section className="rounded-2xl border border-[var(--theme-primary-a24)] bg-[linear-gradient(138deg,var(--theme-primary-a20),var(--theme-primary-a08))] p-3.5 shadow-[0_14px_28px_-24px_rgba(30,41,59,0.5)]">
             <Tabs
               tabs={UPLOAD_MODE_TABS}
@@ -2100,7 +2100,7 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="space-y-2">{uploadTargetConfirmFileRows}</div>
+                      <div className="max-h-64 space-y-2 overflow-y-auto pr-1">{uploadTargetConfirmFileRows}</div>
                       {uploadTargetConfirmHiddenCount > 0 ? (
                         <div className="rounded-xl border border-neutral-200/75 bg-neutral-50/75 px-3 py-2 text-xs text-neutral-600 dark:border-neutral-700/75 dark:bg-neutral-800/55 dark:text-neutral-300">
                           已省略显示 {uploadTargetConfirmHiddenCount} 个文件，避免大量节点导致弹窗渲染异常；上传时仍会处理全部已选文件。
@@ -2253,36 +2253,38 @@ export default function App() {
                               {renderTorrentPreviewSortIcon('fileSize')}
                             </button>
                           </div>
-                          {sortedTorrentPreviewFiles.map((file, rank) => (
-                            <div
-                              key={`${file.fileIndex}-${file.filePath}`}
-                              className="grid grid-cols-[40px_52px_minmax(0,1fr)_74px_92px] items-center gap-3 border-b border-neutral-200/70 px-3 py-2.5 last:border-b-0 dark:border-neutral-700/70"
-                            >
-                              <div className="flex items-center justify-center">
-                                <HeroCheckbox
-                                  isSelected={torrentPreviewSelectedSet.has(file.fileIndex)}
-                                  onChange={() => handleToggleTorrentPreviewFile(file.fileIndex)}
-                                  aria-label={`选择 ${file.filePath}`}
-                                >
-                                  <HeroCheckbox.Control>
-                                    <HeroCheckbox.Indicator />
-                                  </HeroCheckbox.Control>
-                                </HeroCheckbox>
+                          <div className="max-h-72 overflow-y-auto sm:max-h-[42vh]">
+                            {sortedTorrentPreviewFiles.map((file, rank) => (
+                              <div
+                                key={`${file.fileIndex}-${file.filePath}`}
+                                className="grid grid-cols-[40px_52px_minmax(0,1fr)_74px_92px] items-center gap-3 border-b border-neutral-200/70 px-3 py-2.5 last:border-b-0 dark:border-neutral-700/70"
+                              >
+                                <div className="flex items-center justify-center">
+                                  <HeroCheckbox
+                                    isSelected={torrentPreviewSelectedSet.has(file.fileIndex)}
+                                    onChange={() => handleToggleTorrentPreviewFile(file.fileIndex)}
+                                    aria-label={`选择 ${file.filePath}`}
+                                  >
+                                    <HeroCheckbox.Control>
+                                      <HeroCheckbox.Indicator />
+                                    </HeroCheckbox.Control>
+                                  </HeroCheckbox>
+                                </div>
+                                <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--theme-primary-a20)] text-[11px] font-semibold text-[var(--theme-primary-ink)]">
+                                  {rank + 1}
+                                </span>
+                                <span className="min-w-0 truncate text-sm text-neutral-700 dark:text-neutral-300">
+                                  {file.filePath}
+                                </span>
+                                <span className="inline-flex justify-center rounded-md bg-[var(--theme-primary-a12)] px-2 py-1 text-[11px] font-medium text-[var(--theme-primary-ink)]">
+                                  {file.fileType}
+                                </span>
+                                <span className="text-right text-xs text-neutral-500 dark:text-neutral-400">
+                                  {formatFileSize(file.fileSize)}
+                                </span>
                               </div>
-                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--theme-primary-a20)] text-[11px] font-semibold text-[var(--theme-primary-ink)]">
-                                {rank + 1}
-                              </span>
-                              <span className="min-w-0 truncate text-sm text-neutral-700 dark:text-neutral-300">
-                                {file.filePath}
-                              </span>
-                              <span className="inline-flex justify-center rounded-md bg-[var(--theme-primary-a12)] px-2 py-1 text-[11px] font-medium text-[var(--theme-primary-ink)]">
-                                {file.fileType}
-                              </span>
-                              <span className="text-right text-xs text-neutral-500 dark:text-neutral-400">
-                                {formatFileSize(file.fileSize)}
-                              </span>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
                         {selectedTorrentPreviewFileCount === 0 ? (
                           <div className="rounded-xl border border-amber-200/80 bg-amber-50/80 p-3 text-sm text-amber-800 dark:border-amber-800/60 dark:bg-amber-900/20 dark:text-amber-200">
