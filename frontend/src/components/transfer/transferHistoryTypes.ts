@@ -6,4 +6,4 @@ export type HistoryStatusFilter = 'all' | TransferHistoryItem['status'];
 
 export type TorrentStatusFilter = 'all' | 'active' | 'awaiting_selection' | 'completed' | 'error';
 
-export type TorrentCleanupFilter = 'all' | 'pending' | 'cleaned';
+export type TorrentCleanupFilter = 'all' | 'pending' | 'cleaned' | 'never';

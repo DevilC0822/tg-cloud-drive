@@ -234,36 +234,6 @@ func (s *Server) handleUpsertTransferHistory(w http.ResponseWriter, r *http.Requ
 	})
 }
 
-func (s *Server) handleDeleteTransferHistory(w http.ResponseWriter, r *http.Request) {
-	olderThanRaw := strings.TrimSpace(r.URL.Query().Get("olderThanDays"))
-	st := store.New(s.db)
-
-	var (
-		deleted int64
-		err     error
-	)
-	if olderThanRaw == "" {
-		deleted, err = st.DeleteAllTransferHistory(r.Context())
-	} else {
-		days := intFromQuery(olderThanRaw, -1)
-		if days < 1 || days > 3650 {
-			writeError(w, http.StatusBadRequest, "bad_request", "olderThanDays 范围应为 1~3650")
-			return
-		}
-		cutoff := time.Now().Add(-time.Duration(days) * 24 * time.Hour)
-		deleted, err = st.DeleteTransferHistoryOlderThan(r.Context(), cutoff)
-	}
-	if err != nil {
-		s.logger.Error("delete transfer history failed", "error", err.Error())
-		writeError(w, http.StatusInternalServerError, "internal_error", "删除传输历史失败")
-		return
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"deleted": deleted,
-	})
-}
-
 func (s *Server) handleDeleteTransferHistoryItem(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(chi.URLParam(r, "id"))
 	if err != nil {

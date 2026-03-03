@@ -4,7 +4,6 @@ import {
   Download,
   Pencil,
   FolderInput,
-  Copy,
   Trash2,
   Share2,
   Info,
@@ -39,12 +38,12 @@ export interface FileContextMenuProps {
   visible: boolean;
   position: { x: number; y: number };
   file: FileItem | null;
+  selectedCount?: number;
   onClose: () => void;
   onPreview?: (file: FileItem) => void | Promise<void>;
   onDownload?: (file: FileItem) => void | Promise<void>;
   onRename?: (file: FileItem) => void | Promise<void>;
   onMove?: (file: FileItem) => void | Promise<void>;
-  onCopy?: (file: FileItem) => void | Promise<void>;
   onShare?: (file: FileItem) => void | Promise<void>;
   onUnshare?: (file: FileItem) => void | Promise<void>;
   onDelete?: (file: FileItem) => void | Promise<void>;
@@ -57,12 +56,12 @@ export function FileContextMenu({
   visible,
   position,
   file,
+  selectedCount = 0,
   onClose,
   onPreview,
   onDownload,
   onRename,
   onMove,
-  onCopy,
   onShare,
   onUnshare,
   onDelete,
@@ -71,15 +70,18 @@ export function FileContextMenu({
   onVaultOut,
 }: FileContextMenuProps) {
   const safePosition = useMemo(() => clampMenuPosition(position), [position]);
+  const multiSelectActive = selectedCount > 1;
 
   const menuItems: FileMenuItem[] = useMemo(() => {
     if (!file) return [];
+    const shareDisabled = file.type === 'folder' || multiSelectActive;
 
     return [
       {
         id: 'preview',
         label: file.type === 'folder' ? '打开' : '预览',
         icon: Eye,
+        disabled: multiSelectActive,
         onClick: () => {
           onPreview?.(file);
           onClose();
@@ -99,7 +101,7 @@ export function FileContextMenu({
         id: 'share',
         label: file.isShared ? '复制分享链接' : '创建分享链接',
         icon: Share2,
-        disabled: file.type === 'folder',
+        disabled: shareDisabled,
         onClick: () => {
           onShare?.(file);
           onClose();
@@ -112,7 +114,7 @@ export function FileContextMenu({
               label: '取消分享',
               icon: Share2,
               danger: true,
-              disabled: file.type === 'folder',
+              disabled: shareDisabled,
               onClick: () => {
                 onUnshare?.(file);
                 onClose();
@@ -126,6 +128,7 @@ export function FileContextMenu({
         label: '重命名',
         icon: Pencil,
         shortcut: 'F2',
+        disabled: multiSelectActive,
         onClick: () => {
           onRename?.(file);
           onClose();
@@ -137,16 +140,6 @@ export function FileContextMenu({
         icon: FolderInput,
         onClick: () => {
           onMove?.(file);
-          onClose();
-        },
-      },
-      {
-        id: 'copy',
-        label: '复制',
-        icon: Copy,
-        shortcut: '⌘C',
-        onClick: () => {
-          onCopy?.(file);
           onClose();
         },
       },
@@ -169,6 +162,7 @@ export function FileContextMenu({
         id: 'info',
         label: '详细信息',
         icon: Info,
+        disabled: multiSelectActive,
         onClick: () => {
           onInfo?.(file);
           onClose();
@@ -177,7 +171,7 @@ export function FileContextMenu({
       { divider: true },
       {
         id: 'delete',
-        label: '删除',
+        label: multiSelectActive ? `删除选中（${selectedCount}）` : '删除',
         icon: Trash2,
         danger: true,
         shortcut: 'Del',
@@ -190,7 +184,6 @@ export function FileContextMenu({
   }, [
     file,
     onClose,
-    onCopy,
     onDelete,
     onDownload,
     onInfo,
@@ -201,6 +194,8 @@ export function FileContextMenu({
     onUnshare,
     onVaultIn,
     onVaultOut,
+    multiSelectActive,
+    selectedCount,
   ]);
 
   if (!visible || !file) return null;
@@ -222,9 +217,11 @@ export function FileContextMenu({
       </HeroDropdown.Trigger>
       <HeroDropdown.Popover
         placement="bottom start"
+        data-selection-preserve="true"
         className="popover-warm min-w-[220px] rounded-2xl p-1"
       >
         <HeroDropdown.Menu
+          data-selection-preserve="true"
           aria-label="文件右键菜单"
           className="max-h-[70vh] overflow-y-auto"
           onAction={(key) => {

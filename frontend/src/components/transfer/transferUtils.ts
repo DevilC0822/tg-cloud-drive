@@ -137,10 +137,37 @@ export function formatCleanupCountdown(dueAt: Date, nowMs: number): string {
   return `距清理还剩 ${days} 天 ${remainHours} 小时`;
 }
 
-export function torrentCleanupStatus(task: TorrentTask): { label: string; className: string; dueAt: Date | null } {
+export type TorrentCleanupState = 'not_started' | 'pending' | 'cleaned' | 'never';
+
+export interface TorrentCleanupStatus {
+  state: TorrentCleanupState;
+  label: string;
+  className: string;
+  dueAt: Date | null;
+}
+
+function normalizeCleanupPolicy(raw?: string | null): string {
+  const policy = (raw || '').trim().toLowerCase();
+  if (policy === 'never' || policy === 'immediate' || policy === 'fixed' || policy === 'random') {
+    return policy;
+  }
+  return '';
+}
+
+export function torrentCleanupStatus(task: TorrentTask): TorrentCleanupStatus {
+  const policy = normalizeCleanupPolicy(task.sourceCleanupPolicy);
   const dueAtDate = parseDueAt(task.dueAt);
+  if (policy === 'never') {
+    return {
+      state: 'never',
+      label: '永不清理',
+      className: 'bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-200',
+      dueAt: null,
+    };
+  }
   if (task.status !== 'completed') {
     return {
+      state: 'not_started',
       label: '未进入清理',
       className: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300',
       dueAt: null,
@@ -148,14 +175,32 @@ export function torrentCleanupStatus(task: TorrentTask): { label: string; classN
   }
   if (dueAtDate) {
     return {
+      state: 'pending',
       label: '待清理',
       className: 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300',
       dueAt: dueAtDate,
     };
   }
+  if (task.sourceCleanupDone) {
+    return {
+      state: 'cleaned',
+      label: '已清理',
+      className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+      dueAt: null,
+    };
+  }
+  if (policy === 'immediate' || policy === 'fixed' || policy === 'random') {
+    return {
+      state: 'pending',
+      label: '待清理',
+      className: 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300',
+      dueAt: null,
+    };
+  }
   return {
-    label: '已清理',
-    className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+    state: 'never',
+    label: '永不清理',
+    className: 'bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-200',
     dueAt: null,
   };
 }

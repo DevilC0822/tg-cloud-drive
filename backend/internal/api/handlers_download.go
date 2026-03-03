@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -140,6 +138,20 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 		writeError(w, http.StatusInternalServerError, "internal_error", "文件元数据异常")
 		return
 	}
+	if len(chunks) == 1 {
+		remoteSize, err := s.resolveSingleChunkRemoteSize(r.Context(), chunks[0])
+		if err != nil {
+			s.logger.Warn(
+				"resolve single chunk remote size failed",
+				"item_id", it.ID.String(),
+				"chunk_id", chunks[0].ID.String(),
+				"error", err.Error(),
+			)
+		} else if remoteSize > 0 {
+			size = remoteSize
+			chunks[0].ChunkSize = int(remoteSize)
+		}
+	}
 
 	br, partial, err := parseSingleRange(r.Header.Get("Range"), size)
 	if err != nil {
@@ -164,11 +176,8 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 	}
 
 	download := strings.TrimSpace(r.URL.Query().Get("download")) == "1"
-	mimeType := "application/octet-stream"
-	if it.MimeType != nil && strings.TrimSpace(*it.MimeType) != "" {
-		mimeType = strings.TrimSpace(*it.MimeType)
-	}
-	inline := !download && isPreviewableMime(mimeType)
+	mimeType := resolveDownloadMimeType(it)
+	inline := shouldInlinePreviewDownload(it.Type, mimeType, download)
 
 	headers := map[string]string{
 		"Accept-Ranges":       "bytes",
@@ -291,37 +300,34 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 			return
 		}
 
-		// 自建 Bot API local 模式下，getFile 可能返回容器内绝对路径；
-		// 若后端已挂载相同数据卷，优先走本地文件读取，避免 /file 404。
-		trimmedPath := strings.TrimSpace(filePath)
-		if filepath.IsAbs(trimmedPath) {
-			localFile, openErr := os.Open(trimmedPath)
-			if openErr == nil {
-				if subStart > 0 {
-					if _, seekErr := localFile.Seek(subStart, io.SeekStart); seekErr != nil {
-						_ = localFile.Close()
-						s.logger.Error("seek local telegram file failed", "error", seekErr.Error())
-						if !wroteHeader {
-							writeError(w, http.StatusBadGateway, "bad_gateway", "上游文件服务异常")
-						}
-						return
-					}
-				}
-
-				if !wroteHeader {
-					writeHeaders()
-				}
-				if _, copyErr := io.CopyN(w, localFile, subLen); copyErr != nil {
+		// 优先尝试本地文件读取（支持绝对路径与 local 模式下的相对路径映射），
+		// 可避免 /file 拉流在非 Range 场景下的全量前置读取。
+		localFile, _, openErr := openTelegramLocalFileByFilePath(filePath)
+		if openErr == nil {
+			if subStart > 0 {
+				if _, seekErr := localFile.Seek(subStart, io.SeekStart); seekErr != nil {
 					_ = localFile.Close()
-					s.logger.Error("stream local telegram file failed", "error", copyErr.Error())
+					s.logger.Error("seek local telegram file failed", "error", seekErr.Error())
+					if !wroteHeader {
+						writeError(w, http.StatusBadGateway, "bad_gateway", "上游文件服务异常")
+					}
 					return
 				}
-				_ = localFile.Close()
-				if flusher != nil {
-					flusher.Flush()
-				}
-				continue
 			}
+
+			if !wroteHeader {
+				writeHeaders()
+			}
+			if _, copyErr := io.CopyN(w, localFile, subLen); copyErr != nil {
+				_ = localFile.Close()
+				s.logger.Error("stream local telegram file failed", "error", copyErr.Error())
+				return
+			}
+			_ = localFile.Close()
+			if flusher != nil {
+				flusher.Flush()
+			}
+			continue
 		}
 		downloadURL := tgClient.DownloadURLFromFilePath(filePath)
 
@@ -427,6 +433,18 @@ func (s *Server) ensureChunkFileID(ctx context.Context, c store.Chunk) (string, 
 	}
 
 	return recoveredID, nil
+}
+
+func (s *Server) resolveSingleChunkRemoteSize(ctx context.Context, chunk store.Chunk) (int64, error) {
+	chunkFileID, err := s.ensureChunkFileID(ctx, chunk)
+	if err != nil {
+		return 0, err
+	}
+	meta, err := s.getCachedFileMeta(ctx, chunkFileID)
+	if err != nil {
+		return 0, err
+	}
+	return resolveStoredSizeByTelegramSize(meta.FileSize, 0), nil
 }
 
 func maxInt64(a, b int64) int64 {

@@ -128,6 +128,7 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPageSize, setHistoryPageSize] = useState(20);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
   const [historyPagination, setHistoryPagination] = useState<HistoryPagination>({
     page: 1,
     pageSize: 20,
@@ -140,9 +141,11 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
 
   const loadHistory = useCallback(async () => {
     if (!enabled) {
+      setHistoryError('');
       return;
     }
     setHistoryLoading(true);
+    setHistoryError('');
     try {
       const params = new URLSearchParams();
       params.set('page', String(historyPage));
@@ -166,8 +169,9 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
       if (nextPagination.totalPages > 0 && historyPage > nextPagination.totalPages) {
         setHistoryPage(nextPagination.totalPages);
       }
-    } catch {
-      // 保持已有状态，避免瞬时网络波动导致页面被清空
+    } catch (err: unknown) {
+      const e = err as Error;
+      setHistoryError(e?.message || '历史记录加载失败，请稍后重试');
     } finally {
       setHistoryLoading(false);
     }
@@ -392,46 +396,6 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
     if (xhr) xhr.abort();
   }, []);
 
-  const clearFinishedDownloads = useCallback(() => {
-    setDownloadTasks((prev) => prev.filter((task) => task.status === 'pending' || task.status === 'downloading'));
-  }, [setDownloadTasks]);
-
-  const clearHistory = useCallback(async () => {
-    try {
-      await apiFetchJson<{ deleted: number }>('/api/transfers/history', { method: 'DELETE' });
-      if (historyPage !== 1) {
-        setHistoryPage(1);
-      } else {
-        await loadHistory();
-      }
-      return { ok: true as const };
-    } catch {
-      return { ok: false as const, reason: '清空历史失败' };
-    }
-  }, [historyPage, loadHistory]);
-
-  const clearHistoryByDays = useCallback(
-    async (days: number) => {
-      if (!Number.isFinite(days) || days < 1 || days > 3650) {
-        return { ok: false as const, reason: '天数范围应为 1~3650' };
-      }
-      try {
-        await apiFetchJson<{ deleted: number }>(`/api/transfers/history?olderThanDays=${Math.floor(days)}`, {
-          method: 'DELETE',
-        });
-        if (historyPage !== 1) {
-          setHistoryPage(1);
-        } else {
-          await loadHistory();
-        }
-        return { ok: true as const };
-      } catch {
-        return { ok: false as const, reason: '按天清理失败' };
-      }
-    },
-    [historyPage, loadHistory],
-  );
-
   const removeHistoryItem = useCallback(
     async (id: string) => {
       if (!isUUID(id)) {
@@ -473,13 +437,11 @@ export function useTransferCenter(options: UseTransferCenterOptions = {}) {
     history,
     historyFilter,
     historyLoading,
+    historyError,
     historyPagination,
     startDownload,
     retryDownload,
     cancelDownload,
-    clearFinishedDownloads,
-    clearHistory,
-    clearHistoryByDays,
     removeHistoryItem,
     changeHistoryFilter,
     changeHistoryPage,

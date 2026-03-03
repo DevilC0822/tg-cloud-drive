@@ -1,86 +1,116 @@
-import { ArrowDownToLine, ArrowUpFromLine, Clock3, Trash2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Clock3, Trash2, Timer } from 'lucide-react';
 import type { TransferHistoryItem } from '@/types';
 import { formatDateTime, formatFileSize } from '@/utils/formatters';
 import { ActionIconButton } from '@/components/ui/HeroActionPrimitives';
+import { motion } from 'framer-motion';
 import {
   formatDurationShort,
-  historyDirectionLabel,
   historyStatusColor,
   historyStatusLabel,
 } from '@/components/transfer/transferUtils';
+import { FILE_HISTORY_GRID } from './HistoryFileList';
 
 export interface HistoryFileItemProps {
   item: TransferHistoryItem;
   onRequestRemove: (id: string, name: string) => void;
 }
 
-function directionIcon(direction: TransferHistoryItem['direction']) {
-  return direction === 'upload' ? (
-    <ArrowUpFromLine className="h-4 w-4 text-[var(--theme-primary-ink)] dark:text-[var(--theme-primary-soft)]" />
-  ) : (
-    <ArrowDownToLine className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
-  );
+function directionStyles(direction: TransferHistoryItem['direction']) {
+  return direction === 'upload' 
+    ? {
+        icon: <ArrowUpFromLine className="h-4 w-4" />,
+        color: 'text-brand-500',
+        bg: 'bg-brand-500/10',
+        label: 'UPLOAD'
+      }
+    : {
+        icon: <ArrowDownToLine className="h-4 w-4" />,
+        color: 'text-emerald-500',
+        bg: 'bg-emerald-500/10',
+        label: 'DOWNLOAD'
+      };
 }
 
 export function HistoryFileItem({ item, onRequestRemove }: HistoryFileItemProps) {
   const duration = item.finishedAt - item.startedAt;
   const finishedAtText = formatDateTime(new Date(item.finishedAt));
+  const styles = directionStyles(item.direction);
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-t border-neutral-200/80 px-4 py-3 first:border-t-0 md:grid-cols-[minmax(0,1fr)_110px_90px_90px_180px_auto] md:items-center dark:border-neutral-700/80">
-      <div className="min-w-0">
-        <div className="flex items-start gap-2">
-          <span className="mt-0.5 shrink-0">{directionIcon(item.direction)}</span>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{item.fileName}</div>
-            {item.error ? (
-              <div className="mt-1 truncate text-xs text-red-600 dark:text-red-300">{item.error}</div>
-            ) : null}
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 md:hidden">
-              <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                {historyDirectionLabel(item.direction)}
-              </span>
-              <span
-                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${historyStatusColor(item.status)}`}
-              >
-                {historyStatusLabel(item.status)}
-              </span>
-              <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                {formatFileSize(item.size)}
-              </span>
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-neutral-500 md:hidden dark:text-neutral-400">
-              <span className="inline-flex items-center gap-1">
-                <Clock3 className="h-3.5 w-3.5" />
-                {finishedAtText}
-              </span>
-              <span>·</span>
-              <span>耗时 {formatDurationShort(duration)}</span>
-            </div>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`transfer-history-row group relative grid ${FILE_HISTORY_GRID} items-center gap-4 border-b border-neutral-200/60 px-4 py-4 md:px-6 dark:border-white/5 dark:bg-transparent`}
+    >
+      {/* 任务文件 */}
+      <div className="flex min-w-0 items-center gap-4">
+        <div className={`hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${styles.bg} ${styles.color} shadow-sm`}>
+          {styles.icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-0.5 md:hidden">
+            <span className={`text-[9px] font-black tracking-widest ${styles.color}`}>
+              {styles.label}
+            </span>
           </div>
+          <h3 className="truncate text-sm font-bold tracking-tight text-neutral-900 dark:text-neutral-100" title={item.fileName}>
+            {item.fileName}
+          </h3>
+          {item.error && (
+            <p className="mt-1 truncate text-[11px] font-medium text-red-600/80 dark:text-red-400/80">
+              {item.error}
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="hidden text-xs text-neutral-700 md:block dark:text-neutral-200">{formatFileSize(item.size)}</div>
-      <div className="hidden text-xs text-neutral-700 md:block dark:text-neutral-200">
-        {formatDurationShort(duration)}
-      </div>
+      {/* 容量 */}
       <div className="hidden md:block">
-        <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${historyStatusColor(item.status)}`}
-        >
+        <p className="font-mono text-xs font-bold text-neutral-700 dark:text-neutral-300">{formatFileSize(item.size)}</p>
+      </div>
+      
+      {/* 耗时 */}
+      <div className="hidden md:block">
+        <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-neutral-700 dark:text-neutral-300">
+          <Timer className="h-3 w-3 opacity-50" />
+          {formatDurationShort(duration)}
+        </div>
+      </div>
+
+      {/* 状态 */}
+      <div className="hidden md:block">
+        <span className={`inline-flex items-center text-[10px] font-black uppercase tracking-widest ${historyStatusColor(item.status)}`}>
           {historyStatusLabel(item.status)}
         </span>
       </div>
-      <div className="hidden text-xs text-neutral-500 md:block dark:text-neutral-400">{finishedAtText}</div>
 
-      <ActionIconButton
-        icon={<Trash2 className="h-4 w-4" />}
-        label="删除记录"
-        tone="danger"
-        onPress={() => onRequestRemove(item.id, item.fileName)}
-        className="border border-neutral-200/80 dark:border-neutral-700/80"
-      />
-    </div>
+      {/* 完成时间 */}
+      <div className="hidden md:block">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+          <Clock3 className="h-3 w-3 opacity-50" />
+          {finishedAtText}
+        </div>
+      </div>
+
+      {/* 移动端元数据整合 */}
+      <div className="flex flex-col items-end gap-1 md:hidden">
+        <p className="font-mono text-[11px] font-bold text-neutral-700 dark:text-neutral-300">{formatFileSize(item.size)}</p>
+        <span className={`text-[9px] font-black uppercase tracking-widest ${historyStatusColor(item.status)}`}>
+          {historyStatusLabel(item.status)}
+        </span>
+      </div>
+
+      {/* 操作 */}
+      <div className="flex items-center justify-end">
+        <ActionIconButton
+          icon={<Trash2 className="h-4 w-4" />}
+          label="移除此记录"
+          tone="danger"
+          onPress={() => onRequestRemove(item.id, item.fileName)}
+          className="h-9 w-9 rounded-xl border-none bg-neutral-100 hover:bg-red-500/10 hover:text-red-600 dark:bg-white/5 dark:hover:bg-red-500/20 shadow-none"
+        />
+      </div>
+    </motion.div>
   );
 }

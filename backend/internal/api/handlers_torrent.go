@@ -22,27 +22,29 @@ import (
 )
 
 type torrentTaskDTO struct {
-	ID              string               `json:"id"`
-	SourceType      string               `json:"sourceType"`
-	SourceURL       *string              `json:"sourceUrl"`
-	TorrentName     string               `json:"torrentName"`
-	InfoHash        string               `json:"infoHash"`
-	TargetChatID    string               `json:"targetChatId"`
-	TargetParentID  *string              `json:"targetParentId"`
-	SubmittedBy     string               `json:"submittedBy"`
-	EstimatedSize   int64                `json:"estimatedSize"`
-	DownloadedBytes int64                `json:"downloadedBytes"`
-	Progress        float64              `json:"progress"`
-	IsPrivate       bool                 `json:"isPrivate"`
-	TrackerHosts    []string             `json:"trackerHosts"`
-	Status          string               `json:"status"`
-	Error           *string              `json:"error"`
-	StartedAt       *time.Time           `json:"startedAt"`
-	FinishedAt      *time.Time           `json:"finishedAt"`
-	DueAt           *time.Time           `json:"dueAt"`
-	CreatedAt       time.Time            `json:"createdAt"`
-	UpdatedAt       time.Time            `json:"updatedAt"`
-	Files           []torrentTaskFileDTO `json:"files,omitempty"`
+	ID                  string               `json:"id"`
+	SourceType          string               `json:"sourceType"`
+	SourceURL           *string              `json:"sourceUrl"`
+	TorrentName         string               `json:"torrentName"`
+	InfoHash            string               `json:"infoHash"`
+	TargetChatID        string               `json:"targetChatId"`
+	TargetParentID      *string              `json:"targetParentId"`
+	SubmittedBy         string               `json:"submittedBy"`
+	EstimatedSize       int64                `json:"estimatedSize"`
+	DownloadedBytes     int64                `json:"downloadedBytes"`
+	Progress            float64              `json:"progress"`
+	IsPrivate           bool                 `json:"isPrivate"`
+	TrackerHosts        []string             `json:"trackerHosts"`
+	Status              string               `json:"status"`
+	Error               *string              `json:"error"`
+	StartedAt           *time.Time           `json:"startedAt"`
+	FinishedAt          *time.Time           `json:"finishedAt"`
+	SourceCleanupPolicy string               `json:"sourceCleanupPolicy"`
+	DueAt               *time.Time           `json:"dueAt"`
+	SourceCleanupDone   bool                 `json:"sourceCleanupDone"`
+	CreatedAt           time.Time            `json:"createdAt"`
+	UpdatedAt           time.Time            `json:"updatedAt"`
+	Files               []torrentTaskFileDTO `json:"files,omitempty"`
 }
 
 type torrentTaskFileDTO struct {
@@ -91,26 +93,28 @@ func toTorrentTaskDTO(task store.TorrentTask, files []store.TorrentTaskFile) tor
 	}
 
 	dto := torrentTaskDTO{
-		ID:              task.ID.String(),
-		SourceType:      string(task.SourceType),
-		SourceURL:       task.SourceURL,
-		TorrentName:     task.TorrentName,
-		InfoHash:        task.InfoHash,
-		TargetChatID:    task.TargetChatID,
-		TargetParentID:  parentID,
-		SubmittedBy:     task.SubmittedBy,
-		EstimatedSize:   task.EstimatedSize,
-		DownloadedBytes: task.DownloadedBytes,
-		Progress:        task.Progress,
-		IsPrivate:       task.IsPrivate,
-		TrackerHosts:    task.TrackerHosts,
-		Status:          string(task.Status),
-		Error:           task.Error,
-		StartedAt:       task.StartedAt,
-		FinishedAt:      task.FinishedAt,
-		DueAt:           task.SourceCleanupDueAt,
-		CreatedAt:       task.CreatedAt,
-		UpdatedAt:       task.UpdatedAt,
+		ID:                  task.ID.String(),
+		SourceType:          string(task.SourceType),
+		SourceURL:           task.SourceURL,
+		TorrentName:         task.TorrentName,
+		InfoHash:            task.InfoHash,
+		TargetChatID:        task.TargetChatID,
+		TargetParentID:      parentID,
+		SubmittedBy:         task.SubmittedBy,
+		EstimatedSize:       task.EstimatedSize,
+		DownloadedBytes:     task.DownloadedBytes,
+		Progress:            task.Progress,
+		IsPrivate:           task.IsPrivate,
+		TrackerHosts:        task.TrackerHosts,
+		Status:              string(task.Status),
+		Error:               task.Error,
+		StartedAt:           task.StartedAt,
+		FinishedAt:          task.FinishedAt,
+		SourceCleanupPolicy: task.SourceCleanupPolicy,
+		DueAt:               task.SourceCleanupDueAt,
+		SourceCleanupDone:   task.SourceCleanupDone,
+		CreatedAt:           task.CreatedAt,
+		UpdatedAt:           task.UpdatedAt,
 	}
 	if len(files) > 0 {
 		dto.Files = make([]torrentTaskFileDTO, 0, len(files))
@@ -154,6 +158,18 @@ func toTorrentPreviewDTO(meta itorrent.MetaInfo) torrentPreviewDTO {
 		TrackerHosts: meta.AnnounceHosts,
 		Files:        files,
 	}
+}
+
+func (s *Server) resolveTorrentTaskCleanupPolicy(ctx context.Context) string {
+	settings, err := s.getRuntimeSettings(ctx)
+	if err != nil {
+		settings = s.defaultRuntimeSettings()
+	}
+	mode, err := normalizeTorrentSourceDeleteMode(settings.TorrentSourceDeleteMode)
+	if err != nil {
+		return torrentSourceDeleteModeImmediate
+	}
+	return mode
 }
 
 func (s *Server) handlePreviewTorrent(w http.ResponseWriter, r *http.Request) {
@@ -237,6 +253,7 @@ func (s *Server) handleCreateTorrentTask(w http.ResponseWriter, r *http.Request)
 
 	now := time.Now()
 	taskID := uuid.New()
+	cleanupPolicy := s.resolveTorrentTaskCleanupPolicy(r.Context())
 	if err := os.MkdirAll(s.cfg.TorrentWorkDir, 0o755); err != nil {
 		s.logger.Error("create torrent work dir failed", "error", err.Error())
 		writeError(w, http.StatusInternalServerError, "internal_error", "创建 Torrent 工作目录失败")
@@ -250,27 +267,28 @@ func (s *Server) handleCreateTorrentTask(w http.ResponseWriter, r *http.Request)
 	}
 
 	created, err := st.CreateTorrentTask(r.Context(), store.TorrentTask{
-		ID:              taskID,
-		SourceType:      payload.SourceType,
-		SourceURL:       payload.SourceURL,
-		TorrentName:     meta.Name,
-		InfoHash:        meta.InfoHash,
-		TorrentFilePath: torrentPath,
-		QBTorrentHash:   nil,
-		TargetChatID:    strings.TrimSpace(s.cfg.TGStorageChatID),
-		TargetParentID:  payload.ParentID,
-		SubmittedBy:     payload.SubmittedBy,
-		EstimatedSize:   meta.TotalSize,
-		DownloadedBytes: 0,
-		Progress:        0,
-		IsPrivate:       meta.IsPrivate,
-		TrackerHosts:    meta.AnnounceHosts,
-		Status:          store.TorrentTaskStatusQueued,
-		Error:           nil,
-		StartedAt:       nil,
-		FinishedAt:      nil,
-		CreatedAt:       now,
-		UpdatedAt:       now,
+		ID:                  taskID,
+		SourceType:          payload.SourceType,
+		SourceURL:           payload.SourceURL,
+		TorrentName:         meta.Name,
+		InfoHash:            meta.InfoHash,
+		TorrentFilePath:     torrentPath,
+		QBTorrentHash:       nil,
+		TargetChatID:        strings.TrimSpace(s.cfg.TGStorageChatID),
+		TargetParentID:      payload.ParentID,
+		SubmittedBy:         payload.SubmittedBy,
+		EstimatedSize:       meta.TotalSize,
+		DownloadedBytes:     0,
+		Progress:            0,
+		IsPrivate:           meta.IsPrivate,
+		TrackerHosts:        meta.AnnounceHosts,
+		Status:              store.TorrentTaskStatusQueued,
+		Error:               nil,
+		StartedAt:           nil,
+		FinishedAt:          nil,
+		SourceCleanupPolicy: cleanupPolicy,
+		CreatedAt:           now,
+		UpdatedAt:           now,
 	})
 	if err != nil {
 		_ = os.Remove(torrentPath)

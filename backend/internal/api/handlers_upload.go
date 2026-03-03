@@ -113,6 +113,7 @@ partLoop:
 		writeError(w, http.StatusBadRequest, "bad_request", "文件名不能为空")
 		return
 	}
+	mimeType = normalizeUploadMimeType(fileName, mimeType)
 
 	var parentID *uuid.UUID
 	if parentRaw != "" && strings.ToLower(parentRaw) != "null" {
@@ -218,11 +219,12 @@ partLoop:
 			if sendErr == nil {
 				resolvedDoc, docErr := s.resolveMessageDocument(r.Context(), msg)
 				if docErr == nil {
+					storedSize := resolveStoredSizeByTelegramSize(resolvedDoc.FileSize, fileSize)
 					ch := store.Chunk{
 						ID:             uuid.New(),
 						ItemID:         it.ID,
 						ChunkIndex:     0,
-						ChunkSize:      int(fileSize),
+						ChunkSize:      int(storedSize),
 						TGChatID:       s.cfg.TGStorageChatID,
 						TGMessageID:    msg.MessageID,
 						TGFileID:       resolvedDoc.FileID,
@@ -237,7 +239,7 @@ partLoop:
 						return
 					}
 
-					if err := st.UpdateItemSize(r.Context(), it.ID, fileSize, time.Now()); err != nil {
+					if err := st.UpdateItemSize(r.Context(), it.ID, storedSize, time.Now()); err != nil {
 						s.logger.Error("update item size failed", "error", err.Error())
 						_ = s.deleteMessageWithRetry(r.Context(), ch.TGChatID, ch.TGMessageID)
 						cleanupItem(r.Context())
@@ -633,11 +635,7 @@ const (
 )
 
 func normalizeTelegramMimeType(raw string) string {
-	normalized := strings.ToLower(strings.TrimSpace(raw))
-	if idx := strings.Index(normalized, ";"); idx >= 0 {
-		normalized = strings.TrimSpace(normalized[:idx])
-	}
-	return normalized
+	return normalizeMimeType(raw)
 }
 
 func selectTelegramUploadKind(fileName string, mimeType string) telegramUploadKind {

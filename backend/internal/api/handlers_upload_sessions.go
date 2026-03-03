@@ -84,7 +84,7 @@ func (s *Server) handleCreateUploadSession(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	mimeType := strings.TrimSpace(strOrEmpty(req.MimeType))
+	mimeType := normalizeUploadMimeType(fileName, strOrEmpty(req.MimeType))
 	var mimePtr *string
 	if mimeType != "" {
 		mimePtr = &mimeType
@@ -358,7 +358,7 @@ func (s *Server) handleUploadSessionChunk(w http.ResponseWriter, r *http.Request
 		ID:             uuid.New(),
 		ItemID:         session.ItemID,
 		ChunkIndex:     chunkIndex,
-		ChunkSize:      int(tmpFile.size),
+		ChunkSize:      resolveStoredChunkSize(resolvedDoc.FileSize, tmpFile.size),
 		TGChatID:       s.cfg.TGStorageChatID,
 		TGMessageID:    msg.MessageID,
 		TGFileID:       resolvedDoc.FileID,
@@ -509,7 +509,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 			ID:             uuid.New(),
 			ItemID:         session.ItemID,
 			ChunkIndex:     0,
-			ChunkSize:      int(session.FileSize),
+			ChunkSize:      resolveStoredChunkSize(resolvedDoc.FileSize, session.FileSize),
 			TGChatID:       s.cfg.TGStorageChatID,
 			TGMessageID:    msg.MessageID,
 			TGFileID:       resolvedDoc.FileID,
@@ -527,7 +527,24 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	if err := st.UpdateItemSize(r.Context(), session.ItemID, session.FileSize, time.Now()); err != nil {
+	uploadedChunks, err := st.ListChunks(r.Context(), session.ItemID)
+	if err != nil {
+		s.logger.Error("list chunks failed", "error", err.Error(), "session_id", session.ID.String())
+		writeError(w, http.StatusInternalServerError, "internal_error", "查询上传分片失败")
+		return
+	}
+	actualSize := int64(0)
+	for _, c := range uploadedChunks {
+		if c.ChunkSize > 0 {
+			actualSize += int64(c.ChunkSize)
+		}
+	}
+	actualSize = resolveStoredSizeByTelegramSize(0, actualSize)
+	if actualSize <= 0 {
+		actualSize = resolveStoredSizeByTelegramSize(0, session.FileSize)
+	}
+
+	if err := st.UpdateItemSize(r.Context(), session.ItemID, actualSize, time.Now()); err != nil {
 		s.logger.Error("update item size failed", "error", err.Error())
 		writeError(w, http.StatusInternalServerError, "internal_error", "更新文件大小失败")
 		return

@@ -8,7 +8,7 @@ export interface TransferSearchFieldProps {
 }
 
 /**
- * 传输中心统一搜索框（用于全局过滤：活跃任务 + 历史）
+ * 传输中心搜索框（由上层决定搜索作用域）
  */
 export function TransferSearchField({
   value,

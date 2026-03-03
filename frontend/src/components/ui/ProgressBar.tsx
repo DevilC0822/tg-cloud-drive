@@ -1,5 +1,7 @@
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { motion } from 'framer-motion';
+import { springTransition } from '@/utils/animations';
 
 export interface ProgressBarProps {
   value: number; // 0-100
@@ -32,14 +34,17 @@ export function ProgressBar({ value, size = 'md', color = 'default', className }
   return (
     <div className={cn('w-full', className)}>
       <div className={cn('w-full overflow-hidden rounded-full bg-neutral-200/90 dark:bg-neutral-700/85', sizes[size])}>
-        <div
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${clampedValue}%` }}
+          transition={springTransition}
           className={cn(
-            'h-full rounded-full shadow-[0_4px_12px_-8px_rgba(15,23,42,0.7)] transition-all duration-300 ease-out',
+            'h-full rounded-full shadow-[0_4px_12px_-8px_rgba(15,23,42,0.7)]',
             colors[color],
           )}
-          style={{ width: `${clampedValue}%` }}
         />
       </div>
     </div>
   );
 }
+

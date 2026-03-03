@@ -1,4 +1,4 @@
-import { MoreVertical } from 'lucide-react';
+import { Check, MoreVertical } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { FileItem } from '@/types';
@@ -43,19 +43,33 @@ export function FileRow({
   return (
     <div
       data-file-item="true"
+      data-selected={selected ? 'true' : 'false'}
+      aria-selected={selected}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       className={cn(
-        'group grid cursor-pointer items-center gap-4 border-b border-white/20 px-4 py-3 dark:border-white/5',
-        'transition-colors duration-200 hover:bg-white/30 dark:hover:bg-white/5',
-        selected && 'bg-[var(--theme-primary-a12)] hover:bg-[var(--theme-primary-a16)]',
+        'group relative grid cursor-pointer items-center gap-4 border-b border-white/20 px-4 py-3 dark:border-white/5',
+        'transition-all duration-200',
+        selected
+          ? 'bg-[linear-gradient(90deg,var(--theme-primary-a24),var(--theme-primary-a08))] shadow-[inset_0_0_0_1px_var(--theme-primary-a24)] hover:bg-[linear-gradient(90deg,var(--theme-primary-a35),var(--theme-primary-a12))] dark:bg-[linear-gradient(90deg,var(--theme-primary-a24),rgba(15,23,42,0.24))]'
+          : 'hover:bg-white/30 dark:hover:bg-white/5',
         columnsClassName,
       )}
     >
+      {/* 选中指示条 */}
+      {selected && (
+        <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-[var(--theme-primary)] shadow-[0_0_8px_var(--theme-primary-a55)]" />
+      )}
+
       {/* 文件图标 */}
-      <div className="flex h-10 w-10 items-center justify-center">
+      <div className="relative flex h-10 w-10 items-center justify-center">
         <FileThumbnail file={file} size="row" />
+        {selected ? (
+          <span className="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[var(--theme-primary)] text-neutral-900 shadow-sm">
+            <Check className="h-2.5 w-2.5 stroke-[3px]" />
+          </span>
+        ) : null}
       </div>
 
       {/* 文件名 */}

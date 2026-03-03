@@ -475,26 +475,6 @@ export function useFiles() {
     [refreshFolders, refreshItems, setAuthenticated],
   );
 
-  const copyItem = useCallback(
-    async (itemId: string, destinationFolderId?: string | null) => {
-      try {
-        const res = await apiFetchJson<{ item: ItemDTO }>(`/api/items/${itemId}/copy`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ destinationParentId: destinationFolderId ?? null }),
-        });
-
-        await refreshFolders();
-        await refreshItems();
-        return { ok: true as const, idPairs: [] as const, item: dtoToFileItem(res.item) };
-      } catch (err: unknown) {
-        if (isUnauthorized(err)) setAuthenticated(false);
-        return { ok: false as const, reason: (err as ApiError)?.message || '复制失败', idPairs: [] as const };
-      }
-    },
-    [refreshFolders, refreshItems, setAuthenticated],
-  );
-
   const deleteFilesPermanently = useCallback(
     async (fileIds: string[]) => {
       if (fileIds.length === 0) return;
@@ -617,7 +597,6 @@ export function useFiles() {
     createFolder,
     renameFile,
     moveItem,
-    copyItem,
     deleteFilesPermanently,
     toggleVault,
     toggleSort,

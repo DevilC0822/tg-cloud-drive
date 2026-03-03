@@ -127,7 +127,9 @@ export interface TorrentTask {
   error?: string | null;
   startedAt?: string | null;
   finishedAt?: string | null;
+  sourceCleanupPolicy?: string | null;
   dueAt?: string | null;
+  sourceCleanupDone: boolean;
   createdAt: string;
   updatedAt: string;
   files?: TorrentTaskFile[];

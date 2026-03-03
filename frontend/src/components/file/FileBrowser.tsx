@@ -9,20 +9,27 @@ import { FileContextMenu } from './FileContextMenu';
 import { Breadcrumb } from '@/components/navigation/Breadcrumb';
 import { DropZone } from '@/components/upload/DropZone';
 import { Pagination } from '@/components/ui/Pagination';
-import type { FileItem, SortBy, SortOrder, BreadcrumbItem } from '@/types';
-import { ActionIconButton, ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
+import type { FileItem, SortBy, SortOrder, BreadcrumbItem, ViewMode } from '@/types';
+import { ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
+import { Tabs, type TabItem } from '@/components/ui/Tabs';
 
-const SORT_FIELD_OPTIONS: { key: SortBy; label: string; icon: React.ReactNode }[] = [
-  { key: 'name', label: '名称', icon: <Text className="h-3.5 w-3.5" /> },
-  { key: 'size', label: '大小', icon: <HardDrive className="h-3.5 w-3.5" /> },
-  { key: 'date', label: '时间', icon: <Clock3 className="h-3.5 w-3.5" /> },
-  { key: 'type', label: '类型', icon: <FileType className="h-3.5 w-3.5" /> },
+const SORT_FIELD_TABS: TabItem<SortBy>[] = [
+  { id: 'name', label: '名称', icon: <Text className="h-3.5 w-3.5" /> },
+  { id: 'size', label: '大小', icon: <HardDrive className="h-3.5 w-3.5" /> },
+  { id: 'date', label: '时间', icon: <Clock3 className="h-3.5 w-3.5" /> },
+  { id: 'type', label: '类型', icon: <FileType className="h-3.5 w-3.5" /> },
 ];
 
-const SORT_ORDER_OPTIONS: { key: SortOrder; label: string; icon: React.ReactNode }[] = [
-  { key: 'asc', label: '升序', icon: <ArrowUp className="h-3.5 w-3.5" /> },
-  { key: 'desc', label: '降序', icon: <ArrowDown className="h-3.5 w-3.5" /> },
+const SORT_ORDER_TABS: TabItem<SortOrder>[] = [
+  { id: 'asc', label: '升序', icon: <ArrowUp className="h-3.5 w-3.5" /> },
+  { id: 'desc', label: '降序', icon: <ArrowDown className="h-3.5 w-3.5" /> },
 ];
+
+const VIEW_MODE_TABS: TabItem<ViewMode>[] = [
+  { id: 'grid', label: '', icon: <Grid3X3 className="h-4 w-4" /> },
+  { id: 'list', label: '', icon: <List className="h-4 w-4" /> },
+];
+
 
 export interface FileBrowserProps {
   files: FileItem[];
@@ -40,7 +47,6 @@ export interface FileBrowserProps {
   onUpload: (files: FileList | File[]) => void;
   onDownload?: (file: FileItem) => void | Promise<void>;
   onMove?: (file: FileItem) => void | Promise<void>;
-  onCopy?: (file: FileItem) => void | Promise<void>;
   onShare?: (file: FileItem) => void | Promise<void>;
   onUnshare?: (file: FileItem) => void | Promise<void>;
   onInfo?: (file: FileItem) => void | Promise<void>;
@@ -73,7 +79,6 @@ export function FileBrowser({
   onUpload,
   onDownload,
   onMove,
-  onCopy,
   onShare,
   onUnshare,
   onInfo,
@@ -99,13 +104,14 @@ export function FileBrowser({
     setSortConfig((prev) => ({ ...prev, order }));
   };
 
-  const currentFieldOption = SORT_FIELD_OPTIONS.find((o) => o.key === sortConfig.by) ?? SORT_FIELD_OPTIONS[0];
+  const currentFieldLabel = SORT_FIELD_TABS.find((o) => o.id === sortConfig.by)?.label ?? '排序';
   const OrderIcon = sortConfig.order === 'asc' ? ArrowUp : ArrowDown;
 
   const handleContentClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!onClearSelection || selectedCount === 0) return;
     const target = event.target as HTMLElement;
     if (target.closest('[data-file-item="true"]')) return;
+    if (target.closest('[data-selection-preserve="true"]')) return;
     onClearSelection();
   };
 
@@ -130,71 +136,47 @@ export function FileBrowser({
                   trailingIcon={<OrderIcon className="h-3 w-3" />}
                   className="h-8 shrink-0 rounded-full px-2.5 text-[11px] tracking-[0.06em] uppercase"
                 >
-                  {currentFieldOption.label}
+                  {currentFieldLabel}
                 </ActionTextButton>
               </HeroDropdown.Trigger>
-              <HeroDropdown.Popover className="popover-warm w-48 rounded-2xl p-3">
-                {/* 排序方式 */}
-                <div className="mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase dark:text-neutral-500">排序方式</div>
-                <div className="grid grid-cols-2 gap-1 rounded-xl border border-neutral-200/80 bg-white/48 p-1 dark:border-neutral-700/80 dark:bg-neutral-800/52">
-                  {SORT_FIELD_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      onClick={() => handleSort(opt.key)}
-                      className={[
-                        'flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
-                        sortConfig.by === opt.key
-                          ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink)]'
-                          : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
-                      ].join(' ')}
-                    >
-                      {opt.icon}
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                {/* 排序方向 */}
-                <div className="mt-3 mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase dark:text-neutral-500">排序方向</div>
-                <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white/48 px-1 py-1 dark:border-neutral-700/80 dark:bg-neutral-800/52">
-                  {SORT_ORDER_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      onClick={() => handleSortOrderChange(opt.key)}
-                      className={[
-                        'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
-                        sortConfig.order === opt.key
-                          ? 'bg-[var(--theme-primary-a20)] text-[var(--theme-primary-ink)]'
-                          : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
-                      ].join(' ')}
-                    >
-                      {opt.icon}
-                      {opt.label}
-                    </button>
-                  ))}
+              <HeroDropdown.Popover className="popover-warm w-52 rounded-2xl p-3">
+                <div className="space-y-4">
+                  <div>
+                    <div className="mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase dark:text-neutral-500">排序方式</div>
+                    <Tabs
+                      tabs={SORT_FIELD_TABS}
+                      activeTab={sortConfig.by}
+                      onChange={handleSort}
+                      size="sm"
+                      layoutId="sortFieldTabs"
+                      className="grid grid-cols-2 bg-white/48 dark:bg-neutral-800/52"
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-2 text-[10px] font-semibold tracking-widest text-neutral-400 uppercase dark:text-neutral-500">排序方向</div>
+                    <Tabs
+                      tabs={SORT_ORDER_TABS}
+                      activeTab={sortConfig.order}
+                      onChange={handleSortOrderChange}
+                      size="sm"
+                      layoutId="sortOrderTabs"
+                      className="bg-white/48 dark:bg-neutral-800/52"
+                    />
+                  </div>
                 </div>
               </HeroDropdown.Popover>
             </HeroDropdown>
           ) : null}
         </div>
         {showViewModeToggle ? (
-          <div className="hidden h-9 items-center overflow-hidden rounded-xl border border-neutral-200/80 bg-white/72 px-0.5 py-0.5 sm:flex dark:border-neutral-700/80 dark:bg-neutral-900/68">
-            <ActionIconButton
-              icon={<Grid3X3 className="h-4 w-4" />}
-              label="网格视图"
-              tone={viewMode === 'grid' ? 'brand' : 'neutral'}
-              onPress={() => setViewMode('grid')}
-              className={viewMode === 'grid' ? 'border-transparent bg-white/95 dark:bg-neutral-700' : 'border-transparent bg-transparent'}
-            />
-            <ActionIconButton
-              icon={<List className="h-4 w-4" />}
-              label="列表视图"
-              tone={viewMode === 'list' ? 'brand' : 'neutral'}
-              onPress={() => setViewMode('list')}
-              className={viewMode === 'list' ? 'border-transparent bg-white/95 dark:bg-neutral-700' : 'border-transparent bg-transparent'}
-            />
-          </div>
+          <Tabs
+            tabs={VIEW_MODE_TABS}
+            activeTab={viewMode}
+            onChange={setViewMode}
+            size="sm"
+            layoutId="viewModeTabs"
+            className="hidden sm:flex bg-white/72 dark:bg-neutral-900/68 px-0.5 py-0.5"
+          />
         ) : null}
       </div>
 
@@ -254,12 +236,12 @@ export function FileBrowser({
         visible={contextMenu.visible}
         position={contextMenu.position}
         file={contextMenu.targetFile}
+        selectedCount={selectedCount}
         onClose={onCloseContextMenu}
         onPreview={onPreview}
         onDownload={onDownload}
         onRename={onRename}
         onMove={onMove}
-        onCopy={onCopy}
         onDelete={onDelete}
         onShare={onShare}
         onUnshare={onUnshare}

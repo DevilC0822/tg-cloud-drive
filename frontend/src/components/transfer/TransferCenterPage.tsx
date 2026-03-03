@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DownloadTask, TorrentTask, TransferHistoryItem, UploadTask } from '@/types';
 import type { HistoryFilter, HistoryPagination } from '@/hooks/useTransferCenter';
 import { AttentionBanner } from '@/components/transfer/AttentionBanner';
@@ -7,13 +7,9 @@ import type { ActiveTaskRow } from '@/components/transfer/ActiveTaskItem';
 import { HistorySection } from '@/components/transfer/HistorySection';
 import type {
   HistoryStatusFilter,
-  TorrentCleanupFilter,
-  TorrentStatusFilter,
   TransferHistoryTab,
 } from '@/components/transfer/transferHistoryTypes';
-import { TransferHeader } from '@/components/transfer/TransferHeader';
 import { isActiveTorrentTask } from '@/components/transfer/transferUtils';
-import type { TransferCleanupAction } from '@/components/transfer/transferCleanupTypes';
 import { DangerActionConfirmModal } from '@/components/ui/HeroActionPrimitives';
 import { useToast } from '@/hooks/useToast';
 
@@ -25,12 +21,15 @@ export interface TransferCenterPageProps {
   history: TransferHistoryItem[];
   historyFilter: HistoryFilter;
   historyLoading: boolean;
+  historyError?: string;
   historyPagination: HistoryPagination;
+  torrentError?: string;
   onRetryUpload: (taskId: string) => Promise<unknown>;
   onRemoveUploadTask: (taskId: string) => void;
   onRetryDownload: (taskId: string) => void;
   onCancelDownload: (taskId: string) => void;
-  onCleanup: (action: TransferCleanupAction) => void | Promise<void>;
+  onRemoveHistoryItem: (id: string) => void | Promise<void>;
+  onDeleteTorrentTask: (id: string) => void | Promise<void>;
   onHistoryFilterChange: (filter: HistoryFilter) => void;
   onHistoryPageChange: (page: number) => void;
   onHistoryPageSizeChange: (pageSize: number) => void;
@@ -39,8 +38,7 @@ export interface TransferCenterPageProps {
 }
 
 type TransferDangerAction =
-  | { type: 'clear-history' }
-  | { type: 'clear-history-by-days'; days: number }
+  | { type: 'cancel-all-downloads' }
   | { type: 'remove-history-item'; id: string; name: string }
   | { type: 'delete-torrent-task'; id: string; name: string };
 
@@ -52,12 +50,15 @@ export function TransferCenterPage({
   history,
   historyFilter,
   historyLoading,
+  historyError,
   historyPagination,
+  torrentError,
   onRetryUpload,
   onRemoveUploadTask,
   onRetryDownload,
   onCancelDownload,
-  onCleanup,
+  onRemoveHistoryItem,
+  onDeleteTorrentTask,
   onHistoryFilterChange,
   onHistoryPageChange,
   onHistoryPageSizeChange,
@@ -65,18 +66,12 @@ export function TransferCenterPage({
   onRetryTorrentTask,
 }: TransferCenterPageProps) {
   const { pushToast } = useToast();
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const headerWrapRef = useRef<HTMLDivElement | null>(null);
-  const [query, setQuery] = useState('');
+  const [historyQuery, setHistoryQuery] = useState('');
   const [attentionOpen, setAttentionOpen] = useState(false);
   const [activeOpen, setActiveOpen] = useState(true);
   const [historyTab, setHistoryTab] = useState<TransferHistoryTab>('files');
   const [cleanupNowMs, setCleanupNowMs] = useState(() => Date.now());
-  const [stickyOffsetPx, setStickyOffsetPx] = useState(96);
-  const [headerElevated, setHeaderElevated] = useState(false);
   const [fileHistoryStatusFilter, setFileHistoryStatusFilter] = useState<HistoryStatusFilter>('all');
-  const [torrentStatusFilter, setTorrentStatusFilter] = useState<TorrentStatusFilter>('all');
-  const [torrentCleanupFilter, setTorrentCleanupFilter] = useState<TorrentCleanupFilter>('all');
   const [dangerAction, setDangerAction] = useState<TransferDangerAction | null>(null);
 
   useEffect(() => {
@@ -88,62 +83,6 @@ export function TransferCenterPage({
     };
   }, []);
 
-  useEffect(() => {
-    const headerEl = headerWrapRef.current;
-    if (!headerEl) return;
-
-    const updateOffset = () => {
-      const height = headerEl.getBoundingClientRect().height;
-      const next = Math.max(96, Math.ceil(height + 12));
-      setStickyOffsetPx(next);
-    };
-
-    updateOffset();
-
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(() => {
-      updateOffset();
-    });
-    observer.observe(headerEl);
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    const rootEl = rootRef.current;
-    const scrollEl = (rootEl?.closest('main') as HTMLElement | null) ?? null;
-    const target: EventTarget = scrollEl ?? window;
-
-    let rafId = 0;
-    const updateElevation = () => {
-      rafId = 0;
-      const scrollTop = scrollEl ? scrollEl.scrollTop : window.scrollY;
-      setHeaderElevated(scrollTop > 4);
-    };
-
-    const onScroll = () => {
-      if (rafId) return;
-      rafId = window.requestAnimationFrame(updateElevation);
-    };
-
-    updateElevation();
-    target.addEventListener('scroll', onScroll, { passive: true });
-
-    return () => {
-      target.removeEventListener('scroll', onScroll);
-      if (rafId) {
-        window.cancelAnimationFrame(rafId);
-      }
-    };
-  }, []);
-
-  const containerStyle = useMemo<CSSProperties>(() => {
-    return {
-      ['--transfer-sticky-offset' as any]: `${stickyOffsetPx}px`,
-    };
-  }, [stickyOffsetPx]);
-
   const activeUploads = useMemo(
     () => uploadTasks.filter((task) => task.status === 'pending' || task.status === 'uploading'),
     [uploadTasks],
@@ -152,12 +91,7 @@ export function TransferCenterPage({
     () => downloadTasks.filter((task) => task.status === 'pending' || task.status === 'downloading'),
     [downloadTasks],
   );
-  const endedDownloads = useMemo(
-    () => downloadTasks.filter((task) => task.status !== 'pending' && task.status !== 'downloading'),
-    [downloadTasks],
-  );
   const failedUploads = useMemo(() => uploadTasks.filter((task) => task.status === 'error'), [uploadTasks]);
-  const completedUploads = useMemo(() => uploadTasks.filter((task) => task.status === 'completed'), [uploadTasks]);
   const failedDownloads = useMemo(
     () => downloadTasks.filter((task) => task.status === 'error' || task.status === 'canceled'),
     [downloadTasks],
@@ -169,26 +103,17 @@ export function TransferCenterPage({
   const failedTorrentTasks = useMemo(() => torrentTasks.filter((task) => task.status === 'error'), [torrentTasks]);
   const activeTorrentTasks = useMemo(() => torrentTasks.filter(isActiveTorrentTask), [torrentTasks]);
 
-  const activeTaskCount = activeUploads.length + activeDownloads.length + activeTorrentTasks.length;
-  const issueTaskCount =
-    failedUploads.length + failedDownloads.length + awaitingSelectionTasks.length + failedTorrentTasks.length;
+  const historyScopedQuery = historyQuery.trim();
+  const sectionQuery = '';
 
   const dangerConfirmConfig = useMemo(() => {
     if (!dangerAction) return null;
 
-    if (dangerAction.type === 'clear-history') {
+    if (dangerAction.type === 'cancel-all-downloads') {
       return {
-        title: '确认清空历史记录',
-        description: '将清空全部文件历史记录，该操作不可恢复。',
-        confirmText: '确认清空',
-      };
-    }
-
-    if (dangerAction.type === 'clear-history-by-days') {
-      return {
-        title: '确认按天数清理历史',
-        description: `将清理早于 ${dangerAction.days} 天的文件历史记录，该操作不可恢复。`,
-        confirmText: '确认清理',
+        title: '确认取消全部下载',
+        description: '将取消当前所有进行中的下载任务。',
+        confirmText: '确认取消',
       };
     }
 
@@ -210,48 +135,23 @@ export function TransferCenterPage({
   const handleConfirmDangerAction = useCallback(() => {
     if (!dangerAction) return;
 
-    if (dangerAction.type === 'clear-history') {
-      void onCleanup({ type: 'clear-history' });
-      setDangerAction(null);
-      return;
-    }
-
-    if (dangerAction.type === 'clear-history-by-days') {
-      void onCleanup({ type: 'clear-history-by-days', days: dangerAction.days });
+    if (dangerAction.type === 'cancel-all-downloads') {
+      for (const task of activeDownloads) {
+        onCancelDownload(task.id);
+      }
       setDangerAction(null);
       return;
     }
 
     if (dangerAction.type === 'remove-history-item') {
-      void onCleanup({ type: 'remove-history-item', id: dangerAction.id });
+      void onRemoveHistoryItem(dangerAction.id);
       setDangerAction(null);
       return;
     }
 
-    void onCleanup({ type: 'delete-torrent-task', id: dangerAction.id });
+    void onDeleteTorrentTask(dangerAction.id);
     setDangerAction(null);
-  }, [dangerAction, onCleanup]);
-
-  const handleCleanupRequest = useCallback(
-    (action: TransferCleanupAction) => {
-      if (action.type === 'clear-history') {
-        setDangerAction({ type: 'clear-history' });
-        return;
-      }
-
-      if (action.type === 'clear-history-by-days') {
-        setDangerAction({ type: 'clear-history-by-days', days: action.days });
-        return;
-      }
-
-      void onCleanup(action);
-    },
-    [onCleanup],
-  );
-
-  const jumpToSection = useCallback((id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+  }, [activeDownloads, dangerAction, onCancelDownload, onDeleteTorrentTask, onRemoveHistoryItem]);
 
   const handleCopyText = useCallback(
     async (text: string, successMessage: string) => {
@@ -262,7 +162,7 @@ export function TransferCenterPage({
           return;
         }
       } catch {
-        // 忽略，降级到无提示
+        // 忽略
       }
       pushToast({ type: 'info', message: '复制失败（浏览器权限限制）' });
     },
@@ -291,100 +191,118 @@ export function TransferCenterPage({
   }, [activeDownloads, activeTorrentTasks, activeUploads]);
 
   const handleCancelAllDownloads = useCallback(() => {
-    for (const task of activeDownloads) {
-      onCancelDownload(task.id);
-    }
-  }, [activeDownloads, onCancelDownload]);
+    setDangerAction({ type: 'cancel-all-downloads' });
+  }, []);
 
   return (
-    <div ref={rootRef} style={containerStyle} className="mx-auto w-full max-w-[90rem] px-3 pt-0 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:px-5 md:py-7">
-      <div className="space-y-5 md:space-y-6">
-        <div
-          ref={headerWrapRef}
-          className={`transfer-header-surface sticky top-0 z-10 -mx-3 transition-[filter] duration-200 md:static md:mx-0 md:drop-shadow-none ${
-            headerElevated ? 'drop-shadow-[0_18px_30px_rgba(15,23,42,0.18)]' : 'drop-shadow-none'
-          }`}
-        >
-          <TransferHeader
-            activeCount={activeTaskCount}
-            issueCount={issueTaskCount}
-            query={query}
-            onQueryChange={setQuery}
-            onJumpToActive={() => jumpToSection('transfer-active')}
-            onJumpToAttention={() => jumpToSection('transfer-attention')}
-            completedUploadCount={completedUploads.length}
-            uploadTaskCount={uploadTasks.length}
-            endedDownloadCount={endedDownloads.length}
-            historyTotalCount={historyPagination.totalCount}
-            onCleanup={handleCleanupRequest}
-          />
+    <div className="relative min-h-screen w-full overflow-x-hidden px-3 pt-0 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 md:px-8 md:pt-4 md:pb-12">
+      {/* Background Decorative Elements - 移动端性能优化 */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-[-5%] left-[-5%] h-[30%] w-[40%] rounded-full bg-brand-500/5 blur-[80px] md:blur-[120px]" />
+        <div className="absolute right-[-5%] bottom-[-5%] h-[25%] w-[35%] rounded-full bg-brand-500/5 blur-[60px] md:blur-[100px]" />
+      </div>
+
+      <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8 md:space-y-10">
+        <div className="space-y-8 sm:space-y-10 md:space-y-12">
+          {historyError || torrentError ? (
+            <section
+              aria-live="polite"
+              className="group relative overflow-hidden rounded-2xl border border-amber-200/50 bg-amber-50/50 p-4 transition-all hover:bg-amber-50/80 dark:border-amber-500/20 dark:bg-amber-500/5"
+            >
+              <div className="relative z-10 flex items-center gap-3 text-sm font-medium text-amber-800 dark:text-amber-200">
+                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <div className="space-y-1 min-w-0">
+                  {historyError ? <div className="truncate">历史同步失败：{historyError}</div> : null}
+                  {torrentError ? <div className="truncate">Torrent 同步失败：{torrentError}</div> : null}
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          <div id="transfer-attention">
+            <AttentionBanner
+              failedUploads={failedUploads}
+              failedDownloads={failedDownloads}
+              awaitingSelectionTasks={awaitingSelectionTasks}
+              failedTorrentTasks={failedTorrentTasks}
+              query={sectionQuery}
+              open={attentionOpen}
+              onToggle={() => setAttentionOpen((prev) => !prev)}
+              onRetryUpload={onRetryUpload}
+              onRemoveUploadTask={onRemoveUploadTask}
+              onRetryDownload={onRetryDownload}
+              onOpenTorrentSelection={onOpenTorrentSelection}
+              onRetryTorrentTask={onRetryTorrentTask}
+              onRequestDeleteTorrentTask={(task) =>
+                setDangerAction({
+                  type: 'delete-torrent-task',
+                  id: task.id,
+                  name: task.torrentName || task.infoHash,
+                })
+              }
+            />
+          </div>
+
+          <div id="transfer-active" className="space-y-4">
+            <div className="flex items-center gap-3 px-1 sm:px-2">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-white/10" />
+              <h2 className="text-[9px] font-black uppercase tracking-[0.25em] text-neutral-400 sm:text-[10px]">
+                活跃处理中
+              </h2>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-white/10" />
+            </div>
+            
+            <ActiveTaskSection
+              rows={activeRows}
+              activeDownloadTasks={activeDownloads}
+              query={sectionQuery}
+              open={activeOpen}
+              onOpenChange={setActiveOpen}
+              onCancelDownload={onCancelDownload}
+              onRequestCancelAllDownloads={handleCancelAllDownloads}
+            />
+          </div>
+
+          <div id="transfer-history" className="space-y-4">
+            <div className="flex items-center gap-3 px-1 sm:px-2">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-white/10" />
+              <h2 className="text-[9px] font-black uppercase tracking-[0.25em] text-neutral-400 sm:text-[10px]">
+                任务归档
+              </h2>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-white/10" />
+            </div>
+
+            <HistorySection
+              tab={historyTab}
+              onTabChange={setHistoryTab}
+              query={historyScopedQuery}
+              onQueryChange={setHistoryQuery}
+              history={history}
+              historyFilter={historyFilter}
+              historyLoading={historyLoading}
+              historyPagination={historyPagination}
+              fileStatusFilter={fileHistoryStatusFilter}
+              onFileStatusFilterChange={setFileHistoryStatusFilter}
+              onHistoryFilterChange={onHistoryFilterChange}
+              onHistoryPageChange={onHistoryPageChange}
+              onHistoryPageSizeChange={onHistoryPageSizeChange}
+              onRequestRemoveHistoryItem={(id, name) => setDangerAction({ type: 'remove-history-item', id, name })}
+              torrentTasks={torrentTasks}
+              torrentLoading={torrentLoading}
+              nowMs={cleanupNowMs}
+              onCopyText={handleCopyText}
+              onOpenTorrentSelection={onOpenTorrentSelection}
+              onRetryTorrentTask={onRetryTorrentTask}
+              onRequestDeleteTorrentTask={(task) =>
+                setDangerAction({
+                  type: 'delete-torrent-task',
+                  id: task.id,
+                  name: task.torrentName || task.infoHash,
+                })
+              }
+            />
+          </div>
         </div>
-
-        <AttentionBanner
-          failedUploads={failedUploads}
-          failedDownloads={failedDownloads}
-          awaitingSelectionTasks={awaitingSelectionTasks}
-          failedTorrentTasks={failedTorrentTasks}
-          query={query}
-          open={attentionOpen}
-          onToggle={() => setAttentionOpen((prev) => !prev)}
-          onRetryUpload={onRetryUpload}
-          onRemoveUploadTask={onRemoveUploadTask}
-          onRetryDownload={onRetryDownload}
-          onOpenTorrentSelection={onOpenTorrentSelection}
-          onRetryTorrentTask={onRetryTorrentTask}
-          onRequestDeleteTorrentTask={(task) =>
-            setDangerAction({
-              type: 'delete-torrent-task',
-              id: task.id,
-              name: task.torrentName || task.infoHash,
-            })
-          }
-        />
-
-        <ActiveTaskSection
-          rows={activeRows}
-          activeDownloadTasks={activeDownloads}
-          query={query}
-          open={activeOpen}
-          onOpenChange={setActiveOpen}
-          onCancelDownload={onCancelDownload}
-          onCancelAllDownloads={handleCancelAllDownloads}
-        />
-
-        <HistorySection
-          tab={historyTab}
-          onTabChange={setHistoryTab}
-          query={query}
-          onQueryChange={setQuery}
-          history={history}
-          historyFilter={historyFilter}
-          historyLoading={historyLoading}
-          historyPagination={historyPagination}
-          fileStatusFilter={fileHistoryStatusFilter}
-          onFileStatusFilterChange={setFileHistoryStatusFilter}
-          onHistoryFilterChange={onHistoryFilterChange}
-          onHistoryPageChange={onHistoryPageChange}
-          onHistoryPageSizeChange={onHistoryPageSizeChange}
-          onRequestRemoveHistoryItem={(id, name) => setDangerAction({ type: 'remove-history-item', id, name })}
-          torrentTasks={torrentTasks}
-          torrentLoading={torrentLoading}
-          torrentStatusFilter={torrentStatusFilter}
-          onTorrentStatusFilterChange={setTorrentStatusFilter}
-          torrentCleanupFilter={torrentCleanupFilter}
-          onTorrentCleanupFilterChange={setTorrentCleanupFilter}
-          nowMs={cleanupNowMs}
-          onCopyText={handleCopyText}
-          onOpenTorrentSelection={onOpenTorrentSelection}
-          onRetryTorrentTask={onRetryTorrentTask}
-          onRequestDeleteTorrentTask={(task) =>
-            setDangerAction({
-              type: 'delete-torrent-task',
-              id: task.id,
-              name: task.torrentName || task.infoHash,
-            })
-          }
-        />
       </div>
 
       <DangerActionConfirmModal

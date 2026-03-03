@@ -1,24 +1,13 @@
-import { useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { TorrentTask } from '@/types';
-import type { TorrentCleanupFilter, TorrentStatusFilter } from '@/components/transfer/transferHistoryTypes';
-import { ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
-import { HistoryTorrentItem } from '@/components/transfer/HistoryTorrentItem';
-import {
-  includesQuery,
-  isActiveTorrentTask,
-  normalizeQuery,
-  parseDateMs,
-  parseDueAt,
-} from '@/components/transfer/transferUtils';
+import { HistoryTorrentItem } from './HistoryTorrentItem';
+import { Magnet, Inbox } from 'lucide-react';
+import { staggerContainer, transitions } from '@/utils/animations';
 
 export interface HistoryTorrentListProps {
   tasks: TorrentTask[];
   loading: boolean;
   query: string;
-  statusFilter: TorrentStatusFilter;
-  onStatusFilterChange: (next: TorrentStatusFilter) => void;
-  cleanupFilter: TorrentCleanupFilter;
-  onCleanupFilterChange: (next: TorrentCleanupFilter) => void;
   nowMs: number;
   onCopyInfoHash: (infoHash: string) => void;
   onOpenSelection: (taskId: string) => void;
@@ -26,157 +15,79 @@ export interface HistoryTorrentListProps {
   onRequestDelete: (task: TorrentTask) => void;
 }
 
+/**
+ * 种子任务列定义 (Grid Config)
+ */
+export const TORRENT_HISTORY_GRID = "grid-cols-[1fr_auto] md:grid-cols-[minmax(0,1fr)_160px_140px_140px_auto]";
+
+function TableHeader() {
+  return (
+    <div className={`hidden md:grid ${TORRENT_HISTORY_GRID} gap-4 px-6 py-3 border-b border-neutral-200/60 dark:border-white/5`}>
+      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">种子信息</div>
+      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">下载进度</div>
+      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">状态</div>
+      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">清理详情</div>
+      <div className="text-right text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">操作</div>
+    </div>
+  );
+}
+
 export function HistoryTorrentList({
   tasks,
   loading,
-  query,
-  statusFilter,
-  onStatusFilterChange,
-  cleanupFilter,
-  onCleanupFilterChange,
   nowMs,
   onCopyInfoHash,
   onOpenSelection,
   onRetryTask,
   onRequestDelete,
 }: HistoryTorrentListProps) {
-  const queryNorm = useMemo(() => normalizeQuery(query), [query]);
-
-  const filtered = useMemo(() => {
-    const byStatus = (task: TorrentTask) => {
-      if (statusFilter === 'all') return true;
-      if (statusFilter === 'active') return isActiveTorrentTask(task);
-      return task.status === statusFilter;
-    };
-    const byCleanup = (task: TorrentTask) => {
-      if (cleanupFilter === 'all') return true;
-      const dueAt = parseDueAt(task.dueAt);
-      if (cleanupFilter === 'pending') return task.status === 'completed' && !!dueAt;
-      return task.status === 'completed' && !dueAt;
-    };
-    const byQuery = (task: TorrentTask) => {
-      if (!queryNorm) return true;
-      return includesQuery(`${task.torrentName || ''} ${task.infoHash || ''}`, queryNorm);
-    };
-
-    return tasks
-      .filter(byStatus)
-      .filter(byCleanup)
-      .filter(byQuery)
-      .slice()
-      .sort((a, b) => {
-        const aMs = parseDateMs(a.updatedAt) ?? parseDateMs(a.createdAt) ?? 0;
-        const bMs = parseDateMs(b.updatedAt) ?? parseDateMs(b.createdAt) ?? 0;
-        return bMs - aMs;
-      });
-  }, [cleanupFilter, queryNorm, statusFilter, tasks]);
-
-  const emptyText = useMemo(() => {
-    if (loading && tasks.length === 0) return '正在同步 Torrent 任务...';
-    if (tasks.length === 0) return '暂无 Torrent 任务。';
-    if (filtered.length === 0) return '当前筛选条件下没有匹配结果。';
-    return '';
-  }, [filtered.length, loading, tasks.length]);
+  const isEmpty = !loading && tasks.length === 0;
 
   return (
-    <div className="mt-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center">
-          <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-neutral-200/80 bg-white/70 p-1.5 dark:border-neutral-700/80 dark:bg-neutral-900/50">
-            <ActionTextButton
-              active={statusFilter === 'all'}
-              onPress={() => onStatusFilterChange('all')}
-              className="justify-center"
-            >
-              全部
-            </ActionTextButton>
-            <ActionTextButton
-              active={statusFilter === 'active'}
-              onPress={() => onStatusFilterChange('active')}
-              className="justify-center"
-            >
-              进行中
-            </ActionTextButton>
-            <ActionTextButton
-              active={statusFilter === 'awaiting_selection'}
-              onPress={() => onStatusFilterChange('awaiting_selection')}
-              className="justify-center"
-            >
-              待选择
-            </ActionTextButton>
-            <ActionTextButton
-              active={statusFilter === 'error'}
-              onPress={() => onStatusFilterChange('error')}
-              className="justify-center"
-            >
-              失败
-            </ActionTextButton>
-            <ActionTextButton
-              active={statusFilter === 'completed'}
-              onPress={() => onStatusFilterChange('completed')}
-              className="justify-center"
-            >
-              已完成
-            </ActionTextButton>
-          </div>
+    <div className="flex flex-col min-h-[400px]">
+      <TableHeader />
 
-          <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-neutral-200/80 bg-white/70 p-1.5 dark:border-neutral-700/80 dark:bg-neutral-900/50">
-            <ActionTextButton
-              active={cleanupFilter === 'all'}
-              onPress={() => onCleanupFilterChange('all')}
-              className="justify-center"
+      <div className="flex-1">
+        <AnimatePresence mode="popLayout">
+          {loading && tasks.length === 0 ? (
+            <motion.div 
+              key="loading" 
+              {...transitions.fadeIn}
+              className="py-20 flex flex-col items-center justify-center text-neutral-400 gap-3"
             >
-              全部
-            </ActionTextButton>
-            <ActionTextButton
-              active={cleanupFilter === 'pending'}
-              onPress={() => onCleanupFilterChange('pending')}
-              className="justify-center"
+              <Magnet className="h-8 w-8 animate-pulse opacity-20" />
+              <p className="text-xs font-bold uppercase tracking-widest">Tracking Torrents...</p>
+            </motion.div>
+          ) : isEmpty ? (
+            <motion.div 
+              key="empty" 
+              {...transitions.fadeIn}
+              className="py-20 flex flex-col items-center justify-center text-neutral-400 gap-3"
             >
-              待清理
-            </ActionTextButton>
-            <ActionTextButton
-              active={cleanupFilter === 'cleaned'}
-              onPress={() => onCleanupFilterChange('cleaned')}
-              className="justify-center"
+              <Inbox className="h-8 w-8 opacity-20" />
+              <p className="text-xs font-bold uppercase tracking-widest">No Active Torrents</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="list"
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
             >
-              已清理
-            </ActionTextButton>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-          <ActionStatusPill>筛选后 {filtered.length}</ActionStatusPill>
-          {loading ? <span>同步中...</span> : null}
-        </div>
-      </div>
-
-      <div className="mt-4 overflow-hidden rounded-3xl border border-neutral-200/80 bg-white/70 dark:border-neutral-700/80 dark:bg-neutral-900/50">
-        {emptyText ? (
-          <div className="px-4 py-8 text-sm text-neutral-500 dark:text-neutral-400">{emptyText}</div>
-        ) : (
-          <>
-            <div className="hidden border-b border-neutral-200/80 px-4 py-2.5 text-[11px] font-medium text-neutral-500 md:grid md:grid-cols-[minmax(0,1fr)_160px_150px_150px_auto] md:items-center dark:border-neutral-700/80 dark:text-neutral-400">
-              <span>任务</span>
-              <span>大小 / 进度</span>
-              <span>状态 / 清理</span>
-              <span>下载量</span>
-              <span className="text-right">操作</span>
-            </div>
-            {filtered.map((task) => (
-              <HistoryTorrentItem
-                key={task.id}
-                task={task}
-                nowMs={nowMs}
-                queryNorm={queryNorm}
-                onCopyInfoHash={onCopyInfoHash}
-                onOpenSelection={onOpenSelection}
-                onRetryTask={onRetryTask}
-                onRequestDelete={onRequestDelete}
-              />
-            ))}
-          </>
-        )}
+              {tasks.map((task) => (
+                <HistoryTorrentItem
+                  key={task.id}
+                  task={task}
+                  nowMs={nowMs}
+                  onCopyInfoHash={onCopyInfoHash}
+                  onOpenSelection={onOpenSelection}
+                  onRetryTask={onRetryTask}
+                  onRequestDelete={onRequestDelete}
+                />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

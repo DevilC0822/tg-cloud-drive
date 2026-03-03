@@ -4,6 +4,8 @@ import { uploadTasksAtom, uploadPanelExpandedAtom, isUploadingAtom } from '@/sto
 import { useUpload } from '@/hooks/useUpload';
 import { DangerActionConfirmModal } from '@/components/ui/HeroActionPrimitives';
 import type { UploadTask } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { springTransition } from '@/utils/animations';
 import {
   UploadPanelBody,
   UploadPanelHeader,
@@ -36,7 +38,13 @@ function UploadProgressCard({
   onRequestRemoveTask,
 }: UploadProgressCardProps) {
   return (
-    <section className="animate-slideUp fixed right-2 bottom-[calc(0.5rem+env(safe-area-inset-bottom))] z-40 w-[calc(100vw-1rem)] overflow-hidden rounded-3xl border border-neutral-200/85 bg-[linear-gradient(160deg,rgba(255,255,255,0.95),rgba(251,249,246,0.94))] shadow-[0_36px_70px_-42px_rgba(15,23,42,0.9)] backdrop-blur sm:right-4 sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:w-[25.5rem] dark:border-neutral-700/80 dark:bg-[linear-gradient(160deg,rgba(23,23,23,0.93),rgba(17,24,39,0.92))]">
+    <motion.section
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.95 }}
+      transition={springTransition}
+      className="fixed right-2 bottom-[calc(0.5rem+env(safe-area-inset-bottom))] z-40 w-[calc(100vw-1rem)] overflow-hidden rounded-3xl border border-neutral-200/85 bg-[linear-gradient(160deg,rgba(255,255,255,0.95),rgba(251,249,246,0.94))] shadow-[0_36px_70px_-42px_rgba(15,23,42,0.9)] backdrop-blur sm:right-4 sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] sm:w-[25.5rem] dark:border-neutral-700/80 dark:bg-[linear-gradient(160deg,rgba(23,23,23,0.93),rgba(17,24,39,0.92))]"
+    >
       <UploadPanelHeader
         expanded={expanded}
         isUploading={isUploading}
@@ -57,7 +65,7 @@ function UploadProgressCard({
           onRequestRemoveTask({ type: 'remove-task', taskId: targetTask.id, taskName: targetTask.file.name, taskStatus: targetTask.status })
         }
       />
-    </section>
+    </motion.section>
   );
 }
 
@@ -98,23 +106,25 @@ export function UploadProgress() {
     setDangerAction(null);
   }, [clearAllTasks, clearCompletedTasks, dangerAction, removeTask]);
 
-  if (uploadTasks.length === 0) return null;
-
   return (
     <>
-      <UploadProgressCard
-        expanded={expanded}
-        isUploading={isUploading}
-        uploadTasks={uploadTasks}
-        summary={summary}
-        onToggleExpand={() => setExpanded(!expanded)}
-        onClearCompleted={() => setDangerAction({ type: 'clear-completed' })}
-        onClearAll={() => setDangerAction({ type: 'clear-all' })}
-        onRetryTask={(taskID) => {
-          void retryTask(taskID);
-        }}
-        onRequestRemoveTask={setDangerAction}
-      />
+      <AnimatePresence>
+        {uploadTasks.length > 0 && (
+          <UploadProgressCard
+            expanded={expanded}
+            isUploading={isUploading}
+            uploadTasks={uploadTasks}
+            summary={summary}
+            onToggleExpand={() => setExpanded(!expanded)}
+            onClearCompleted={() => setDangerAction({ type: 'clear-completed' })}
+            onClearAll={() => setDangerAction({ type: 'clear-all' })}
+            onRetryTask={(taskID) => {
+              void retryTask(taskID);
+            }}
+            onRequestRemoveTask={setDangerAction}
+          />
+        )}
+      </AnimatePresence>
       <UploadProgressDangerModal
         dangerConfirmConfig={dangerConfirmConfig}
         onClose={() => setDangerAction(null)}
@@ -123,3 +133,5 @@ export function UploadProgress() {
     </>
   );
 }
+
+

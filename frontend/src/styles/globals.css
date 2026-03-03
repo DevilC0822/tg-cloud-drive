@@ -9,6 +9,16 @@
 @source '../**/*.{js,ts,jsx,tsx}';
 
 /* 自定义主题 - 使用 hex 颜色覆盖 oklch */
+:root {
+  --history-item-hover-bg: color-mix(in srgb, var(--theme-primary) 14%, #ffffff 86%);
+  --history-item-hover-ring: color-mix(in srgb, var(--theme-primary) 38%, transparent);
+}
+
+.dark {
+  --history-item-hover-bg: color-mix(in srgb, var(--theme-primary) 22%, #121418 78%);
+  --history-item-hover-ring: color-mix(in srgb, var(--theme-primary) 44%, transparent);
+}
+
 @theme {
   /* 主题主色（唯一硬编码） */
   --theme-primary: #f4a48d;
@@ -253,61 +263,78 @@
 
 /* 组件样式 */
 @layer components {
-  /* 玻璃态效果 */
+  .transfer-history-row {
+    position: relative;
+    isolation: isolate;
+  }
+
+  @media (hover: hover) {
+    .transfer-history-row:hover {
+      background-color: var(--history-item-hover-bg);
+      box-shadow: inset 0 0 0 1px var(--history-item-hover-ring);
+    }
+  }
+
+  /* 玻璃态效果 - 统一标准 */
   .glass {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-  }
-
-  .dark .glass {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.1) 100%);
-    border-color: rgba(255, 255, 255, 0.08);
-  }
-
-  .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.2) 100%);
+    background: rgba(255, 255, 255, 0.45);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px -8px rgba(15, 23, 42, 0.08);
+  }
+
+  .dark .glass {
+    background: rgba(30, 41, 59, 0.45);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 1.5rem;
-    box-shadow:
-      0 16px 40px -16px rgba(15, 23, 42, 0.1),
+    box-shadow: 
+      0 12px 40px -12px rgba(15, 23, 42, 0.08),
       inset 0 1px 0 rgba(255, 255, 255, 0.6);
   }
 
   .dark .glass-card {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.2) 100%);
+    background: rgba(30, 41, 59, 0.35);
     border-color: rgba(255, 255, 255, 0.1);
-    border-radius: 1.5rem;
-    box-shadow:
-      0 16px 40px -16px rgba(0, 0, 0, 0.5),
+    box-shadow: 
+      0 12px 40px -12px rgba(0, 0, 0, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .glass-sidebar {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.3) 100%);
+    background: rgba(255, 255, 255, 0.55);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 12px 0 40px -16px rgba(15, 23, 42, 0.06);
   }
 
   .dark .glass-sidebar {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.2) 100%);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.4);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 12px 0 40px -16px rgba(0, 0, 0, 0.4);
   }
 
   .glass-header {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.2) 100%);
+    background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 10px 30px -15px rgba(15, 23, 42, 0.08);
   }
 
   .dark .glass-header {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.2) 100%);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.4);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.4);
   }
 
   /* 传输中心：移动端吸顶顶栏（glass-header），桌面端卡片（glass-card） */
@@ -442,151 +469,14 @@
 }
 
 /* 动画 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes modalBackdropIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes modalBackdropOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes modalDialogIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.992);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes modalDialogOut {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(6px) scale(0.994);
-  }
-}
-
-@keyframes navActivePulse {
-  0% {
-    opacity: 0;
-    transform: scale(0.985);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--theme-primary) 0%, transparent);
-  }
-  45% {
-    opacity: 1;
-    transform: scale(1);
-    box-shadow: 0 0 0 5px var(--theme-primary-a20);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1);
-    box-shadow: 0 0 0 10px color-mix(in srgb, var(--theme-primary) 0%, transparent);
-  }
-}
-
 @layer utilities {
-  .animate-fadeIn {
-    animation: fadeIn 0.22s ease-out;
-  }
-
-  .animate-slideUp {
-    animation: slideUp 0.24s ease-out;
-  }
-
-  .animate-scaleIn {
-    animation: scaleIn 0.22s ease-out;
-  }
-
-  .animate-navActivePulse {
-    animation: navActivePulse 280ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
   .modal-backdrop-motion {
     will-change: opacity;
-  }
-
-  .modal-backdrop-motion[data-entering] {
-    animation: modalBackdropIn var(--motion-modal-enter-duration) var(--motion-modal-enter-ease) both;
-  }
-
-  .modal-backdrop-motion[data-exiting] {
-    animation: modalBackdropOut var(--motion-modal-exit-duration) var(--motion-modal-exit-ease) both;
   }
 
   .modal-dialog-motion {
     transform-origin: top center;
     will-change: transform, opacity;
-  }
-
-  .modal-dialog-motion[data-entering] {
-    animation: modalDialogIn var(--motion-modal-enter-duration) var(--motion-modal-enter-ease) both;
-  }
-
-  .modal-dialog-motion[data-exiting] {
-    animation: modalDialogOut var(--motion-modal-exit-duration) var(--motion-modal-exit-ease) both;
-  }
-
-  .animate-modalOverlayIn {
-    animation: modalBackdropIn var(--motion-modal-enter-duration) var(--motion-modal-enter-ease) both;
-  }
-
-  .animate-modalOverlayOut {
-    animation: modalBackdropOut var(--motion-modal-exit-duration) var(--motion-modal-exit-ease) both;
-  }
-
-  .animate-modalPanelIn {
-    animation: modalDialogIn var(--motion-modal-enter-duration) var(--motion-modal-enter-ease) both;
-  }
-
-  .animate-modalPanelOut {
-    animation: modalDialogOut var(--motion-modal-exit-duration) var(--motion-modal-exit-ease) both;
   }
 }
 

@@ -12,6 +12,13 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const (
+	torrentCleanupPolicyNever     = "never"
+	torrentCleanupPolicyImmediate = "immediate"
+	torrentCleanupPolicyFixed     = "fixed"
+	torrentCleanupPolicyRandom    = "random"
+)
+
 func parseTorrentTaskStatus(raw string) (TorrentTaskStatus, error) {
 	v := TorrentTaskStatus(strings.ToLower(strings.TrimSpace(raw)))
 	switch v {
@@ -34,6 +41,16 @@ func parseTorrentSourceType(raw string) (TorrentSourceType, error) {
 		return v, nil
 	default:
 		return "", ErrBadInput
+	}
+}
+
+func normalizeTorrentCleanupPolicy(raw string) string {
+	policy := strings.ToLower(strings.TrimSpace(raw))
+	switch policy {
+	case torrentCleanupPolicyNever, torrentCleanupPolicyImmediate, torrentCleanupPolicyFixed, torrentCleanupPolicyRandom:
+		return policy
+	default:
+		return torrentCleanupPolicyImmediate
 	}
 }
 
@@ -99,6 +116,7 @@ func scanTorrentTask(
 	errMsg *string,
 	startedAt *time.Time,
 	finishedAt *time.Time,
+	sourceCleanupPolicy string,
 	sourceCleanupDueAt *time.Time,
 	sourceCleanupDone bool,
 	createdAt time.Time,
@@ -113,29 +131,30 @@ func scanTorrentTask(
 		return TorrentTask{}, err
 	}
 	return TorrentTask{
-		ID:                 id,
-		SourceType:         sourceType,
-		SourceURL:          sourceURL,
-		TorrentName:        strings.TrimSpace(torrentName),
-		InfoHash:           strings.TrimSpace(strings.ToLower(infoHash)),
-		TorrentFilePath:    strings.TrimSpace(torrentFilePath),
-		QBTorrentHash:      qbTorrentHash,
-		TargetChatID:       strings.TrimSpace(targetChatID),
-		TargetParentID:     targetParentID,
-		SubmittedBy:        strings.TrimSpace(submittedBy),
-		EstimatedSize:      estimatedSize,
-		DownloadedBytes:    downloadedBytes,
-		Progress:           progress,
-		IsPrivate:          isPrivate,
-		TrackerHosts:       decodeTrackerHosts(trackerHostsJSON),
-		Status:             status,
-		Error:              errMsg,
-		StartedAt:          startedAt,
-		FinishedAt:         finishedAt,
-		SourceCleanupDueAt: sourceCleanupDueAt,
-		SourceCleanupDone:  sourceCleanupDone,
-		CreatedAt:          createdAt,
-		UpdatedAt:          updatedAt,
+		ID:                  id,
+		SourceType:          sourceType,
+		SourceURL:           sourceURL,
+		TorrentName:         strings.TrimSpace(torrentName),
+		InfoHash:            strings.TrimSpace(strings.ToLower(infoHash)),
+		TorrentFilePath:     strings.TrimSpace(torrentFilePath),
+		QBTorrentHash:       qbTorrentHash,
+		TargetChatID:        strings.TrimSpace(targetChatID),
+		TargetParentID:      targetParentID,
+		SubmittedBy:         strings.TrimSpace(submittedBy),
+		EstimatedSize:       estimatedSize,
+		DownloadedBytes:     downloadedBytes,
+		Progress:            progress,
+		IsPrivate:           isPrivate,
+		TrackerHosts:        decodeTrackerHosts(trackerHostsJSON),
+		Status:              status,
+		Error:               errMsg,
+		StartedAt:           startedAt,
+		FinishedAt:          finishedAt,
+		SourceCleanupPolicy: normalizeTorrentCleanupPolicy(sourceCleanupPolicy),
+		SourceCleanupDueAt:  sourceCleanupDueAt,
+		SourceCleanupDone:   sourceCleanupDone,
+		CreatedAt:           createdAt,
+		UpdatedAt:           updatedAt,
 	}, nil
 }
 
@@ -160,46 +179,47 @@ func (s *Store) CreateTorrentTask(ctx context.Context, task TorrentTask) (Torren
 	}
 
 	const q = `
-INSERT INTO torrent_tasks(
-  id, source_type, source_url, torrent_name, info_hash, torrent_file_path, qb_torrent_hash,
-  target_chat_id, target_parent_id, submitted_by, estimated_size, downloaded_bytes, progress,
-  is_private, tracker_hosts_json, status, error, started_at, finished_at,
-  source_cleanup_due_at, source_cleanup_done, created_at, updated_at
-)
-VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23
-)
-RETURNING
-  id, source_type, source_url, torrent_name, info_hash, torrent_file_path, qb_torrent_hash,
-  target_chat_id, target_parent_id, submitted_by, estimated_size, downloaded_bytes, progress,
-  is_private, tracker_hosts_json, status, error, started_at, finished_at,
-  source_cleanup_due_at, source_cleanup_done, created_at, updated_at
-`
+	INSERT INTO torrent_tasks(
+	  id, source_type, source_url, torrent_name, info_hash, torrent_file_path, qb_torrent_hash,
+	  target_chat_id, target_parent_id, submitted_by, estimated_size, downloaded_bytes, progress,
+	  is_private, tracker_hosts_json, status, error, started_at, finished_at,
+	  source_cleanup_policy, source_cleanup_due_at, source_cleanup_done, created_at, updated_at
+	)
+	VALUES (
+	  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24
+	)
+	RETURNING
+	  id, source_type, source_url, torrent_name, info_hash, torrent_file_path, qb_torrent_hash,
+	  target_chat_id, target_parent_id, submitted_by, estimated_size, downloaded_bytes, progress,
+	  is_private, tracker_hosts_json, status, error, started_at, finished_at,
+	  source_cleanup_policy, source_cleanup_due_at, source_cleanup_done, created_at, updated_at
+	`
 
 	var (
-		id                 uuid.UUID
-		sourceTypeRaw      string
-		sourceURL          *string
-		torrentName        string
-		infoHash           string
-		torrentFilePath    string
-		qbTorrentHash      *string
-		targetChatID       string
-		targetParentID     *uuid.UUID
-		submittedBy        string
-		estimatedSize      int64
-		downloadedBytes    int64
-		progress           float64
-		isPrivate          bool
-		trackerHostsJSON   string
-		statusRaw          string
-		errMsg             *string
-		startedAt          *time.Time
-		finishedAt         *time.Time
-		sourceCleanupDueAt *time.Time
-		sourceCleanupDone  bool
-		createdAt          time.Time
-		updatedAt          time.Time
+		id                  uuid.UUID
+		sourceTypeRaw       string
+		sourceURL           *string
+		torrentName         string
+		infoHash            string
+		torrentFilePath     string
+		qbTorrentHash       *string
+		targetChatID        string
+		targetParentID      *uuid.UUID
+		submittedBy         string
+		estimatedSize       int64
+		downloadedBytes     int64
+		progress            float64
+		isPrivate           bool
+		trackerHostsJSON    string
+		statusRaw           string
+		errMsg              *string
+		startedAt           *time.Time
+		finishedAt          *time.Time
+		sourceCleanupPolicy string
+		sourceCleanupDueAt  *time.Time
+		sourceCleanupDone   bool
+		createdAt           time.Time
+		updatedAt           time.Time
 	)
 	if err := s.db.QueryRow(
 		ctx,
@@ -223,6 +243,7 @@ RETURNING
 		task.Error,
 		task.StartedAt,
 		task.FinishedAt,
+		normalizeTorrentCleanupPolicy(task.SourceCleanupPolicy),
 		task.SourceCleanupDueAt,
 		task.SourceCleanupDone,
 		task.CreatedAt,
@@ -247,6 +268,7 @@ RETURNING
 		&errMsg,
 		&startedAt,
 		&finishedAt,
+		&sourceCleanupPolicy,
 		&sourceCleanupDueAt,
 		&sourceCleanupDone,
 		&createdAt,
@@ -274,6 +296,7 @@ RETURNING
 		errMsg,
 		startedAt,
 		finishedAt,
+		sourceCleanupPolicy,
 		sourceCleanupDueAt,
 		sourceCleanupDone,
 		createdAt,
@@ -283,37 +306,38 @@ RETURNING
 
 func (s *Store) GetTorrentTask(ctx context.Context, id uuid.UUID) (TorrentTask, error) {
 	const q = `
-SELECT
-  id, source_type, source_url, torrent_name, info_hash, torrent_file_path, qb_torrent_hash,
-  target_chat_id, target_parent_id, submitted_by, estimated_size, downloaded_bytes, progress,
-  is_private, tracker_hosts_json, status, error, started_at, finished_at,
-  source_cleanup_due_at, source_cleanup_done, created_at, updated_at
-FROM torrent_tasks
-WHERE id = $1
-`
+	SELECT
+	  id, source_type, source_url, torrent_name, info_hash, torrent_file_path, qb_torrent_hash,
+	  target_chat_id, target_parent_id, submitted_by, estimated_size, downloaded_bytes, progress,
+	  is_private, tracker_hosts_json, status, error, started_at, finished_at,
+	  source_cleanup_policy, source_cleanup_due_at, source_cleanup_done, created_at, updated_at
+	FROM torrent_tasks
+	WHERE id = $1
+	`
 	var (
-		sourceTypeRaw      string
-		sourceURL          *string
-		torrentName        string
-		infoHash           string
-		torrentFilePath    string
-		qbTorrentHash      *string
-		targetChatID       string
-		targetParentID     *uuid.UUID
-		submittedBy        string
-		estimatedSize      int64
-		downloadedBytes    int64
-		progress           float64
-		isPrivate          bool
-		trackerHostsJSON   string
-		statusRaw          string
-		errMsg             *string
-		startedAt          *time.Time
-		finishedAt         *time.Time
-		sourceCleanupDueAt *time.Time
-		sourceCleanupDone  bool
-		createdAt          time.Time
-		updatedAt          time.Time
+		sourceTypeRaw       string
+		sourceURL           *string
+		torrentName         string
+		infoHash            string
+		torrentFilePath     string
+		qbTorrentHash       *string
+		targetChatID        string
+		targetParentID      *uuid.UUID
+		submittedBy         string
+		estimatedSize       int64
+		downloadedBytes     int64
+		progress            float64
+		isPrivate           bool
+		trackerHostsJSON    string
+		statusRaw           string
+		errMsg              *string
+		startedAt           *time.Time
+		finishedAt          *time.Time
+		sourceCleanupPolicy string
+		sourceCleanupDueAt  *time.Time
+		sourceCleanupDone   bool
+		createdAt           time.Time
+		updatedAt           time.Time
 	)
 	err := s.db.QueryRow(ctx, q, id).Scan(
 		&id,
@@ -335,6 +359,7 @@ WHERE id = $1
 		&errMsg,
 		&startedAt,
 		&finishedAt,
+		&sourceCleanupPolicy,
 		&sourceCleanupDueAt,
 		&sourceCleanupDone,
 		&createdAt,
@@ -366,6 +391,7 @@ WHERE id = $1
 		errMsg,
 		startedAt,
 		finishedAt,
+		sourceCleanupPolicy,
 		sourceCleanupDueAt,
 		sourceCleanupDone,
 		createdAt,
@@ -422,13 +448,13 @@ func (s *Store) ListTorrentTasks(
 	offsetArg := len(args)
 
 	query := fmt.Sprintf(`
-SELECT
-  id, source_type, source_url, torrent_name, info_hash, torrent_file_path, qb_torrent_hash,
-  target_chat_id, target_parent_id, submitted_by, estimated_size, downloaded_bytes, progress,
-  is_private, tracker_hosts_json, status, error, started_at, finished_at,
-  source_cleanup_due_at, source_cleanup_done, created_at, updated_at
-FROM torrent_tasks
-WHERE %s
+	SELECT
+	  id, source_type, source_url, torrent_name, info_hash, torrent_file_path, qb_torrent_hash,
+	  target_chat_id, target_parent_id, submitted_by, estimated_size, downloaded_bytes, progress,
+	  is_private, tracker_hosts_json, status, error, started_at, finished_at,
+	  source_cleanup_policy, source_cleanup_due_at, source_cleanup_done, created_at, updated_at
+	FROM torrent_tasks
+	WHERE %s
 ORDER BY created_at DESC
 LIMIT $%d OFFSET $%d
 `, whereSQL, limitArg, offsetArg)
@@ -442,29 +468,30 @@ LIMIT $%d OFFSET $%d
 	items := make([]TorrentTask, 0, pageSize)
 	for rows.Next() {
 		var (
-			id                 uuid.UUID
-			sourceTypeRaw      string
-			sourceURL          *string
-			torrentName        string
-			infoHash           string
-			torrentFilePath    string
-			qbTorrentHash      *string
-			targetChatID       string
-			targetParentID     *uuid.UUID
-			submittedBy        string
-			estimatedSize      int64
-			downloadedBytes    int64
-			progress           float64
-			isPrivate          bool
-			trackerHostsJSON   string
-			statusRaw          string
-			errMsg             *string
-			startedAt          *time.Time
-			finishedAt         *time.Time
-			sourceCleanupDueAt *time.Time
-			sourceCleanupDone  bool
-			createdAt          time.Time
-			updatedAt          time.Time
+			id                  uuid.UUID
+			sourceTypeRaw       string
+			sourceURL           *string
+			torrentName         string
+			infoHash            string
+			torrentFilePath     string
+			qbTorrentHash       *string
+			targetChatID        string
+			targetParentID      *uuid.UUID
+			submittedBy         string
+			estimatedSize       int64
+			downloadedBytes     int64
+			progress            float64
+			isPrivate           bool
+			trackerHostsJSON    string
+			statusRaw           string
+			errMsg              *string
+			startedAt           *time.Time
+			finishedAt          *time.Time
+			sourceCleanupPolicy string
+			sourceCleanupDueAt  *time.Time
+			sourceCleanupDone   bool
+			createdAt           time.Time
+			updatedAt           time.Time
 		)
 		if err := rows.Scan(
 			&id,
@@ -486,6 +513,7 @@ LIMIT $%d OFFSET $%d
 			&errMsg,
 			&startedAt,
 			&finishedAt,
+			&sourceCleanupPolicy,
 			&sourceCleanupDueAt,
 			&sourceCleanupDone,
 			&createdAt,
@@ -513,6 +541,7 @@ LIMIT $%d OFFSET $%d
 			errMsg,
 			startedAt,
 			finishedAt,
+			sourceCleanupPolicy,
 			sourceCleanupDueAt,
 			sourceCleanupDone,
 			createdAt,
@@ -635,37 +664,38 @@ SET status = $2,
     updated_at = $3
 FROM picked
 WHERE t.id = picked.id
-RETURNING
-  t.id, t.source_type, t.source_url, t.torrent_name, t.info_hash, t.torrent_file_path, t.qb_torrent_hash,
-  t.target_chat_id, t.target_parent_id, t.submitted_by, t.estimated_size, t.downloaded_bytes, t.progress,
-  t.is_private, t.tracker_hosts_json, t.status, t.error, t.started_at, t.finished_at,
-  t.source_cleanup_due_at, t.source_cleanup_done, t.created_at, t.updated_at
-`
+	RETURNING
+	  t.id, t.source_type, t.source_url, t.torrent_name, t.info_hash, t.torrent_file_path, t.qb_torrent_hash,
+	  t.target_chat_id, t.target_parent_id, t.submitted_by, t.estimated_size, t.downloaded_bytes, t.progress,
+	  t.is_private, t.tracker_hosts_json, t.status, t.error, t.started_at, t.finished_at,
+	  t.source_cleanup_policy, t.source_cleanup_due_at, t.source_cleanup_done, t.created_at, t.updated_at
+	`
 
 	var (
-		id                 uuid.UUID
-		sourceTypeRaw      string
-		sourceURL          *string
-		torrentName        string
-		infoHash           string
-		torrentFilePath    string
-		qbTorrentHash      *string
-		targetChatID       string
-		targetParentID     *uuid.UUID
-		submittedBy        string
-		estimatedSize      int64
-		downloadedBytes    int64
-		progress           float64
-		isPrivate          bool
-		trackerHostsJSON   string
-		statusRaw          string
-		errMsg             *string
-		startedAt          *time.Time
-		finishedAt         *time.Time
-		sourceCleanupDueAt *time.Time
-		sourceCleanupDone  bool
-		createdAt          time.Time
-		updatedAt          time.Time
+		id                  uuid.UUID
+		sourceTypeRaw       string
+		sourceURL           *string
+		torrentName         string
+		infoHash            string
+		torrentFilePath     string
+		qbTorrentHash       *string
+		targetChatID        string
+		targetParentID      *uuid.UUID
+		submittedBy         string
+		estimatedSize       int64
+		downloadedBytes     int64
+		progress            float64
+		isPrivate           bool
+		trackerHostsJSON    string
+		statusRaw           string
+		errMsg              *string
+		startedAt           *time.Time
+		finishedAt          *time.Time
+		sourceCleanupPolicy string
+		sourceCleanupDueAt  *time.Time
+		sourceCleanupDone   bool
+		createdAt           time.Time
+		updatedAt           time.Time
 	)
 	if err := s.db.QueryRow(ctx, q, fromRaw, string(parsedTo), now).Scan(
 		&id,
@@ -687,6 +717,7 @@ RETURNING
 		&errMsg,
 		&startedAt,
 		&finishedAt,
+		&sourceCleanupPolicy,
 		&sourceCleanupDueAt,
 		&sourceCleanupDone,
 		&createdAt,
@@ -717,6 +748,7 @@ RETURNING
 		errMsg,
 		startedAt,
 		finishedAt,
+		sourceCleanupPolicy,
 		sourceCleanupDueAt,
 		sourceCleanupDone,
 		createdAt,
@@ -896,20 +928,24 @@ func (s *Store) SetTorrentTaskSourceCleanupSchedule(
 	ctx context.Context,
 	id uuid.UUID,
 	dueAt time.Time,
+	policy string,
 	now time.Time,
 ) error {
 	if dueAt.IsZero() {
 		return ErrBadInput
 	}
+	normalizedPolicy := normalizeTorrentCleanupPolicy(policy)
 	ct, err := s.db.Exec(
 		ctx,
 		`UPDATE torrent_tasks
 SET source_cleanup_due_at = $2,
+    source_cleanup_policy = $3,
     source_cleanup_done = FALSE,
-    updated_at = $3
+    updated_at = $4
 WHERE id = $1`,
 		id,
 		dueAt,
+		normalizedPolicy,
 		now,
 	)
 	if err != nil {
@@ -962,37 +998,38 @@ UPDATE torrent_tasks t
 SET updated_at = $1
 FROM picked
 WHERE t.id = picked.id
-RETURNING
-  t.id, t.source_type, t.source_url, t.torrent_name, t.info_hash, t.torrent_file_path, t.qb_torrent_hash,
-  t.target_chat_id, t.target_parent_id, t.submitted_by, t.estimated_size, t.downloaded_bytes, t.progress,
-  t.is_private, t.tracker_hosts_json, t.status, t.error, t.started_at, t.finished_at,
-  t.source_cleanup_due_at, t.source_cleanup_done, t.created_at, t.updated_at
-`
+	RETURNING
+	  t.id, t.source_type, t.source_url, t.torrent_name, t.info_hash, t.torrent_file_path, t.qb_torrent_hash,
+	  t.target_chat_id, t.target_parent_id, t.submitted_by, t.estimated_size, t.downloaded_bytes, t.progress,
+	  t.is_private, t.tracker_hosts_json, t.status, t.error, t.started_at, t.finished_at,
+	  t.source_cleanup_policy, t.source_cleanup_due_at, t.source_cleanup_done, t.created_at, t.updated_at
+	`
 
 	var (
-		id                 uuid.UUID
-		sourceTypeRaw      string
-		sourceURL          *string
-		torrentName        string
-		infoHash           string
-		torrentFilePath    string
-		qbTorrentHash      *string
-		targetChatID       string
-		targetParentID     *uuid.UUID
-		submittedBy        string
-		estimatedSize      int64
-		downloadedBytes    int64
-		progress           float64
-		isPrivate          bool
-		trackerHostsJSON   string
-		statusRaw          string
-		errMsg             *string
-		startedAt          *time.Time
-		finishedAt         *time.Time
-		sourceCleanupDueAt *time.Time
-		sourceCleanupDone  bool
-		createdAt          time.Time
-		updatedAt          time.Time
+		id                  uuid.UUID
+		sourceTypeRaw       string
+		sourceURL           *string
+		torrentName         string
+		infoHash            string
+		torrentFilePath     string
+		qbTorrentHash       *string
+		targetChatID        string
+		targetParentID      *uuid.UUID
+		submittedBy         string
+		estimatedSize       int64
+		downloadedBytes     int64
+		progress            float64
+		isPrivate           bool
+		trackerHostsJSON    string
+		statusRaw           string
+		errMsg              *string
+		startedAt           *time.Time
+		finishedAt          *time.Time
+		sourceCleanupPolicy string
+		sourceCleanupDueAt  *time.Time
+		sourceCleanupDone   bool
+		createdAt           time.Time
+		updatedAt           time.Time
 	)
 	if err := s.db.QueryRow(ctx, q, now).Scan(
 		&id,
@@ -1014,6 +1051,7 @@ RETURNING
 		&errMsg,
 		&startedAt,
 		&finishedAt,
+		&sourceCleanupPolicy,
 		&sourceCleanupDueAt,
 		&sourceCleanupDone,
 		&createdAt,
@@ -1044,6 +1082,7 @@ RETURNING
 		errMsg,
 		startedAt,
 		finishedAt,
+		sourceCleanupPolicy,
 		sourceCleanupDueAt,
 		sourceCleanupDone,
 		createdAt,

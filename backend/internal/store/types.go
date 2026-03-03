@@ -137,29 +137,30 @@ const (
 )
 
 type TorrentTask struct {
-	ID                 uuid.UUID
-	SourceType         TorrentSourceType
-	SourceURL          *string
-	TorrentName        string
-	InfoHash           string
-	TorrentFilePath    string
-	QBTorrentHash      *string
-	TargetChatID       string
-	TargetParentID     *uuid.UUID
-	SubmittedBy        string
-	EstimatedSize      int64
-	DownloadedBytes    int64
-	Progress           float64
-	IsPrivate          bool
-	TrackerHosts       []string
-	Status             TorrentTaskStatus
-	Error              *string
-	StartedAt          *time.Time
-	FinishedAt         *time.Time
-	SourceCleanupDueAt *time.Time
-	SourceCleanupDone  bool
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ID                  uuid.UUID
+	SourceType          TorrentSourceType
+	SourceURL           *string
+	TorrentName         string
+	InfoHash            string
+	TorrentFilePath     string
+	QBTorrentHash       *string
+	TargetChatID        string
+	TargetParentID      *uuid.UUID
+	SubmittedBy         string
+	EstimatedSize       int64
+	DownloadedBytes     int64
+	Progress            float64
+	IsPrivate           bool
+	TrackerHosts        []string
+	Status              TorrentTaskStatus
+	Error               *string
+	StartedAt           *time.Time
+	FinishedAt          *time.Time
+	SourceCleanupPolicy string
+	SourceCleanupDueAt  *time.Time
+	SourceCleanupDone   bool
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 type TorrentTaskFile struct {

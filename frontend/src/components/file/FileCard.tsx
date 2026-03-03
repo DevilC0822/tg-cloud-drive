@@ -1,10 +1,12 @@
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { FileItem } from '@/types';
 import { ActionIconButton } from '@/components/ui/HeroActionPrimitives';
 import { formatFileSize } from '@/utils/formatters';
 import { FileThumbnail } from './FileThumbnail';
+import { motion, AnimatePresence } from 'framer-motion';
+import { springTransition } from '@/utils/animations';
 
 function cn(...inputs: (string | undefined | null | boolean)[]) {
   return twMerge(clsx(inputs));
@@ -20,37 +22,70 @@ export interface FileCardProps {
 
 export function FileCard({ file, selected = false, onClick, onDoubleClick, onContextMenu }: FileCardProps) {
   return (
-    <div
+    <motion.div
+      layout
       data-file-item="true"
+      data-selected={selected ? 'true' : 'false'}
+      aria-selected={selected}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
+      whileHover={
+        selected
+          ? { y: -4 }
+          : { y: -4, boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' }
+      }
+      whileTap={{ scale: 0.98 }}
+      transition={springTransition}
       className={cn(
-        'group relative cursor-pointer rounded-2xl border border-white/50 bg-white/40 p-3 backdrop-blur-md sm:p-4 dark:border-white/10 dark:bg-black/30',
-        'shadow-[0_8px_24px_-12px_rgba(15,23,42,0.15)] transition-all duration-300 active:scale-[0.97] hover:bg-white/60 hover:shadow-xl [@media(hover:hover)]:hover:-translate-y-1 dark:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)] dark:hover:bg-white/10',
-        selected &&
-          'bg-white/60 ring-2 ring-[var(--theme-primary)] ring-offset-2 ring-offset-transparent dark:bg-white/10 dark:ring-offset-transparent',
+        'group relative cursor-pointer rounded-2xl border transition-all duration-300',
+        'p-3 backdrop-blur-md sm:p-4',
+        selected
+          ? 'border-[var(--theme-primary-a70)] bg-[linear-gradient(145deg,var(--theme-primary-a20),var(--theme-primary-a08))] shadow-[inset_0_0_0_1px_var(--theme-primary-a35),0_18px_36px_-20px_var(--theme-primary-a55)] dark:border-[var(--theme-primary-a55)] dark:bg-[linear-gradient(145deg,var(--theme-primary-a24),rgba(15,23,42,0.24))]'
+          : 'border-white/50 bg-white/40 shadow-[0_8px_24px_-12px_rgba(15,23,42,0.15)] dark:border-white/10 dark:bg-black/30 dark:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)]'
       )}
     >
-      {/* 更多操作按钮 */}
-      <ActionIconButton
-        icon={<MoreVertical className="h-4 w-4" />}
-        label="更多操作"
-        onClick={(e) => {
-          e.stopPropagation();
-          onContextMenu?.(e);
-        }}
-        className={cn(
-          'absolute top-2.5 right-2.5 z-10 rounded-xl',
-          'border border-white/70 dark:border-neutral-700/80',
-          'bg-white/85 backdrop-blur dark:bg-neutral-900/80',
-          'shadow-sm hover:shadow',
-          'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
-          'opacity-100 md:opacity-0 md:group-hover:opacity-100',
-          'scale-100 md:scale-95 md:group-hover:scale-100',
-          'transition-all duration-200',
+      {selected ? (
+        <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-[var(--theme-primary-a35)]" />
+      ) : null}
+
+      {/* 选中标识 */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            className="absolute top-2.5 left-2.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--theme-primary)] text-neutral-900 shadow-sm"
+          >
+            <Check className="h-3 w-3 stroke-[3px]" />
+          </motion.div>
         )}
-      />
+      </AnimatePresence>
+
+      {/* 更多操作按钮 */}
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, x: 5 }}
+          whileHover={{ scale: 1.1 }}
+          className="absolute top-2.5 right-2.5 z-10"
+        >
+          <ActionIconButton
+            icon={<MoreVertical className="h-4 w-4" />}
+            label="更多操作"
+            onClick={(e) => {
+              e.stopPropagation();
+              onContextMenu?.(e);
+            }}
+            className={cn(
+              'rounded-xl border border-white/70 dark:border-neutral-700/80',
+              'bg-white/85 backdrop-blur dark:bg-neutral-900/80 shadow-sm',
+              'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+              'opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200'
+            )}
+          />
+        </motion.div>
+      </AnimatePresence>
 
       {/* 文件图标/缩略图 */}
       <div className="mb-3 flex h-24 items-center justify-center">
@@ -69,6 +104,7 @@ export function FileCard({ file, selected = false, onClick, onDoubleClick, onCon
           {file.type === 'folder' ? '目录' : formatFileSize(file.size)}
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 }
+

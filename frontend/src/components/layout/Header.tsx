@@ -387,250 +387,243 @@ export function Header({}: HeaderProps) {
 
   return (
     <>
-      <header className="glass-header relative z-30 rounded-none px-3 py-2.5 shadow-lg sm:px-4 md:rounded-3xl lg:px-6">
-        <div className={cn('flex items-center gap-2.5 xl:gap-3')}>
-          <ActionIconButton
-            icon={<Menu className="h-5 w-5" />}
-            label="打开侧边栏"
-            onPress={() => setMobileSidebarOpen(true)}
-            className="lg:hidden"
-          />
+      <header className="glass-header relative z-30 flex items-center gap-2.5 rounded-none px-3 py-2.5 sm:px-4 md:rounded-3xl lg:px-6 xl:gap-3">
+        <ActionIconButton
+          icon={<Menu className="h-5 w-5" />}
+          label="打开侧边栏"
+          onPress={() => setMobileSidebarOpen(true)}
+          className="lg:hidden"
+        />
 
-          <div className="min-w-0 flex-1">
-            <div className={cn('flex items-center', capsuleGroupGapClass)}>
-              <div className="w-full sm:max-w-xl lg:max-w-2xl">
-                <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="搜索文件和文件夹..." />
-              </div>
+        <div className="min-w-0 flex-1">
+          <div className={cn('flex items-center', capsuleGroupGapClass)}>
+            <div className="w-full sm:max-w-xl lg:max-w-2xl">
+              <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="搜索文件和文件夹..." />
             </div>
           </div>
+        </div>
 
-          <div className={cn('ml-auto flex shrink-0 items-center', capsuleGroupGapClass)}>
-            <div
-              className={cn(
-                'hidden items-center border border-neutral-200/80 bg-white/56 lg:flex dark:border-neutral-700/80 dark:bg-neutral-900/62',
-                capsuleFrameClass,
-                capsuleInnerGapClass,
-              )}
+        <div className={cn('ml-auto flex shrink-0 items-center', capsuleGroupGapClass)}>
+          <div
+            className={cn(
+              'hidden items-center border border-neutral-200/60 bg-white/40 lg:flex dark:border-neutral-700/60 dark:bg-neutral-900/40',
+              capsuleFrameClass,
+              capsuleInnerGapClass,
+            )}
+          >
+            <ActionStatusPill
+              tone={serviceAccessError ? 'danger' : currentMethod === 'self_hosted_bot_api' ? 'success' : 'brand'}
+              className={cn('h-8 border border-white/40 px-2.5 dark:border-neutral-700/80', capsuleInnerGapClass)}
             >
-              <ActionStatusPill
-                tone={serviceAccessError ? 'danger' : currentMethod === 'self_hosted_bot_api' ? 'success' : 'brand'}
-                className={cn('h-8 border border-white/40 px-2.5 dark:border-neutral-700/80', capsuleInnerGapClass)}
-              >
-                {serviceAccessLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : serviceAccessError ? (
-                  <AlertCircle className="h-3.5 w-3.5" />
-                ) : (
-                  <currentMethodMeta.Icon className="h-3.5 w-3.5" />
+              {serviceAccessLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : serviceAccessError ? (
+                <AlertCircle className="h-3.5 w-3.5" />
+              ) : (
+                <currentMethodMeta.Icon className="h-3.5 w-3.5" />
+              )}
+              <span title={serviceAccessError || '当前 Telegram 服务接入方式'}>{currentMethodMeta.shortLabel}</span>
+            </ActionStatusPill>
+
+            <span className={capsuleDividerClass} />
+
+            <ActionTextButton
+              tone="brand"
+              leadingIcon={<ArrowRightLeft className="h-3.5 w-3.5" />}
+              onPress={openSwitchModal}
+              className="border-transparent bg-transparent"
+            >
+              切换服务
+            </ActionTextButton>
+          </div>
+
+          {/* 主题切换（所有屏幕可见，位于头像左侧） */}
+          <HeroDropdown>
+            <HeroDropdown.Trigger>
+              <ActionIconButton
+                icon={<ThemeIcon className="h-4 w-4" />}
+                label="切换主题"
+                tone="neutral"
+                className={cn(
+                  'h-9 min-h-9 w-9 min-w-9 rounded-full border border-neutral-200/60',
+                  'bg-white/70 text-neutral-700 shadow-sm dark:border-neutral-700/70 dark:bg-neutral-900/60 dark:text-neutral-200',
                 )}
-                <span title={serviceAccessError || '当前 Telegram 服务接入方式'}>{currentMethodMeta.shortLabel}</span>
-              </ActionStatusPill>
-
-              <span className={capsuleDividerClass} />
-
-              <ActionTextButton
-                tone="brand"
-                leadingIcon={<ArrowRightLeft className="h-3.5 w-3.5" />}
-                onPress={openSwitchModal}
-                className="border-transparent bg-transparent"
+              />
+            </HeroDropdown.Trigger>
+            <HeroDropdown.Popover className="popover-warm w-40 rounded-2xl p-1">
+              <HeroDropdown.Menu
+                aria-label="主题切换"
+                onAction={(key) => changeTheme(key as 'light' | 'dark' | 'system')}
               >
-                切换服务
-              </ActionTextButton>
-            </div>
-
-            {/* 桌面端：主题切换 + 用户头像胶囊 */}
-            <div
-              className={cn(
-                'hidden items-center border border-neutral-200/80 bg-white/56 shadow-[0_10px_20px_-16px_rgba(30,41,59,0.42)] lg:flex dark:border-neutral-700/80 dark:bg-neutral-900/62',
-                capsuleFrameClass,
-                capsuleInnerGapClass,
-              )}
-            >
-              <HeroDropdown>
-                <HeroDropdown.Trigger>
-                  <ActionIconButton
-                    icon={<ThemeIcon className="h-5 w-5" />}
-                    label="切换主题"
-                    tone="neutral"
-                    className="border-transparent bg-transparent"
-                  />
-                </HeroDropdown.Trigger>
-                <HeroDropdown.Popover className="popover-warm w-40 rounded-2xl p-1">
-                  <HeroDropdown.Menu
-                    aria-label="主题切换"
-                    onAction={(key) => changeTheme(key as 'light' | 'dark' | 'system')}
-                  >
-                    <HeroDropdown.Item
-                      id="light"
-                      textValue="浅色"
-                      className={cn(theme === 'light' && 'text-[var(--theme-primary)]')}
-                    >
-                      <Sun className="h-4 w-4 text-current" />
-                      <HeroLabel>浅色</HeroLabel>
-                    </HeroDropdown.Item>
-                    <HeroDropdown.Item
-                      id="dark"
-                      textValue="深色"
-                      className={cn(theme === 'dark' && 'text-[var(--theme-primary)]')}
-                    >
-                      <Moon className="h-4 w-4 text-current" />
-                      <HeroLabel>深色</HeroLabel>
-                    </HeroDropdown.Item>
-                    <HeroDropdown.Item
-                      id="system"
-                      textValue="跟随系统"
-                      className={cn(theme === 'system' && 'text-[var(--theme-primary)]')}
-                    >
-                      <Monitor className="h-4 w-4 text-current" />
-                      <HeroLabel>跟随系统</HeroLabel>
-                    </HeroDropdown.Item>
-                  </HeroDropdown.Menu>
-                </HeroDropdown.Popover>
-              </HeroDropdown>
-            </div>
-
-            {/* 用户头像（所有屏幕可见） */}
-            <HeroDropdown isOpen={userMenuOpen} onOpenChange={setUserMenuOpen}>
-                <HeroDropdown.Trigger>
-                  <ActionIconButton
-                    icon={<span className="text-sm leading-none font-semibold">U</span>}
-                    label="打开用户菜单"
-                    aria-haspopup="menu"
-                    aria-expanded={userMenuOpen}
-                    className={cn(
-                      'h-9 min-h-9 w-9 min-w-9 rounded-full',
-                      'bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)]',
-                      'text-neutral-900',
-                      'shadow-[0_12px_26px_-18px_rgba(30,41,59,0.58)]',
-                      'data-[hovered=true]:bg-gradient-to-br data-[hovered=true]:from-[var(--theme-primary-soft-hover)] data-[hovered=true]:to-[var(--theme-primary-soft-2)]',
-                      'data-[pressed=true]:bg-gradient-to-br data-[pressed=true]:from-[var(--theme-primary-soft-press)] data-[pressed=true]:to-[var(--theme-primary-deep)]',
-                      userMenuOpen && 'ring-2 ring-[var(--theme-primary-a55)]',
-                    )}
-                  />
-                </HeroDropdown.Trigger>
-                <HeroDropdown.Popover
-                  placement="bottom end"
-                  className="popover-warm w-[min(360px,calc(100svw-24px))] max-w-[calc(100svw-24px)] overflow-hidden rounded-3xl p-0"
+                <HeroDropdown.Item
+                  id="light"
+                  textValue="浅色"
+                  className={cn(theme === 'light' && 'text-[var(--theme-primary)]')}
                 >
-                  <div className="border-b border-neutral-200/80 bg-gradient-to-r from-[var(--theme-primary-a20)] via-[var(--theme-primary-a08)] to-transparent px-4 py-3 dark:border-neutral-700/80 dark:to-transparent">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="relative shrink-0">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)] font-semibold text-neutral-900 shadow-sm ring-1 ring-white/35 dark:ring-neutral-950/35">
-                          U
-                        </div>
-                        <span className="absolute -right-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full border-2 border-neutral-50 bg-emerald-500 shadow-sm dark:border-neutral-950 dark:bg-emerald-400" />
-                      </div>
+                  <Sun className="h-4 w-4 text-current" />
+                  <HeroLabel>浅色</HeroLabel>
+                </HeroDropdown.Item>
+                <HeroDropdown.Item
+                  id="dark"
+                  textValue="深色"
+                  className={cn(theme === 'dark' && 'text-[var(--theme-primary)]')}
+                >
+                  <Moon className="h-4 w-4 text-current" />
+                  <HeroLabel>深色</HeroLabel>
+                </HeroDropdown.Item>
+                <HeroDropdown.Item
+                  id="system"
+                  textValue="跟随系统"
+                  className={cn(theme === 'system' && 'text-[var(--theme-primary)]')}
+                >
+                  <Monitor className="h-4 w-4 text-current" />
+                  <HeroLabel>跟随系统</HeroLabel>
+                </HeroDropdown.Item>
+              </HeroDropdown.Menu>
+            </HeroDropdown.Popover>
+          </HeroDropdown>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <div className="truncate font-semibold text-neutral-900 dark:text-neutral-100">管理员</div>
-                          <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
-                            当前会话
-                          </span>
-                        </div>
-                        <div className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                          TG Cloud Drive · 已登录
-                        </div>
-                      </div>
+          {/* 用户头像（所有屏幕可见） */}
+          <HeroDropdown isOpen={userMenuOpen} onOpenChange={setUserMenuOpen}>
+            <HeroDropdown.Trigger>
+              <ActionIconButton
+                icon={<span className="text-sm leading-none font-semibold">U</span>}
+                label="打开用户菜单"
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+                className={cn(
+                  'h-9 min-h-9 w-9 min-w-9 rounded-full',
+                  'bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)]',
+                  'text-neutral-900',
+                  'shadow-sm',
+                  'data-[hovered=true]:bg-gradient-to-br data-[hovered=true]:from-[var(--theme-primary-soft-hover)] data-[hovered=true]:to-[var(--theme-primary-soft-2)]',
+                  'data-[pressed=true]:bg-gradient-to-br data-[pressed=true]:from-[var(--theme-primary-soft-press)] data-[pressed=true]:to-[var(--theme-primary-deep)]',
+                  userMenuOpen && 'ring-2 ring-[var(--theme-primary-a55)]',
+                )}
+              />
+            </HeroDropdown.Trigger>
+            <HeroDropdown.Popover
+              placement="bottom end"
+              className="popover-warm w-[min(360px,calc(100svw-24px))] max-w-[calc(100svw-24px)] overflow-hidden rounded-3xl p-0"
+            >
+              <div className="border-b border-neutral-200/80 bg-gradient-to-r from-[var(--theme-primary-a20)] via-[var(--theme-primary-a08)] to-transparent px-4 py-3 dark:border-neutral-700/80 dark:to-transparent">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="relative shrink-0">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-primary-strong)] font-semibold text-neutral-900 shadow-sm ring-1 ring-white/35 dark:ring-neutral-950/35">
+                      U
+                    </div>
+                    <span className="absolute -right-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full border-2 border-neutral-50 bg-emerald-500 shadow-sm dark:border-neutral-950 dark:bg-emerald-400" />
+                  </div>
 
-                      <span className="w-full sm:ml-auto sm:w-auto sm:shrink-0">
-                        <ActionStatusPill tone="success" className="inline-flex gap-1.5">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          会话有效
-                        </ActionStatusPill>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <div className="truncate font-semibold text-neutral-900 dark:text-neutral-100">管理员</div>
+                      <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+                        当前会话
                       </span>
                     </div>
+                    <div className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
+                      TG Cloud Drive · 已登录
+                    </div>
                   </div>
 
-                  <div className="px-4 py-3">
-                    <div className="rounded-xl border border-neutral-200/80 bg-white/48 p-3 dark:border-neutral-700/80 dark:bg-neutral-800/52">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300">
-                          <HardDrive className="h-4 w-4" />
-                          存储概览
-                        </div>
-                        {storageStatsLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-neutral-400 dark:text-neutral-500" />
-                        ) : null}
+                  <span className="w-full sm:ml-auto sm:w-auto sm:shrink-0">
+                    <ActionStatusPill tone="success" className="inline-flex gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      会话有效
+                    </ActionStatusPill>
+                  </span>
+                </div>
+              </div>
+
+              <div className="px-4 py-3">
+                <div className="rounded-xl border border-neutral-200/80 bg-white/48 p-3 dark:border-neutral-700/80 dark:bg-neutral-800/52">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                      <HardDrive className="h-4 w-4" />
+                      存储概览
+                    </div>
+                    {storageStatsLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-neutral-400 dark:text-neutral-500" />
+                    ) : null}
+                  </div>
+                  {storageStatsError ? (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      {storageStatsError}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                        {formatFileSize(storageStats.totalBytes)}
                       </div>
-                      {storageStatsError ? (
-                        <div className="mt-2 flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400">
-                          <AlertCircle className="h-3.5 w-3.5" />
-                          {storageStatsError}
+                      <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                        共 {storageStats.totalFiles} 个文件（不含目录）
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
+                  {storageRows.map((row) => {
+                    const Icon = row.icon;
+                    return (
+                      <div
+                        key={row.key}
+                        className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800/80"
+                      >
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className={cn('h-2 w-2 shrink-0 rounded-full', row.color)} />
+                          <Icon className="h-3.5 w-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" />
+                          <span className="truncate text-xs font-medium text-neutral-700 dark:text-neutral-200">
+                            {row.label}
+                          </span>
                         </div>
-                      ) : (
-                        <>
-                          <div className="mt-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                            {formatFileSize(storageStats.totalBytes)}
+                        <div className="ml-3 text-right">
+                          <div className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
+                            {formatFileSize(row.bytes)}
                           </div>
-                          <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                            共 {storageStats.totalFiles} 个文件（不含目录）
-                          </div>
-                        </>
-                      )}
-                    </div>
+                          <div className="text-[11px] text-neutral-500 dark:text-neutral-400">{row.count} 个</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                    <div className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
-                      {storageRows.map((row) => {
-                        const Icon = row.icon;
-                        return (
-                          <div
-                            key={row.key}
-                            className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800/80"
-                          >
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className={cn('h-2 w-2 shrink-0 rounded-full', row.color)} />
-                              <Icon className="h-3.5 w-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" />
-                              <span className="truncate text-xs font-medium text-neutral-700 dark:text-neutral-200">
-                                {row.label}
-                              </span>
-                            </div>
-                            <div className="ml-3 text-right">
-                              <div className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
-                                {formatFileSize(row.bytes)}
-                              </div>
-                              <div className="text-[11px] text-neutral-500 dark:text-neutral-400">{row.count} 个</div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <HeroDropdown.Menu
-                    aria-label="用户菜单"
-                    className="border-t border-neutral-200 p-2 dark:border-neutral-700"
-                    onAction={(key) => {
-                      if (key === 'refresh-storage') {
-                        void fetchStorageStats();
-                        return;
-                      }
-                      if (key === 'switch-service') {
-                        setUserMenuOpen(false);
-                        openSwitchModal();
-                        return;
-                      }
-                      if (key === 'logout') {
-                        void handleLogout();
-                      }
-                    }}
-                  >
-                    <HeroDropdown.Item id="switch-service" textValue="切换服务">
-                      <ArrowRightLeft className="h-4 w-4 text-current" />
-                      <HeroLabel>切换服务</HeroLabel>
-                    </HeroDropdown.Item>
-                    <HeroDropdown.Item id="refresh-storage" textValue="刷新存储概览" isDisabled={storageStatsLoading}>
-                      <HardDrive className="h-4 w-4 text-current" />
-                      <HeroLabel>刷新存储概览</HeroLabel>
-                    </HeroDropdown.Item>
-                    <HeroDropdown.Item id="logout" textValue="退出登录" variant="danger">
-                      <LogOut className="h-4 w-4 text-current" />
-                      <HeroLabel>退出登录</HeroLabel>
-                    </HeroDropdown.Item>
-                  </HeroDropdown.Menu>
-                </HeroDropdown.Popover>
-              </HeroDropdown>
-          </div>
+              <HeroDropdown.Menu
+                aria-label="用户菜单"
+                className="border-t border-neutral-200 p-2 dark:border-neutral-700"
+                onAction={(key) => {
+                  if (key === 'refresh-storage') {
+                    void fetchStorageStats();
+                    return;
+                  }
+                  if (key === 'switch-service') {
+                    setUserMenuOpen(false);
+                    openSwitchModal();
+                    return;
+                  }
+                  if (key === 'logout') {
+                    void handleLogout();
+                  }
+                }}
+              >
+                <HeroDropdown.Item id="switch-service" textValue="切换服务">
+                  <ArrowRightLeft className="h-4 w-4 text-current" />
+                  <HeroLabel>切换服务</HeroLabel>
+                </HeroDropdown.Item>
+                <HeroDropdown.Item id="refresh-storage" textValue="刷新存储概览" isDisabled={storageStatsLoading}>
+                  <HardDrive className="h-4 w-4 text-current" />
+                  <HeroLabel>刷新存储概览</HeroLabel>
+                </HeroDropdown.Item>
+                <HeroDropdown.Item id="logout" textValue="退出登录" variant="danger">
+                  <LogOut className="h-4 w-4 text-current" />
+                  <HeroLabel>退出登录</HeroLabel>
+                </HeroDropdown.Item>
+              </HeroDropdown.Menu>
+            </HeroDropdown.Popover>
+          </HeroDropdown>
         </div>
       </header>
 

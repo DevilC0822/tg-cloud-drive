@@ -220,22 +220,6 @@ func (s *Store) DeleteTransferHistoryByID(ctx context.Context, id uuid.UUID) err
 	return nil
 }
 
-func (s *Store) DeleteTransferHistoryOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
-	ct, err := s.db.Exec(ctx, `DELETE FROM transfer_history WHERE finished_at < $1`, cutoff)
-	if err != nil {
-		return 0, err
-	}
-	return ct.RowsAffected(), nil
-}
-
-func (s *Store) DeleteAllTransferHistory(ctx context.Context) (int64, error) {
-	ct, err := s.db.Exec(ctx, `DELETE FROM transfer_history`)
-	if err != nil {
-		return 0, err
-	}
-	return ct.RowsAffected(), nil
-}
-
 func (s *Store) CleanupTransferHistoryOlderThan(ctx context.Context, cutoff time.Time, limit int) (int64, error) {
 	if limit <= 0 {
 		limit = 100

@@ -425,7 +425,6 @@ npm run dev
 
 - `GET /api/transfers/history`
 - `POST /api/transfers/history`
-- `DELETE /api/transfers/history`
 - `DELETE /api/transfers/history/{id}`
 
 ## 持久化与数据卷

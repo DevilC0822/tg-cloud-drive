@@ -3,6 +3,7 @@ import { CloudUpload } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useUpload } from '@/hooks/useUpload';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function cn(...inputs: Parameters<typeof clsx>) {
   return twMerge(clsx(inputs));
@@ -63,15 +64,29 @@ export function DropZone({ children, onDrop, className }: DropZoneProps) {
       {children}
 
       {/* 拖拽覆盖层 */}
-      {isDragActive && (
-        <div className="animate-fadeIn absolute inset-0 z-40 flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--theme-primary)] bg-[var(--theme-primary-a12)] backdrop-blur-sm">
-          <div className="text-center">
-            <CloudUpload className="mx-auto mb-4 h-16 w-16 text-[var(--theme-primary)]" />
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100">释放以上传文件</h3>
-            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">文件将上传到当前文件夹</p>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {isDragActive && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 z-40 flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--theme-primary)] bg-[var(--theme-primary-a12)] backdrop-blur-sm"
+          >
+            <div className="text-center">
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <CloudUpload className="mx-auto mb-4 h-16 w-16 text-[var(--theme-primary)]" />
+              </motion.div>
+              <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100">释放以上传文件</h3>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">文件将上传到当前文件夹</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+

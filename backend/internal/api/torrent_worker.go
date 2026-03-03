@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -575,7 +574,10 @@ func (s *Server) scheduleTorrentTaskSourceCleanup(
 		settings = s.defaultRuntimeSettings()
 	}
 
-	mode, err := normalizeTorrentSourceDeleteMode(settings.TorrentSourceDeleteMode)
+	mode, err := normalizeTorrentSourceDeleteMode(task.SourceCleanupPolicy)
+	if err != nil {
+		mode, err = normalizeTorrentSourceDeleteMode(settings.TorrentSourceDeleteMode)
+	}
 	if err != nil {
 		mode = torrentSourceDeleteModeImmediate
 	}
@@ -596,13 +598,13 @@ func (s *Server) scheduleTorrentTaskSourceCleanup(
 			return
 		}
 		retryAt := time.Now().Add(1 * time.Minute)
-		if err := st.SetTorrentTaskSourceCleanupSchedule(ctx, task.ID, retryAt, time.Now()); err != nil {
+		if err := st.SetTorrentTaskSourceCleanupSchedule(ctx, task.ID, retryAt, mode, time.Now()); err != nil {
 			s.logger.Warn("set torrent source cleanup retry schedule failed", "error", err.Error(), "task_id", task.ID.String())
 		}
 		return
 	}
 
-	if err := st.SetTorrentTaskSourceCleanupSchedule(ctx, task.ID, dueAt, time.Now()); err != nil {
+	if err := st.SetTorrentTaskSourceCleanupSchedule(ctx, task.ID, dueAt, mode, time.Now()); err != nil {
 		s.logger.Warn("set torrent source cleanup schedule failed", "error", err.Error(), "task_id", task.ID.String())
 	}
 }
@@ -616,8 +618,12 @@ func (s *Server) processDueTorrentCleanupTask(ctx context.Context, st *store.Sto
 		return
 	}
 
+	mode, err := normalizeTorrentSourceDeleteMode(task.SourceCleanupPolicy)
+	if err != nil {
+		mode = torrentSourceDeleteModeImmediate
+	}
 	retryAt := time.Now().Add(1 * time.Minute)
-	if err := st.SetTorrentTaskSourceCleanupSchedule(ctx, task.ID, retryAt, time.Now()); err != nil {
+	if err := st.SetTorrentTaskSourceCleanupSchedule(ctx, task.ID, retryAt, mode, time.Now()); err != nil {
 		s.logger.Warn("set torrent source cleanup retry schedule failed", "error", err.Error(), "task_id", task.ID.String())
 	}
 }
@@ -740,11 +746,12 @@ func (s *Server) uploadTorrentTaskFileToTelegram(
 			cleanupItem()
 			return store.Item{}, processMeta, docErr
 		}
+		storedSize := resolveStoredSizeByTelegramSize(resolvedDoc.FileSize, info.Size())
 		ch := store.Chunk{
 			ID:             uuid.New(),
 			ItemID:         it.ID,
 			ChunkIndex:     0,
-			ChunkSize:      int(info.Size()),
+			ChunkSize:      int(storedSize),
 			TGChatID:       s.cfg.TGStorageChatID,
 			TGMessageID:    msg.MessageID,
 			TGFileID:       resolvedDoc.FileID,
@@ -756,7 +763,7 @@ func (s *Server) uploadTorrentTaskFileToTelegram(
 			cleanupItem()
 			return store.Item{}, processMeta, err
 		}
-		if err := st.UpdateItemSize(ctx, it.ID, info.Size(), time.Now()); err != nil {
+		if err := st.UpdateItemSize(ctx, it.ID, storedSize, time.Now()); err != nil {
 			_ = s.deleteMessageWithRetry(ctx, ch.TGChatID, ch.TGMessageID)
 			cleanupItem()
 			return store.Item{}, processMeta, err
@@ -790,11 +797,12 @@ func (s *Server) uploadTorrentTaskFileToTelegram(
 			cleanupItem()
 			return store.Item{}, processMeta, docErr
 		}
+		storedSize := resolveStoredSizeByTelegramSize(resolvedDoc.FileSize, info.Size())
 		ch := store.Chunk{
 			ID:             uuid.New(),
 			ItemID:         it.ID,
 			ChunkIndex:     0,
-			ChunkSize:      int(info.Size()),
+			ChunkSize:      int(storedSize),
 			TGChatID:       s.cfg.TGStorageChatID,
 			TGMessageID:    msg.MessageID,
 			TGFileID:       resolvedDoc.FileID,
@@ -806,7 +814,7 @@ func (s *Server) uploadTorrentTaskFileToTelegram(
 			cleanupItem()
 			return store.Item{}, processMeta, err
 		}
-		if err := st.UpdateItemSize(ctx, it.ID, info.Size(), time.Now()); err != nil {
+		if err := st.UpdateItemSize(ctx, it.ID, storedSize, time.Now()); err != nil {
 			_ = s.deleteMessageWithRetry(ctx, ch.TGChatID, ch.TGMessageID)
 			cleanupItem()
 			return store.Item{}, processMeta, err
@@ -853,14 +861,8 @@ func (s *Server) uploadTorrentTaskFileToTelegram(
 }
 
 func inferMimeTypeByPath(filePath string) string {
-	ext := strings.TrimSpace(strings.ToLower(filepath.Ext(filePath)))
-	if ext != "" {
-		if mimeType := strings.TrimSpace(mime.TypeByExtension(ext)); mimeType != "" {
-			if idx := strings.Index(mimeType, ";"); idx >= 0 {
-				return strings.TrimSpace(mimeType[:idx])
-			}
-			return mimeType
-		}
+	if inferred := inferMimeTypeByFileName(filePath); inferred != "" {
+		return inferred
 	}
 
 	f, err := os.Open(filePath)
@@ -877,7 +879,7 @@ func inferMimeTypeByPath(filePath string) string {
 	if n <= 0 {
 		return ""
 	}
-	return strings.TrimSpace(http.DetectContentType(buf[:n]))
+	return normalizeMimeType(http.DetectContentType(buf[:n]))
 }
 
 func (s *Server) recordTorrentTransferHistory(

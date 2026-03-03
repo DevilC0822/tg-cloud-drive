@@ -290,24 +290,21 @@ func (s *Server) downloadVideoPrefixToTempFile(ctx context.Context, itemID uuid.
 			return "", err
 		}
 
-		// 自建 Bot API local 模式下优先读取本地绝对路径，避免 /file 404。
-		trimmedPath := strings.TrimSpace(filePath)
-		if filepath.IsAbs(trimmedPath) {
-			localFile, openErr := os.Open(trimmedPath)
-			if openErr == nil {
-				written, copyErr := io.CopyN(tmpFile, localFile, chunkNeed)
-				_ = localFile.Close()
-				if copyErr != nil && !errors.Is(copyErr, io.EOF) {
-					return "", copyErr
-				}
-				if written > 0 {
-					remain -= written
-				}
-				if written < chunkNeed {
-					break
-				}
-				continue
+		// 优先尝试本地文件读取（支持绝对路径与 local 模式相对路径映射）。
+		localFile, _, openErr := openTelegramLocalFileByFilePath(filePath)
+		if openErr == nil {
+			written, copyErr := io.CopyN(tmpFile, localFile, chunkNeed)
+			_ = localFile.Close()
+			if copyErr != nil && !errors.Is(copyErr, io.EOF) {
+				return "", copyErr
 			}
+			if written > 0 {
+				remain -= written
+			}
+			if written < chunkNeed {
+				break
+			}
+			continue
 		}
 
 		downloadURL := tgClient.DownloadURLFromFilePath(filePath)

@@ -24,6 +24,7 @@ import { downloadConcurrencyAtom, reservedDiskBytesAtom, uploadConcurrencyAtom }
 import { Input } from '@/components/ui/Input';
 import { NumberFieldInput } from '@/components/ui/NumberFieldInput';
 import { ActionStatusPill, ActionTextButton } from '@/components/ui/HeroActionPrimitives';
+import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import { useToast } from '@/hooks/useToast';
 import { ApiError, apiFetchJson } from '@/utils/api';
 
@@ -36,18 +37,18 @@ const BYTES_PER_GB = 1024 * 1024 * 1024;
 const BYTES_PER_MB = 1024 * 1024;
 const SETTINGS_TAB_STORAGE_KEY = 'tgcd-settings-active-tab';
 
-const SETTINGS_TABS = [
-  { key: 'transfer', label: '传输', icon: Upload },
-  { key: 'storage', label: '存储', icon: HardDrive },
-  { key: 'sessions', label: '会话', icon: Clock3 },
-  { key: 'torrent', label: '种子', icon: Magnet },
-  { key: 'vault', label: '密码箱', icon: KeyRound },
-] as const;
+type SettingsTabKey = 'transfer' | 'storage' | 'sessions' | 'torrent' | 'vault';
 
-type SettingsTabKey = (typeof SETTINGS_TABS)[number]['key'];
+const SETTINGS_TABS: TabItem<SettingsTabKey>[] = [
+  { id: 'transfer', label: '传输', icon: <Upload className="h-4 w-4" aria-hidden="true" /> },
+  { id: 'storage', label: '存储', icon: <HardDrive className="h-4 w-4" aria-hidden="true" /> },
+  { id: 'sessions', label: '会话', icon: <Clock3 className="h-4 w-4" aria-hidden="true" /> },
+  { id: 'torrent', label: '种子', icon: <Magnet className="h-4 w-4" aria-hidden="true" /> },
+  { id: 'vault', label: '密码箱', icon: <KeyRound className="h-4 w-4" aria-hidden="true" /> },
+];
 
 function isSettingsTabKey(value: string | null): value is SettingsTabKey {
-  return SETTINGS_TABS.some((tab) => tab.key === value);
+  return SETTINGS_TABS.some((tab) => tab.id === value);
 }
 
 type RuntimeSettingsDTO = {
@@ -134,18 +135,18 @@ export function SettingsPage() {
   const [uploadConcurrency, setUploadConcurrency] = useAtom(uploadConcurrencyAtom);
   const [downloadConcurrency, setDownloadConcurrency] = useAtom(downloadConcurrencyAtom);
   const [reservedDiskBytes, setReservedDiskBytes] = useAtom(reservedDiskBytesAtom);
-  const [uploadSessionTtlHours, setUploadSessionTtlHours] = useState(24);
-  const [uploadSessionCleanupInterval, setUploadSessionCleanupInterval] = useState(30);
-  const [thumbnailCacheMaxBytes, setThumbnailCacheMaxBytes] = useState(512 * 1024 * 1024);
-  const [thumbnailCacheTtlHours, setThumbnailCacheTtlHours] = useState(24 * 30);
-  const [thumbnailGenerateConcurrency, setThumbnailGenerateConcurrency] = useState(1);
-  const [vaultSessionTtlMinutes, setVaultSessionTtlMinutes] = useState(60);
+  const [, setUploadSessionTtlHours] = useState(24);
+  const [, setUploadSessionCleanupInterval] = useState(30);
+  const [, setThumbnailCacheMaxBytes] = useState(512 * 1024 * 1024);
+  const [, setThumbnailCacheTtlHours] = useState(24 * 30);
+  const [, setThumbnailGenerateConcurrency] = useState(1);
+  const [, setVaultSessionTtlMinutes] = useState(60);
   const [vaultPasswordEnabled, setVaultPasswordEnabled] = useState(false);
   const [torrentQbtPasswordConfigured, setTorrentQbtPasswordConfigured] = useState(false);
-  const [torrentSourceDeleteMode, setTorrentSourceDeleteMode] = useState<'never' | 'immediate' | 'fixed' | 'random'>('immediate');
-  const [torrentSourceDeleteFixedMinutes, setTorrentSourceDeleteFixedMinutes] = useState(30);
-  const [torrentSourceDeleteRandomMinMinutes, setTorrentSourceDeleteRandomMinMinutes] = useState(30);
-  const [torrentSourceDeleteRandomMaxMinutes, setTorrentSourceDeleteRandomMaxMinutes] = useState(120);
+  const [, setTorrentSourceDeleteMode] = useState<'never' | 'immediate' | 'fixed' | 'random'>('immediate');
+  const [, setTorrentSourceDeleteFixedMinutes] = useState(30);
+  const [, setTorrentSourceDeleteRandomMinMinutes] = useState(30);
+  const [, setTorrentSourceDeleteRandomMaxMinutes] = useState(120);
   const { pushToast } = useToast();
 
   const [uploadConcurrencyInput, setUploadConcurrencyInput] = useState(String(uploadConcurrency));
@@ -220,39 +221,6 @@ export function SettingsPage() {
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
-
-  const handleReset = useCallback(() => {
-    setUploadConcurrencyInput(String(uploadConcurrency));
-    setDownloadConcurrencyInput(String(downloadConcurrency));
-    setReservedDiskGBInput(bytesToGBString(reservedDiskBytes));
-    setUploadSessionTtlHoursInput(String(uploadSessionTtlHours));
-    setUploadSessionCleanupIntervalInput(String(uploadSessionCleanupInterval));
-    setThumbnailCacheMaxMBInput(String(Math.max(64, Math.round(thumbnailCacheMaxBytes / BYTES_PER_MB))));
-    setThumbnailCacheTtlHoursInput(String(thumbnailCacheTtlHours));
-    setThumbnailGenerateConcurrencyInput(String(thumbnailGenerateConcurrency));
-    setVaultSessionTtlMinutesInput(String(vaultSessionTtlMinutes));
-    setVaultPasswordInput('');
-    setAdminPasswordInput('');
-    setTorrentQbtPasswordInput('');
-    setTorrentSourceDeleteModeInput(torrentSourceDeleteMode);
-    setTorrentSourceDeleteFixedMinutesInput(String(torrentSourceDeleteFixedMinutes));
-    setTorrentSourceDeleteRandomMinMinutesInput(String(torrentSourceDeleteRandomMinMinutes));
-    setTorrentSourceDeleteRandomMaxMinutesInput(String(torrentSourceDeleteRandomMaxMinutes));
-  }, [
-    downloadConcurrency,
-    reservedDiskBytes,
-    thumbnailCacheMaxBytes,
-    thumbnailCacheTtlHours,
-    thumbnailGenerateConcurrency,
-    uploadConcurrency,
-    uploadSessionCleanupInterval,
-    uploadSessionTtlHours,
-    torrentSourceDeleteFixedMinutes,
-    torrentSourceDeleteMode,
-    torrentSourceDeleteRandomMaxMinutes,
-    torrentSourceDeleteRandomMinMinutes,
-    vaultSessionTtlMinutes,
-  ]);
 
   const reservedDiskHint = useMemo(() => {
     const gb = Number.parseFloat(reservedDiskGBInput);
@@ -500,33 +468,20 @@ export function SettingsPage() {
 
       <div className="mt-6 space-y-8">
         {/* 横向 Tabs：分类切换 */}
-        <div className="rounded-2xl border border-neutral-200/80 bg-white/80 p-1 backdrop-blur-xl dark:border-neutral-700/80 dark:bg-neutral-900/55">
-          <div className="flex w-full gap-1 overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="设置分类">
-            {SETTINGS_TABS.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <ActionTextButton
-                  key={tab.key}
-                  tone="brand"
-                  active={activeTab === tab.key}
-                  onPress={() => setActiveTab(tab.key)}
-                  leadingIcon={<Icon className="h-4 w-4 text-current" />}
-                  className="whitespace-nowrap"
-                  aria-pressed={activeTab === tab.key}
-                >
-                  {tab.label}
-                </ActionTextButton>
-              );
-            })}
-          </div>
-        </div>
+        <Tabs
+          tabs={SETTINGS_TABS}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          layoutId="settingsTabs"
+          className="w-full"
+        />
 
-        {/* Tab Panels - 使用网格堆叠避免切换抖动 */}
+        {/* Tab Panels */}
         <div className="grid grid-cols-1 grid-rows-1">
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'transfer' ? 'opacity-100' : 'pointer-events-none opacity-0',
+              activeTab === 'transfer' ? 'opacity-100' : 'hidden',
             )}
           >
             <div className="space-y-8">
@@ -579,7 +534,7 @@ export function SettingsPage() {
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'storage' ? 'opacity-100' : 'pointer-events-none opacity-0',
+              activeTab === 'storage' ? 'opacity-100' : 'hidden',
             )}
           >
             <div className="space-y-8">
@@ -637,7 +592,7 @@ export function SettingsPage() {
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'sessions' ? 'opacity-100' : 'pointer-events-none opacity-0',
+              activeTab === 'sessions' ? 'opacity-100' : 'hidden',
             )}
           >
             <section className="space-y-3">
@@ -666,7 +621,7 @@ export function SettingsPage() {
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'torrent' ? 'opacity-100' : 'pointer-events-none opacity-0',
+              activeTab === 'torrent' ? 'opacity-100' : 'hidden',
             )}
           >
             <section className="space-y-3">
@@ -762,7 +717,7 @@ export function SettingsPage() {
           <div
             className={cn(
               'col-start-1 row-start-1 transition-opacity duration-200',
-              activeTab === 'vault' ? 'opacity-100' : 'pointer-events-none opacity-0',
+              activeTab === 'vault' ? 'opacity-100' : 'hidden',
             )}
           >
             <section className="space-y-3">
@@ -807,10 +762,7 @@ export function SettingsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col-reverse gap-2.5 pb-[env(safe-area-inset-bottom)] sm:flex-row sm:items-center sm:justify-end">
-          <ActionTextButton onPress={handleReset} isDisabled={saving || loading} className="justify-center">
-            重置编辑
-          </ActionTextButton>
+        <div className="flex justify-end pb-[env(safe-area-inset-bottom)]">
           <ActionTextButton
             tone="brand"
             leadingIcon={

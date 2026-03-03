@@ -54,7 +54,9 @@ function normalizeTask(task: TorrentTask): TorrentTask {
     ...task,
     progress: Number.isFinite(task.progress) ? Math.min(1, Math.max(0, task.progress)) : 0,
     trackerHosts: Array.isArray(task.trackerHosts) ? task.trackerHosts : [],
+    sourceCleanupPolicy: task.sourceCleanupPolicy ? String(task.sourceCleanupPolicy).trim().toLowerCase() : null,
     dueAt: task.dueAt ? String(task.dueAt) : null,
+    sourceCleanupDone: !!task.sourceCleanupDone,
     files: Array.isArray(task.files) ? task.files : undefined,
   };
 }
@@ -77,6 +79,7 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
 
   const [tasks, setTasks] = useState<TorrentTask[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const requestSeqRef = useRef(0);
   const loadRunningRef = useRef(false);
@@ -93,6 +96,7 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
     const requestSeq = requestSeqRef.current + 1;
     requestSeqRef.current = requestSeq;
     setLoading(true);
+    setLoadError('');
     try {
       const pageSize = 200;
       const buildQuery = (page: number) => {
@@ -117,8 +121,9 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
         return;
       }
       setTasks(allItems.map(normalizeTask));
-    } catch {
-      // 保持已有列表，避免瞬时网络波动导致界面闪断
+    } catch (err: unknown) {
+      const e = err as ApiError;
+      setLoadError(e?.message || '同步 Torrent 任务失败，请稍后重试');
     } finally {
       loadRunningRef.current = false;
       if (requestSeq === requestSeqRef.current) {
@@ -132,6 +137,7 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
       requestSeqRef.current += 1;
       loadRunningRef.current = false;
       setLoading(false);
+      setLoadError('');
       setTasks([]);
       return;
     }
@@ -318,6 +324,7 @@ export function useTorrentTasks(options: UseTorrentTasksOptions = {}) {
   return {
     tasks,
     loading,
+    loadError,
     submitting,
     previewTorrent,
     createTask,
