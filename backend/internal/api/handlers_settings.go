@@ -177,6 +177,24 @@ func (s *Server) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleGetRuntimeSettings(w http.ResponseWriter, r *http.Request) {
+	runtimeSettings, err := s.getRuntimeSettings(r.Context())
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			s.setupInitialized.Store(false)
+			writeError(w, http.StatusServiceUnavailable, "setup_required", "系统尚未初始化，请先完成初始化配置")
+			return
+		}
+		s.logger.Error("get runtime settings failed", "error", err.Error())
+		writeError(w, http.StatusInternalServerError, "internal_error", "读取运行设置失败")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"runtime": toRuntimeSettingsDTO(runtimeSettings, s.cfg.ChunkSizeBytes),
+	})
+}
+
 func (s *Server) validateAndPatchRuntimeSettings(
 	ctx context.Context,
 	req *runtimeSettingsPatchRequest,

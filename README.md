@@ -323,7 +323,7 @@ docker compose up -d --build backend
 - `CHUNK_SIZE_BYTES`
   - 上传分片大小（默认 `20MB`）
 - `UPLOAD_CONCURRENCY` / `DOWNLOAD_CONCURRENCY`
-  - 默认上传/下载并发阈值（默认 `1` / `2`）
+  - 默认上传/下载并发阈值（默认 `4` / `2`）
 - `RESERVED_DISK_BYTES`
   - 临时目录预留空间（默认 `2GB`）
 - `UPLOAD_SESSION_TTL_HOURS`

@@ -7,9 +7,10 @@ import (
 )
 
 type transferStreamEvent struct {
-	Type string              `json:"type"`
-	ID   *string             `json:"id,omitempty"`
-	Item *transferJobViewDTO `json:"item,omitempty"`
+	Type  string               `json:"type"`
+	ID    *string              `json:"id,omitempty"`
+	Item  *transferJobViewDTO  `json:"item,omitempty"`
+	Items []transferJobViewDTO `json:"items,omitempty"`
 }
 
 type downloadTransferProgress struct {

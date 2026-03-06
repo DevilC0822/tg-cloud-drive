@@ -5,10 +5,12 @@ import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import { TransferFolderTree } from "@/components/transfers/transfer-folder-tree"
 import { useIsMobile } from "@/hooks/use-mobile"
 import type { TransferJobDetail, TransferUploadSessionItem } from "@/lib/transfers-api"
 import type { transferMessages } from "@/lib/i18n"
 import { formatFileSize, formatRelativeTime } from "@/lib/files"
+import { semanticToneClasses } from "@/lib/palette"
 import {
   getTransferDirectionLabel,
   getTransferPhaseLabel,
@@ -60,6 +62,7 @@ function SessionRow({ item }: { item: TransferUploadSessionItem }) {
 
 function DetailBody({ detail, text }: { detail: TransferJobDetail; text: (typeof transferMessages)["en"] }) {
   const item = detail.item
+  const errorTone = semanticToneClasses.error
 
   return (
     <ScrollArea className="h-full">
@@ -130,6 +133,30 @@ function DetailBody({ detail, text }: { detail: TransferJobDetail; text: (typeof
           </section>
         ) : null}
 
+        {detail.folderUpload ? (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <FileStack className="h-4 w-4 text-primary" />
+              {text.folderDetail}
+            </div>
+            <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.rootFolder}: {detail.folderUpload.rootName}</div>
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.directoryCount}: {detail.folderUpload.directoryCount}</div>
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.itemCount}: {detail.folderUpload.fileCount}</div>
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.uploaded}: {detail.folderUpload.completedCount}</div>
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.failed}: {detail.folderUpload.failedCount}</div>
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.activeFiles}: {detail.folderUpload.activeCount}</div>
+            </div>
+            <div className="rounded-[24px] border border-border/50 bg-secondary/10 p-3">
+              <div className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground">
+                <FileStack className="h-4 w-4 text-primary" />
+                {text.folderEntries}
+              </div>
+              <TransferFolderTree transferId={detail.item.id} refreshKey={detail.item.updatedAt} text={text} />
+            </div>
+          </section>
+        ) : null}
+
         {detail.torrentTask ? (
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -153,7 +180,7 @@ function DetailBody({ detail, text }: { detail: TransferJobDetail; text: (typeof
                       <p>{file.uploaded ? text.statusCompleted : file.error ? text.statusError : text.statusRunning}</p>
                     </div>
                   </div>
-                  {file.error ? <p className="mt-2 text-xs text-rose-200">{file.error}</p> : null}
+                  {file.error ? <p className={cn("mt-2 text-xs", errorTone.text)}>{file.error}</p> : null}
                 </div>
               ))}
             </div>

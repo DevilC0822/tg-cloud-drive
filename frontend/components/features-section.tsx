@@ -11,43 +11,39 @@ import {
 import { GlassCard } from "./glass-card"
 import { useI18n } from "@/components/i18n-provider"
 import { dashboardMessages } from "@/lib/dashboard-i18n"
+import { type GlassGlowTone, themeToneClasses, type ThemeToneName } from "@/lib/palette"
+import { cn } from "@/lib/utils"
 
 const featureMetas = [
   {
     icon: Shield,
-    color: "cyan" as const,
-    gradient: "from-cyan-500/20 to-teal-500/20",
-    iconColor: "text-cyan-400",
+    glow: "cyan" as GlassGlowTone,
+    tone: "info" as ThemeToneName,
   },
   {
     icon: Zap,
-    color: "orange" as const,
-    gradient: "from-orange-500/20 to-amber-500/20",
-    iconColor: "text-orange-400",
+    glow: "orange" as GlassGlowTone,
+    tone: "archive" as ThemeToneName,
   },
   {
     icon: Globe,
-    color: "pink" as const,
-    gradient: "from-pink-500/20 to-rose-500/20",
-    iconColor: "text-pink-400",
+    glow: "pink" as GlassGlowTone,
+    tone: "video" as ThemeToneName,
   },
   {
     icon: Lock,
-    color: "cyan" as const,
-    gradient: "from-violet-500/20 to-purple-500/20",
-    iconColor: "text-violet-400",
+    glow: "cyan" as GlassGlowTone,
+    tone: "document" as ThemeToneName,
   },
   {
     icon: Layers,
-    color: "orange" as const,
-    gradient: "from-emerald-500/20 to-green-500/20",
-    iconColor: "text-emerald-400",
+    glow: "orange" as GlassGlowTone,
+    tone: "image" as ThemeToneName,
   },
   {
     icon: RefreshCw,
-    color: "pink" as const,
-    gradient: "from-blue-500/20 to-indigo-500/20",
-    iconColor: "text-blue-400",
+    glow: "pink" as GlassGlowTone,
+    tone: "document" as ThemeToneName,
   },
 ]
 
@@ -75,7 +71,7 @@ export function FeaturesSection() {
           </motion.span>
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="text-foreground">{text.titleLead} </span>
-            <span className="bg-gradient-to-r from-primary via-accent to-neon-orange bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-[var(--tone-document-text)] to-[var(--tone-archive-text)] bg-clip-text text-transparent">
               {text.titleHighlight}
             </span>
           </h2>
@@ -88,6 +84,7 @@ export function FeaturesSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {featureMetas.map((featureMeta, index) => {
             const featureText = text.items[index]
+            const tone = themeToneClasses[featureMeta.tone]
             if (!featureText) return null
             return (
             <motion.div
@@ -99,11 +96,17 @@ export function FeaturesSection() {
             >
               <GlassCard 
                 className="h-full group cursor-pointer" 
-                glow={featureMeta.color}
+                glow={featureMeta.glow}
                 delay={0}
               >
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${featureMeta.gradient} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                  <featureMeta.icon className={`w-7 h-7 ${featureMeta.iconColor}`} />
+                <div
+                  className={cn(
+                    "mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border bg-gradient-to-br transition-transform duration-300 group-hover:scale-110",
+                    tone.border,
+                    tone.gradient,
+                  )}
+                >
+                  <featureMeta.icon className={cn("h-7 w-7", tone.text)} />
                 </div>
                 
                 <h3 className="text-xl font-semibold text-foreground mb-3">

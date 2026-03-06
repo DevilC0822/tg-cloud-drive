@@ -44,10 +44,30 @@ interface CreateUploadBatchResponse {
   job?: TransferJobSummary | null
 }
 
+interface CreateUploadFolderResponse {
+  batchId: string
+  rootItemId: string
+  job?: TransferJobSummary | null
+}
+
 interface CreateUploadSessionResponse {
   session: UploadSession
   transferJobId?: string | null
   transferJob?: TransferJobSummary | null
+}
+
+export interface UploadFolderWorkItem {
+  relativePath: string
+  sessionId: string
+  parentItemId: string
+  fileName: string
+  chunkSize: number
+  totalChunks: number
+}
+
+interface UploadFolderWorkResponse {
+  items: UploadFolderWorkItem[]
+  nextCursor?: string | null
 }
 
 function normalizeUploadProcess(input?: UploadProcess | null): UploadProcess | undefined {
@@ -70,6 +90,27 @@ export async function createUploadBatch(name: string, itemCount: number, totalSi
   return response
 }
 
+export async function createUploadFolder(
+  input: {
+    parentId: string | null
+    rootName: string
+    directories: string[]
+    files: Array<{ relativePath: string; size: number; mimeType: string | null }>
+  },
+) {
+  const payload = {
+    parentId: input.parentId,
+    rootName: input.rootName,
+    directories: input.directories.map((relativePath) => ({ relativePath })),
+    files: input.files,
+  }
+  return apiFetchJson<CreateUploadFolderResponse>("/api/uploads/folders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function createUploadSession(file: File, parentId: string | null, transferBatchId?: string) {
   const payload = {
     parentId,
@@ -84,6 +125,15 @@ export async function createUploadSession(file: File, parentId: string | null, t
     body: JSON.stringify(payload),
   })
   return response
+}
+
+export async function fetchUploadFolderWork(batchId: string, cursor?: string | null, limit = 200) {
+  const params = new URLSearchParams()
+  params.set("limit", String(limit))
+  if (cursor) {
+    params.set("cursor", cursor)
+  }
+  return apiFetchJson<UploadFolderWorkResponse>(`/api/uploads/folders/${encodeURIComponent(batchId)}/work?${params.toString()}`)
 }
 
 export async function fetchUploadSession(sessionId: string) {

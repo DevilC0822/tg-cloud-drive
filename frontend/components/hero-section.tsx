@@ -42,7 +42,7 @@ export function HeroSection() {
         >
           <span className="text-foreground">{text.titleLead}</span>
           <br />
-          <span className="bg-gradient-to-r from-primary via-accent to-neon-orange bg-clip-text text-transparent animate-gradient">
+          <span className="bg-gradient-to-r from-primary via-[var(--tone-document-text)] to-[var(--tone-archive-text)] bg-clip-text text-transparent animate-gradient">
             {text.titleHighlight}
           </span>
         </motion.h1>
@@ -65,7 +65,7 @@ export function HeroSection() {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
         >
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button size="lg" className="bg-gradient-to-r from-primary to-accent text-primary-foreground gap-2 px-8 py-6 text-lg shadow-xl shadow-primary/30 animate-pulse-glow">
+            <Button size="lg" className="bg-gradient-to-r from-primary to-[var(--tone-document-text)] text-primary-foreground gap-2 px-8 py-6 text-lg shadow-xl shadow-primary/30 animate-pulse-glow">
               {text.ctaTrial}
               <ArrowRight className="w-5 h-5" />
             </Button>
@@ -97,7 +97,7 @@ export function HeroSection() {
               whileHover={{ scale: 1.05, y: -5 }}
               className="glass-card rounded-2xl p-6 text-center group cursor-pointer"
             >
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 mb-4 group-hover:from-primary/30 group-hover:to-accent/30 transition-colors">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-[var(--tone-document-bg-strong)] mb-4 transition-colors group-hover:from-primary/30 group-hover:to-[var(--tone-document-bg)]">
                 <stat.icon className="w-6 h-6 text-primary" />
               </div>
               <div className="text-2xl font-bold text-foreground mb-1">{stat.value}</div>

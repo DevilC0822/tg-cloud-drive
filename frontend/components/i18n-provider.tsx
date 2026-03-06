@@ -1,6 +1,6 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useAtom } from "jotai"
-import { LOCALE_STORAGE_KEY, parseLocale, type Locale } from "@/lib/i18n"
+import { LOCALE_STORAGE_KEY, getPreferredLocale, parseLocale, type Locale } from "@/lib/i18n"
 import { localeAtom } from "@/stores/i18n-atoms"
 
 interface I18nContextValue {
@@ -10,15 +10,24 @@ interface I18nContextValue {
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useAtom(localeAtom)
+  const initializedRef = useRef(false)
 
   useEffect(() => {
-    const savedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY)
-    setLocaleState(parseLocale(savedLocale))
-  }, [])
+    if (typeof window === "undefined") {
+      return
+    }
 
-  useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true
+      const preferredLocale = getPreferredLocale()
+      if (preferredLocale !== locale) {
+        setLocaleState(preferredLocale)
+      }
+      return
+    }
+
     window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
-  }, [locale])
+  }, [locale, setLocaleState])
 
   return <>{children}</>
 }

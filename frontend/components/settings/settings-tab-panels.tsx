@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowRightLeft, CheckCircle2, Clock3, Eye, EyeOff, HardD
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { semanticToneClasses } from "@/lib/palette"
 import type { RuntimeSettings } from "@/lib/settings-api"
 import { cn } from "@/lib/utils"
 import type { RuntimeFormState, ServiceFormState, ServiceSwitchResult } from "@/lib/settings-form"
@@ -260,6 +261,7 @@ function ServiceResultCard({ text, result }: { text: SettingsText; result: Servi
   const bot = result.details?.bot
   const chat = result.details?.chat
   const admin = result.details?.admin
+  const tone = result.rolledBack ? semanticToneClasses.warning : semanticToneClasses.success
 
   return (
     <div className="rounded-xl border border-border/60 bg-secondary/30 p-3.5">
@@ -268,8 +270,8 @@ function ServiceResultCard({ text, result }: { text: SettingsText; result: Servi
         <span className="text-[11px] text-muted-foreground">{result.testedAt}</span>
       </div>
       <div className="mt-2 flex items-center gap-2 text-sm">
-        {result.rolledBack ? <AlertTriangle className="h-4 w-4 text-orange-500" /> : <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
-        <span className={cn("font-medium", result.rolledBack ? "text-orange-600 dark:text-orange-300" : "text-emerald-600 dark:text-emerald-300")}>
+        {result.rolledBack ? <AlertTriangle className={cn("h-4 w-4", tone.text)} /> : <CheckCircle2 className={cn("h-4 w-4", tone.text)} />}
+        <span className={cn("font-medium", tone.text)}>
           {result.rolledBack ? text.serviceRolledBack : result.message}
         </span>
       </div>

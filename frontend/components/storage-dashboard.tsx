@@ -18,6 +18,8 @@ import { GlassCard } from "./glass-card"
 import { Button } from "@/components/ui/button"
 import { useI18n } from "@/components/i18n-provider"
 import { dashboardMessages } from "@/lib/dashboard-i18n"
+import { getFileToneClasses, themeToneClasses } from "@/lib/palette"
+import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,32 +56,11 @@ const getFileIcon = (type: FileItem["type"]) => {
   return icons[type]
 }
 
-const getIconGradient = (type: FileItem["type"]) => {
-  const gradients = {
-    folder: "from-amber-500/20 to-orange-500/20",
-    image: "from-emerald-500/20 to-teal-500/20",
-    document: "from-blue-500/20 to-indigo-500/20",
-    video: "from-rose-500/20 to-pink-500/20",
-    audio: "from-violet-500/20 to-purple-500/20",
-  }
-  return gradients[type]
-}
-
-const getIconColor = (type: FileItem["type"]) => {
-  const colors = {
-    folder: "text-amber-400",
-    image: "text-emerald-400",
-    document: "text-blue-400",
-    video: "text-rose-400",
-    audio: "text-violet-400",
-  }
-  return colors[type]
-}
-
 export function StorageDashboard() {
   const storageUsed = 67
   const { locale } = useI18n()
   const text = dashboardMessages[locale].storage
+  const starTone = themeToneClasses.archive
   
   return (
     <section id="dashboard" className="py-20 px-4">
@@ -93,7 +74,7 @@ export function StorageDashboard() {
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="text-foreground">{text.titleLead} </span>
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary to-[var(--tone-document-text)] bg-clip-text text-transparent">
               {text.titleHighlight}
             </span>
           </h2>
@@ -108,7 +89,7 @@ export function StorageDashboard() {
             {/* Upload Button */}
             <GlassCard className="overflow-hidden" delay={0.1}>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground gap-2 py-6 text-lg shadow-lg shadow-primary/20">
+                <Button className="w-full bg-gradient-to-r from-primary to-[var(--tone-document-text)] text-primary-foreground gap-2 py-6 text-lg shadow-lg shadow-primary/20">
                   <Upload className="w-5 h-5" />
                   {text.uploadFiles}
                 </Button>
@@ -118,7 +99,7 @@ export function StorageDashboard() {
             {/* Storage Stats */}
             <GlassCard delay={0.2}>
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
+                <div className="rounded-lg bg-gradient-to-br from-primary/20 to-[var(--tone-document-bg-strong)] p-2">
                   <HardDrive className="w-5 h-5 text-primary" />
                 </div>
                 <span className="font-semibold text-foreground">{text.storage}</span>
@@ -134,7 +115,7 @@ export function StorageDashboard() {
                     whileInView={{ width: `${storageUsed}%` }}
                     viewport={{ once: true }}
                     transition={{ duration: 1, ease: "easeOut" }}
-                    className="absolute h-full bg-gradient-to-r from-primary via-accent to-neon-orange rounded-full"
+                    className="absolute h-full rounded-full bg-gradient-to-r from-primary via-[var(--tone-document-text)] to-[var(--tone-archive-text)]"
                   />
                 </div>
               </div>
@@ -200,6 +181,7 @@ export function StorageDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {files.map((file, index) => {
                   const Icon = getFileIcon(file.type)
+                  const tone = getFileToneClasses(file.type)
                   return (
                     <motion.div
                       key={file.id}
@@ -212,7 +194,7 @@ export function StorageDashboard() {
                     >
                       {file.starred && (
                         <div className="absolute top-3 right-10">
-                          <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                          <Star className={cn("h-4 w-4", starTone.text, starTone.fill)} />
                         </div>
                       )}
                       
@@ -238,8 +220,8 @@ export function StorageDashboard() {
                         </DropdownMenuContent>
                       </DropdownMenu>
 
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getIconGradient(file.type)} flex items-center justify-center mb-3`}>
-                        <Icon className={`w-6 h-6 ${getIconColor(file.type)}`} />
+                      <div className={cn("mb-3 flex h-12 w-12 items-center justify-center rounded-xl border bg-gradient-to-br", tone.border, tone.gradient)}>
+                        <Icon className={cn("h-6 w-6", tone.text)} />
                       </div>
                       
                       <h4 className="font-medium text-foreground truncate mb-1">

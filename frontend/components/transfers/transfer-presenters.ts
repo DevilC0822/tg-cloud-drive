@@ -9,6 +9,7 @@ import {
   Package2,
   Radio,
 } from "lucide-react"
+import { getTransferStatusToneClasses } from "@/lib/palette"
 import type { TransferJobSummary, TransferPhase, TransferSourceKind, TransferJobStatus, TransferDirection } from "@/lib/transfers-api"
 import type { transferMessages } from "@/lib/i18n"
 import { formatFileSize, formatRelativeTime } from "@/lib/files"
@@ -75,10 +76,7 @@ export function getTransferPhaseLabel(phase: TransferPhase, text: TransferText) 
 }
 
 export function getTransferStatusTone(status: TransferJobStatus) {
-  if (status === "completed") return "border-emerald-400/40 bg-emerald-500/10 text-emerald-300"
-  if (status === "error") return "border-rose-400/40 bg-rose-500/10 text-rose-300"
-  if (status === "canceled") return "border-amber-400/40 bg-amber-500/10 text-amber-200"
-  return "border-cyan-400/40 bg-cyan-500/10 text-cyan-200"
+  return getTransferStatusToneClasses(status)
 }
 
 export function getTransferProgressLabel(item: TransferJobSummary) {
@@ -89,6 +87,21 @@ export function getTransferProgressLabel(item: TransferJobSummary) {
 }
 
 export function getTransferCountsLabel(item: TransferJobSummary, text: TransferText) {
+  if (item.batchMode === "folder") {
+    const parts = [
+      `${text.itemCount}: ${item.itemCount}`,
+      `${text.directoryCount}: ${item.directoryCount ?? 0}`,
+      `${text.uploaded}: ${item.completedCount}`,
+    ]
+    if ((item.activeCount ?? 0) > 0) {
+      parts.push(`${text.activeFiles}: ${item.activeCount}`)
+    }
+    if (item.errorCount > 0) {
+      parts.push(`${text.failed}: ${item.errorCount}`)
+    }
+    return parts.join(" · ")
+  }
+
   const parts = [
     `${text.itemCount}: ${item.itemCount}`,
     `${text.uploaded}: ${item.completedCount}`,

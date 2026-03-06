@@ -25,6 +25,7 @@ export interface TransferProgress {
 export interface TransferPreviewItem {
   id: string
   name: string
+  relativePath?: string | null
   status: string
   percent: number
   error?: string | null
@@ -49,6 +50,9 @@ export interface TransferJobSummary {
   finishedAt: string
   createdAt: string
   updatedAt: string
+  batchMode?: "flat" | "folder"
+  directoryCount?: number
+  activeCount?: number
   phase: TransferPhase
   progress: TransferProgress
   previewItems: TransferPreviewItem[]
@@ -75,6 +79,31 @@ export interface TransferUploadSessionDetail {
 
 export interface TransferUploadBatchDetail {
   sessions: TransferUploadSessionItem[]
+}
+
+export interface TransferFolderUploadDetail {
+  rootItemId: string
+  rootName: string
+  directoryCount: number
+  fileCount: number
+  completedCount: number
+  failedCount: number
+  activeCount: number
+  totalSize: number
+}
+
+export interface TransferFolderEntry {
+  relativePath: string
+  name: string
+  entryType: "folder" | "file"
+  status: "pending" | "uploading" | "completed" | "failed"
+  progress: TransferProgress
+  size: number
+  completedCount: number
+  failedCount: number
+  activeCount: number
+  hasChildren: boolean
+  error?: string | null
 }
 
 export interface TransferTorrentTaskFile {
@@ -125,6 +154,7 @@ export interface TransferJobDetail {
   item: TransferJobSummary
   uploadSession?: TransferUploadSessionDetail | null
   uploadBatch?: TransferUploadBatchDetail | null
+  folderUpload?: TransferFolderUploadDetail | null
   torrentTask?: TransferTorrentTaskDetail | null
   downloadTask?: TransferDownloadDetail | null
 }
@@ -146,17 +176,19 @@ export interface TransferHistoryPagination {
 }
 
 export interface TransferStreamEvent {
-  type: "job_upsert" | "job_remove" | "history_upsert" | "history_remove"
+  type: "active_snapshot" | "job_upsert" | "job_remove" | "history_upsert" | "history_remove"
   id?: string
   item?: TransferJobSummary
+  items?: TransferJobSummary[]
 }
 
-interface TransferListResponse {
+interface TransferHistoryResponse {
   items: TransferJobSummary[]
+  pagination: TransferHistoryPagination
 }
 
-interface TransferHistoryResponse extends TransferListResponse {
-  pagination: TransferHistoryPagination
+interface TransferFolderEntriesResponse {
+  items: TransferFolderEntry[]
 }
 
 interface StartDownloadTransferResponse {
@@ -165,10 +197,10 @@ interface StartDownloadTransferResponse {
   job: TransferJobSummary
 }
 
-type TransferStreamHandlers = {
-  onEvent: (event: TransferStreamEvent) => void
-  onStatusChange: (status: TransferStreamStatus) => void
-}
+const historyRequestCache = new Map<string, Promise<{
+  items: TransferJobSummary[]
+  pagination: TransferHistoryPagination
+}>>()
 
 function createHistorySearch(query: TransferHistoryQuery) {
   const params = new URLSearchParams()
@@ -180,30 +212,42 @@ function createHistorySearch(query: TransferHistoryQuery) {
   if (query.q.trim()) params.set("q", query.q.trim())
   return params.toString()
 }
-
-export async function fetchActiveTransfers() {
-  const response = await apiFetchJson<TransferListResponse>("/api/transfers/active")
-  return response.items ?? []
-}
-
 export async function fetchTransferHistory(query: TransferHistoryQuery) {
-  const response = await apiFetchJson<TransferHistoryResponse>(`/api/transfers/history?${createHistorySearch(query)}`)
-  return {
-    items: response.items ?? [],
-    pagination: response.pagination,
+  const path = `/api/transfers/history?${createHistorySearch(query)}`
+  const cached = historyRequestCache.get(path)
+  if (cached) {
+    return cached
   }
-}
 
+  const request = apiFetchJson<TransferHistoryResponse>(path)
+    .then((response) => ({
+      items: response.items ?? [],
+      pagination: response.pagination,
+    }))
+    .finally(() => {
+      historyRequestCache.delete(path)
+    })
+
+  historyRequestCache.set(path, request)
+  return request
+}
 export async function fetchTransferDetail(transferId: string) {
   return apiFetchJson<TransferJobDetail>(`/api/transfers/${encodeURIComponent(transferId)}`)
 }
-
+export async function fetchTransferEntries(transferId: string, parentPath = "") {
+  const params = new URLSearchParams()
+  if (parentPath.trim()) {
+    params.set("parentPath", parentPath)
+  }
+  const suffix = params.toString() ? `?${params.toString()}` : ""
+  const response = await apiFetchJson<TransferFolderEntriesResponse>(`/api/transfers/${encodeURIComponent(transferId)}/entries${suffix}`)
+  return response.items ?? []
+}
 export async function deleteTransferHistoryItem(transferId: string) {
   await apiFetchJson<{ ok: boolean }>(`/api/transfers/history/${encodeURIComponent(transferId)}`, {
     method: "DELETE",
   })
 }
-
 export async function startDownloadTransfer(itemId: string) {
   return apiFetchJson<StartDownloadTransferResponse>("/api/transfers/downloads", {
     method: "POST",
@@ -212,27 +256,4 @@ export async function startDownloadTransfer(itemId: string) {
   })
 }
 
-export function connectTransferStream(handlers: TransferStreamHandlers) {
-  const source = new EventSource("/api/transfers/stream", { withCredentials: true })
-
-  source.onopen = () => {
-    handlers.onStatusChange("connected")
-  }
-
-  source.onmessage = (message) => {
-    try {
-      const event = JSON.parse(message.data) as TransferStreamEvent
-      handlers.onEvent(event)
-    } catch {
-      handlers.onStatusChange("error")
-    }
-  }
-
-  source.onerror = () => {
-    handlers.onStatusChange("reconnecting")
-  }
-
-  return () => {
-    source.close()
-  }
-}
+export { connectTransferStream } from "./transfers-stream"

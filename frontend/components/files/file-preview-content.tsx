@@ -217,7 +217,7 @@ export function FilePreviewContent({
   torrentError,
 }: FilePreviewContentProps) {
   if (kind === "video") {
-    return <video src={contentUrl} controls className="h-[62vh] w-full rounded-2xl border border-border/60 bg-black/90" />
+    return <video src={contentUrl} controls className="h-[62vh] w-full rounded-2xl border border-border/60 bg-[var(--overlay-backdrop)]" />
   }
 
   if (kind === "image" || kind === "gif") {

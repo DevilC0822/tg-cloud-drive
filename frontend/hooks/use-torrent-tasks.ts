@@ -36,6 +36,28 @@ export function useTorrentTasks() {
     setError("")
   }, [setError, setPreview, setSelectedIndexes, setTorrentFile, setTorrentUrl])
 
+  const resetPreviewState = useCallback(() => {
+    setPreview(null)
+    setSelectedIndexes([])
+    setError("")
+  }, [setError, setPreview, setSelectedIndexes])
+
+  const updateTorrentUrl = useCallback((value: string) => {
+    setTorrentUrl(value)
+    if (value.trim()) {
+      setTorrentFile(null)
+    }
+    resetPreviewState()
+  }, [resetPreviewState, setTorrentFile, setTorrentUrl])
+
+  const updateTorrentFile = useCallback((file: File | null) => {
+    setTorrentFile(file)
+    if (file) {
+      setTorrentUrl("")
+    }
+    resetPreviewState()
+  }, [resetPreviewState, setTorrentFile, setTorrentUrl])
+
   const requestPreview = useCallback(async () => {
     const hasUrl = torrentUrl.trim().length > 0
     if (!hasUrl && !torrentFile) {
@@ -106,9 +128,9 @@ export function useTorrentTasks() {
 
   return {
     torrentUrl,
-    setTorrentUrl,
+    setTorrentUrl: updateTorrentUrl,
     torrentFile,
-    setTorrentFile,
+    setTorrentFile: updateTorrentFile,
     preview,
     selectedIndexes,
     toggleFileSelection,

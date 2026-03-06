@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useAppTheme } from "@/hooks/use-app-theme"
+import { animatedBackgroundVars } from "@/lib/palette"
 
 interface Particle {
   x: number
@@ -13,55 +14,52 @@ interface Particle {
 
 interface ThemePalette {
   colors: string[]
-  connectionColorPrefix: string
-  connectionOpacityFactor: number
-  bgColor: string
-  initialBg: string
+  connectionColors: string[]
 }
 
-function createThemePalette(isDark: boolean): ThemePalette {
-  if (isDark) {
+function readThemeValue(styles: CSSStyleDeclaration, name: string, fallback = "transparent") {
+  const value = styles.getPropertyValue(name).trim()
+  return value || fallback
+}
+
+function createThemePalette(): ThemePalette {
+  if (typeof window === "undefined" || typeof document === "undefined") {
     return {
-      colors: [
-        "rgba(0, 255, 255, 0.6)",
-        "rgba(255, 100, 200, 0.6)",
-        "rgba(255, 180, 100, 0.6)",
-      ],
-      connectionColorPrefix: "rgba(0, 255, 255,",
-      connectionOpacityFactor: 0.3,
-      bgColor: "rgba(10, 10, 20, 0.1)",
-      initialBg: "rgba(10, 10, 20, 1)",
+      colors: ["transparent", "transparent", "transparent"],
+      connectionColors: ["transparent", "transparent", "transparent"],
     }
   }
 
+  const styles = window.getComputedStyle(document.documentElement)
   return {
     colors: [
-      "rgba(0, 180, 180, 0.4)",
-      "rgba(200, 80, 160, 0.4)",
-      "rgba(200, 140, 80, 0.4)",
+      readThemeValue(styles, "--tone-info-particle"),
+      readThemeValue(styles, "--tone-video-particle"),
+      readThemeValue(styles, "--tone-archive-particle"),
     ],
-    connectionColorPrefix: "rgba(0, 150, 150,",
-    connectionOpacityFactor: 0.2,
-    bgColor: "rgba(250, 250, 255, 0.15)",
-    initialBg: "rgba(250, 250, 255, 1)",
+    connectionColors: [
+      readThemeValue(styles, "--tone-info-connection"),
+      readThemeValue(styles, "--tone-video-connection"),
+      readThemeValue(styles, "--tone-archive-connection"),
+    ],
   }
 }
 
 export function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { theme, isDark, ready } = useAppTheme()
+  const { resolvedTheme, isDark, ready } = useAppTheme()
   const [mounted, setMounted] = useState(false)
   const animationRef = useRef<number | null>(null)
   const particlesRef = useRef<Particle[]>([])
-  const themePaletteRef = useRef<ThemePalette>(createThemePalette(true))
+  const themePaletteRef = useRef<ThemePalette>(createThemePalette())
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   useEffect(() => {
-    themePaletteRef.current = createThemePalette(theme === "dark")
-  }, [theme])
+    themePaletteRef.current = createThemePalette()
+  }, [resolvedTheme])
 
   useEffect(() => {
     if (!mounted || !ready) return
@@ -97,7 +95,7 @@ export function AnimatedBackground() {
     const particles = particlesRef.current
 
     const drawConnections = () => {
-      const { connectionColorPrefix, connectionOpacityFactor } = themePaletteRef.current
+      const { connectionColors } = themePaletteRef.current
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x
@@ -105,22 +103,24 @@ export function AnimatedBackground() {
           const distance = Math.sqrt(dx * dx + dy * dy)
 
           if (distance < 150) {
-            const opacity = (1 - distance / 150) * connectionOpacityFactor
+            const opacity = 1 - distance / 150
             ctx.beginPath()
-            ctx.strokeStyle = `${connectionColorPrefix}${opacity})`
+            ctx.save()
+            ctx.globalAlpha = opacity
+            ctx.strokeStyle = connectionColors[particles[i].colorIndex] || connectionColors[0]
             ctx.lineWidth = 0.5
             ctx.moveTo(particles[i].x, particles[i].y)
             ctx.lineTo(particles[j].x, particles[j].y)
             ctx.stroke()
+            ctx.restore()
           }
         }
       }
     }
 
     const animate = () => {
-      const { bgColor, colors } = themePaletteRef.current
-      ctx.fillStyle = bgColor
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      const { colors } = themePaletteRef.current
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       particles.forEach((particle) => {
         particle.x += particle.vx
@@ -155,10 +155,6 @@ export function AnimatedBackground() {
       animationRef.current = requestAnimationFrame(animate)
     }
 
-    // Initial clear with theme-appropriate color
-    ctx.fillStyle = themePaletteRef.current.initialBg
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
     animate()
 
     return () => {
@@ -173,10 +169,9 @@ export function AnimatedBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-0 pointer-events-none transition-opacity duration-500"
-      style={{ 
-        background: isDark 
-          ? "linear-gradient(135deg, #0a0a14 0%, #1a0a20 50%, #0a1020 100%)" 
-          : "linear-gradient(135deg, #f8fafc 0%, #f0f4ff 50%, #faf5ff 100%)"
+      style={{
+        backgroundColor: "var(--background)",
+        backgroundImage: animatedBackgroundVars.meshGradient,
       }}
     />
   )

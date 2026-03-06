@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"tg-cloud-drive-api/internal/store"
-	"tg-cloud-drive-api/internal/telegram"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"tg-cloud-drive-api/internal/store"
+	"tg-cloud-drive-api/internal/telegram"
 )
 
 type uploadSessionDTO struct {
@@ -322,6 +322,7 @@ func (s *Server) handleUploadSessionChunk(w http.ResponseWriter, r *http.Request
 		return
 	}
 	recordChunkFailure := func(errMsg string, process *videoUploadProcessMeta) {
+		s.markUploadSessionFailed(context.Background(), session, errMsg)
 		s.recordUploadSessionTransferHistory(
 			context.Background(),
 			session,
@@ -360,7 +361,7 @@ func (s *Server) handleUploadSessionChunk(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusInternalServerError, "internal_error", "查询上传进度失败")
 			return
 		}
-		s.syncUploadSessionProgressEvent(r.Context(), session)
+		s.syncUploadSessionProgressState(r.Context(), session, uploadedCount)
 		writeJSON(w, http.StatusOK, map[string]any{
 			"alreadyUploaded": true,
 			"progress":        toUploadSessionChunkProgressDTO(session, uploadedCount),
@@ -415,6 +416,7 @@ func (s *Server) handleUploadSessionChunk(w http.ResponseWriter, r *http.Request
 					writeError(w, http.StatusInternalServerError, "internal_error", "查询上传进度失败")
 					return
 				}
+				s.syncUploadSessionProgressState(r.Context(), session, uploadedCount)
 				writeJSON(w, http.StatusOK, map[string]any{
 					"alreadyUploaded": true,
 					"progress":        toUploadSessionChunkProgressDTO(session, uploadedCount),
@@ -435,7 +437,7 @@ func (s *Server) handleUploadSessionChunk(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusInternalServerError, "internal_error", "查询上传进度失败")
 			return
 		}
-		s.syncUploadSessionProgressEvent(r.Context(), session)
+		s.syncUploadSessionProgressState(r.Context(), session, uploadedCount)
 
 		writeJSON(w, http.StatusOK, map[string]any{
 			"alreadyUploaded": false,
@@ -517,7 +519,7 @@ func (s *Server) handleUploadSessionChunk(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询上传进度失败")
 		return
 	}
-	s.syncUploadSessionProgressEvent(r.Context(), session)
+	s.syncUploadSessionProgressState(r.Context(), session, uploadedCount)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"alreadyUploaded": false,
@@ -567,13 +569,14 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 
 	missing := missingChunkIndices(session.TotalChunks, uploaded)
 	if len(missing) > 0 {
-		_ = st.SetUploadSessionStatus(r.Context(), session.ID, store.UploadSessionStatusFailed, time.Now())
+		errText := fmt.Sprintf("仍有 %d 个分片未上传", len(missing))
+		s.markUploadSessionFailed(r.Context(), session, errText)
 		s.recordUploadSessionTransferHistory(
 			context.Background(),
 			session,
 			nil,
 			store.TransferStatusError,
-			fmt.Sprintf("仍有 %d 个分片未上传", len(missing)),
+			errText,
 			nil,
 			time.Now(),
 		)
@@ -585,6 +588,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 	uploadMode, err := s.resolveUploadSessionMode(r.Context(), session)
 	if err != nil {
 		s.logger.Error("resolve upload session mode failed", "error", err.Error(), "session_id", session.ID.String())
+		s.markUploadSessionFailed(r.Context(), session, "计算上传策略失败")
 		s.recordUploadSessionTransferHistory(
 			context.Background(),
 			session,
@@ -608,7 +612,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		mergedPath, mergeErr := s.mergeLocalSessionChunks(session)
 		if mergeErr != nil {
 			s.logger.Error("merge local staged upload chunks failed", "error", mergeErr.Error(), "session_id", session.ID.String())
-			_ = st.SetUploadSessionStatus(r.Context(), session.ID, store.UploadSessionStatusFailed, time.Now())
+			s.markUploadSessionFailed(r.Context(), session, "分片合并失败")
 			s.recordUploadSessionTransferHistory(
 				context.Background(),
 				session,
@@ -649,7 +653,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		}
 		if sendErr != nil {
 			s.logger.Error("send local staged merged file failed", "error", sendErr.Error(), "session_id", session.ID.String())
-			_ = st.SetUploadSessionStatus(r.Context(), session.ID, store.UploadSessionStatusFailed, time.Now())
+			s.markUploadSessionFailed(r.Context(), session, "上传到 Telegram 失败")
 			s.recordUploadSessionTransferHistory(
 				context.Background(),
 				session,
@@ -673,7 +677,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 			if msg.MessageID > 0 {
 				_ = s.deleteMessageWithRetry(r.Context(), s.cfg.TGStorageChatID, msg.MessageID)
 			}
-			_ = st.SetUploadSessionStatus(r.Context(), session.ID, store.UploadSessionStatusFailed, time.Now())
+			s.markUploadSessionFailed(r.Context(), session, "上传结果异常（缺少文件标识）")
 			s.recordUploadSessionTransferHistory(
 				context.Background(),
 				session,
@@ -718,11 +722,12 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 
 	now := time.Now()
 	item, finalizeErr := st.FinalizeUploadSession(r.Context(), store.FinalizeUploadSessionInput{
-		SessionID: session.ID,
-		ItemID:    session.ItemID,
-		ItemSize:  actualSize,
-		UpdatedAt: now,
-		Chunk:     mergedChunk,
+		SessionID:      session.ID,
+		ItemID:         session.ItemID,
+		ItemSize:       actualSize,
+		UploadedChunks: session.TotalChunks,
+		UpdatedAt:      now,
+		Chunk:          mergedChunk,
 	})
 	if errors.Is(finalizeErr, store.ErrConflict) && useLocalMergedUpload && mergedMessageID > 0 {
 		_ = s.deleteMessageWithRetry(r.Context(), s.cfg.TGStorageChatID, mergedMessageID)
@@ -730,7 +735,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		uploadedChunks, listErr := st.ListChunks(r.Context(), session.ItemID)
 		if listErr != nil {
 			s.logger.Error("list chunks failed after merged chunk conflict", "error", listErr.Error(), "session_id", session.ID.String())
-			_ = st.SetUploadSessionStatus(r.Context(), session.ID, store.UploadSessionStatusFailed, time.Now())
+			s.markUploadSessionFailed(r.Context(), session, "查询上传分片失败")
 			s.recordUploadSessionTransferHistory(
 				context.Background(),
 				session,
@@ -745,16 +750,17 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		}
 		actualSize = resolveUploadedChunkTotalSize(uploadedChunks, session.FileSize)
 		item, finalizeErr = st.FinalizeUploadSession(r.Context(), store.FinalizeUploadSessionInput{
-			SessionID: session.ID,
-			ItemID:    session.ItemID,
-			ItemSize:  actualSize,
-			UpdatedAt: time.Now(),
-			Chunk:     nil,
+			SessionID:      session.ID,
+			ItemID:         session.ItemID,
+			ItemSize:       actualSize,
+			UploadedChunks: session.TotalChunks,
+			UpdatedAt:      time.Now(),
+			Chunk:          nil,
 		})
 	}
 	if finalizeErr != nil {
 		s.logger.Error("finalize upload session failed", "error", finalizeErr.Error(), "session_id", session.ID.String())
-		_ = st.SetUploadSessionStatus(r.Context(), session.ID, store.UploadSessionStatusFailed, time.Now())
+		s.markUploadSessionFailed(r.Context(), session, "完成上传失败")
 		s.recordUploadSessionTransferHistory(
 			context.Background(),
 			session,
@@ -771,6 +777,9 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		if cleanupErr := s.clearLocalUploadSession(session.ID); cleanupErr != nil {
 			s.logger.Warn("cleanup local staged upload files failed", "error", cleanupErr.Error(), "session_id", session.ID.String())
 		}
+	}
+	if session.TransferBatchID != nil {
+		_ = st.SetUploadFolderEntryStatusBySessionID(r.Context(), session.ID, store.UploadFolderEntryStatusCompleted, nil, time.Now())
 	}
 	s.recordUploadSessionTransferHistory(
 		context.Background(),

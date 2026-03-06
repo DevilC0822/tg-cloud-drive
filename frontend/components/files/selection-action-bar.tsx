@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { fetchFolderTotalSize } from "@/lib/files-api"
 import { formatFileSize, type FileItem } from "@/lib/files"
 import type { filesMessages } from "@/lib/i18n"
+import { themeToneClasses } from "@/lib/palette"
+import { cn } from "@/lib/utils"
 import { filesSelectedFileIdsAtom, filesSelectedItemsAtom } from "@/stores/files-atoms"
 
 interface SelectionActionBarProps {
@@ -45,6 +47,7 @@ export function SelectionActionBar({
   const containsFolder = hasAnyFolder(selectedItems)
   const shareEnabled = canShare(selectedItems)
   const totalSizeLabel = useMemo(() => formatFileSize(resolvedTotalBytes), [resolvedTotalBytes])
+  const starTone = themeToneClasses.archive
 
   useEffect(() => {
     let cancelled = false
@@ -91,7 +94,7 @@ export function SelectionActionBar({
           transition={{ type: "spring", stiffness: 360, damping: 32 }}
           className="absolute bottom-5 left-1/2 z-40 -translate-x-1/2"
         >
-          <div className="glass flex items-center gap-2 rounded-2xl border border-border/55 px-3 py-2 shadow-2xl shadow-black/20">
+          <div className="glass flex items-center gap-2 rounded-2xl border border-border/55 px-3 py-2 shadow-[0_20px_60px_var(--shadow-floating-strong)]">
             <div className="px-2">
               <p className="text-sm font-medium text-foreground">{text.selectedCount(selectedCount)}</p>
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -124,7 +127,7 @@ export function SelectionActionBar({
             </Button>
 
             <Button size="sm" variant="ghost" className="gap-1.5" disabled={pending} onClick={onToggleStar}>
-              <Star className={allStarred ? "h-4 w-4 fill-amber-500 text-amber-500" : "h-4 w-4 text-muted-foreground"} />
+              <Star className={allStarred ? cn("h-4 w-4", starTone.text, starTone.fill) : "h-4 w-4 text-muted-foreground"} />
               <span className="hidden sm:inline">{allStarred ? text.actionUnstar : text.actionStar}</span>
             </Button>
 

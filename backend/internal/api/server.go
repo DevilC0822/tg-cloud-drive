@@ -8,11 +8,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"tg-cloud-drive-api/internal/config"
-	"tg-cloud-drive-api/internal/telegram"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"tg-cloud-drive-api/internal/config"
+	"tg-cloud-drive-api/internal/telegram"
 )
 
 type ServerDeps struct {
@@ -127,6 +127,7 @@ func (s *Server) Router() http.Handler {
 			pr.Get("/items/{id}", s.handleGetItem)
 			pr.Get("/folders", s.handleListFolders)
 			pr.Get("/settings", s.handleGetSettings)
+			pr.Get("/settings/runtime", s.handleGetRuntimeSettings)
 			pr.Get("/storage/stats", s.handleGetStorageStats)
 			pr.Get("/storage/local-residual", s.handleListLocalResidual)
 			pr.Post("/storage/local-residual/{id}/cleanup", s.handleCleanupLocalResidual)
@@ -134,6 +135,7 @@ func (s *Server) Router() http.Handler {
 			pr.Get("/transfers/active", s.handleGetActiveTransfers)
 			pr.Get("/transfers/history", s.handleGetTransferHistory)
 			pr.Get("/transfers/stream", s.handleTransferStream)
+			pr.Get("/transfers/{id}/entries", s.handleGetTransferEntries)
 			pr.Get("/transfers/{id}", s.handleGetTransferDetail)
 			pr.Post("/folders", s.handleCreateFolder)
 			pr.Patch("/settings", s.handlePatchSettings)
@@ -161,6 +163,8 @@ func (s *Server) Router() http.Handler {
 			pr.Delete("/items/{id}/share", s.handleUnshareItem)
 
 			pr.Post("/uploads/batches", s.handleCreateUploadBatch)
+			pr.Post("/uploads/folders", s.handleCreateUploadFolder)
+			pr.Get("/uploads/folders/{id}/work", s.handleGetUploadFolderWork)
 			pr.Post("/uploads", s.handleCreateUploadSession)
 			pr.Get("/uploads/{id}", s.handleGetUploadSession)
 			pr.Post("/uploads/{id}/chunks/{index}", s.handleUploadSessionChunk)

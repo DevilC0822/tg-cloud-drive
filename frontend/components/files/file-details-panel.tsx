@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { 
+  Archive,
   X, 
+  Code2,
   FolderOpen, 
   Image, 
   FileText, 
@@ -18,6 +20,7 @@ import {
   Copy
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { getFileToneClasses, themeToneClasses } from "@/lib/palette"
 import { cn } from "@/lib/utils"
 import { formatFileSize, formatRelativeTime } from "@/lib/files"
 import type { FileItem } from "./file-card"
@@ -34,25 +37,9 @@ const getFileIcon = (type: FileItem["type"]) => {
   if (type === "document") return FileText
   if (type === "video") return Film
   if (type === "audio") return Music
+  if (type === "archive") return Archive
+  if (type === "code") return Code2
   return FileText
-}
-
-const getIconGradient = (type: FileItem["type"]) => {
-  if (type === "folder") return "from-amber-500/30 to-orange-500/30"
-  if (type === "image") return "from-emerald-500/30 to-teal-500/30"
-  if (type === "document") return "from-blue-500/30 to-indigo-500/30"
-  if (type === "video") return "from-rose-500/30 to-pink-500/30"
-  if (type === "audio") return "from-violet-500/30 to-purple-500/30"
-  return "from-slate-500/30 to-slate-400/30"
-}
-
-const getIconColor = (type: FileItem["type"]) => {
-  if (type === "folder") return "text-amber-500 dark:text-amber-400"
-  if (type === "image") return "text-emerald-600 dark:text-emerald-400"
-  if (type === "document") return "text-blue-600 dark:text-blue-400"
-  if (type === "video") return "text-rose-600 dark:text-rose-400"
-  if (type === "audio") return "text-violet-600 dark:text-violet-400"
-  return "text-muted-foreground"
 }
 
 const getFileTypeLabel = (type: FileItem["type"]) => {
@@ -68,6 +55,8 @@ export function FileDetailsPanel({ file, onClose, onStarToggle }: FileDetailsPan
   if (!file) return null
 
   const Icon = getFileIcon(file.type)
+  const tone = getFileToneClasses(file.type)
+  const starTone = themeToneClasses.archive
 
   return (
     <AnimatePresence>
@@ -90,14 +79,11 @@ export function FileDetailsPanel({ file, onClose, onStarToggle }: FileDetailsPan
           </div>
 
           {/* Preview */}
-          <div className={cn(
-            "w-full aspect-square rounded-2xl bg-gradient-to-br flex items-center justify-center mb-6 overflow-hidden",
-            getIconGradient(file.type)
-          )}>
+          <div className={cn("mb-6 flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border bg-gradient-to-br", tone.border, tone.gradient)}>
             {file.thumbnail ? (
               <img src={file.thumbnail} alt={file.name} className="w-full h-full object-cover" />
             ) : (
-              <Icon className={cn("w-20 h-20", getIconColor(file.type))} />
+              <Icon className={cn("h-20 w-20", tone.text)} />
             )}
           </div>
 
@@ -107,15 +93,12 @@ export function FileDetailsPanel({ file, onClose, onStarToggle }: FileDetailsPan
               {file.name}
             </h4>
             <div className="flex items-center gap-2">
-              <span className={cn(
-                "text-xs px-2 py-1 rounded-full",
-                getIconGradient(file.type)
-              )}>
+              <span className={cn("rounded-full border px-2 py-1 text-xs", tone.badge)}>
                 {getFileTypeLabel(file.type)}
               </span>
               {file.starred && (
-                <span className="flex items-center gap-1 text-xs text-amber-400">
-                  <Star className="w-3 h-3 fill-amber-400" />
+                <span className={cn("flex items-center gap-1 text-xs", starTone.text)}>
+                  <Star className={cn("h-3 w-3", starTone.fill)} />
                   已收藏
                 </span>
               )}
@@ -152,7 +135,7 @@ export function FileDetailsPanel({ file, onClose, onStarToggle }: FileDetailsPan
               onClick={onStarToggle}
               className="flex flex-col items-center gap-1 p-3 rounded-xl bg-secondary/70 dark:bg-secondary/50 hover:bg-secondary border border-border/30 dark:border-transparent transition-colors"
             >
-              <Star className={cn("w-5 h-5", file.starred ? "text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" : "text-muted-foreground")} />
+              <Star className={cn("h-5 w-5", file.starred ? `${starTone.text} ${starTone.fill}` : "text-muted-foreground")} />
               <span className="text-xs text-muted-foreground font-medium">收藏</span>
             </motion.button>
             <motion.button

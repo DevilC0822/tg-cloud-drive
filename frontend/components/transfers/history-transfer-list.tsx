@@ -1,4 +1,5 @@
-import { Archive } from "lucide-react"
+import { Archive, Loader2 } from "lucide-react"
+import { AnimatePresence, motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { HistoryTransferCard } from "@/components/transfers/history-transfer-card"
@@ -14,7 +15,8 @@ interface HistoryTransferListProps {
   items: TransferJobSummary[]
   query: TransferHistoryQuery
   pagination: TransferHistoryPagination
-  loading: boolean
+  initialLoading: boolean
+  refreshing: boolean
   text: (typeof transferMessages)["en"]
   onChangeFilters: (patch: Partial<TransferHistoryQuery>) => void
   onChangePage: (page: number) => void
@@ -27,7 +29,8 @@ export function HistoryTransferList({
   items,
   query,
   pagination,
-  loading,
+  initialLoading,
+  refreshing,
   text,
   onChangeFilters,
   onChangePage,
@@ -36,23 +39,33 @@ export function HistoryTransferList({
   onDelete,
 }: HistoryTransferListProps) {
   return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="text-xs uppercase tracking-[0.34em] text-primary/80">{text.historyTitle}</h2>
-        <p className="mt-2 text-sm text-muted-foreground md:text-base">{text.historySubtitle}</p>
+    <section className="space-y-6">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h2 className="text-[13px] font-bold uppercase tracking-[0.2em] text-primary/80 dark:text-primary/70">{text.historyTitle}</h2>
+          <p className="mt-2 text-sm font-medium text-muted-foreground md:text-base">{text.historySubtitle}</p>
+        </div>
+        {refreshing ? (
+          <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-secondary/35 px-3 py-1 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {text.syncing}
+          </div>
+        ) : null}
       </div>
 
       <HistoryFilterBar query={query} text={text} onChange={onChangeFilters} />
 
-      {loading ? <TransferSkeleton count={4} /> : null}
-      {!loading && items.length === 0 ? (
+      {initialLoading ? <TransferSkeleton count={4} /> : null}
+      {!initialLoading && items.length === 0 ? (
         <TransferEmptyState icon={Archive} title={text.emptyHistoryTitle} description={text.emptyHistoryDescription} />
       ) : null}
-      {!loading && items.length > 0 ? (
-        <div className="grid gap-3 xl:grid-cols-2">
-          {items.map((item) => (
-            <HistoryTransferCard key={item.id} item={item} text={text} onOpenDetail={onOpenDetail} onDelete={onDelete} />
-          ))}
+      {!initialLoading && items.length > 0 ? (
+        <div className="grid gap-4 xl:grid-cols-2">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {items.map((item) => (
+              <HistoryTransferCard key={item.id} item={item} text={text} onOpenDetail={onOpenDetail} onDelete={onDelete} />
+            ))}
+          </AnimatePresence>
         </div>
       ) : null}
 

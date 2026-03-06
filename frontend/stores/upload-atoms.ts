@@ -2,10 +2,14 @@ import { atom } from "jotai"
 import type { TorrentPreview } from "@/lib/torrent-api"
 
 export type UploadTaskStatus = "pending" | "uploading" | "completed" | "error"
+export type UploadTaskKind = "file" | "folder"
 
 export interface UploadTask {
   id: string
-  file: File
+  kind: UploadTaskKind
+  displayName: string
+  file?: File
+  totalBytes: number
   progress: number
   status: UploadTaskStatus
   startedAt: number
@@ -15,8 +19,12 @@ export interface UploadTask {
   targetParentId?: string | null
   uploadSessionId?: string
   transferJobId?: string
+  transferBatchId?: string
+  rootItemId?: string
   uploadedChunkCount?: number
   totalChunkCount?: number
+  completedItems?: number
+  totalItems?: number
 }
 
 export const uploadTasksAtom = atom<UploadTask[]>([])

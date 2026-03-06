@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"tg-cloud-drive-api/internal/store"
 	"github.com/google/uuid"
+	"tg-cloud-drive-api/internal/store"
 )
 
 const (
@@ -80,6 +80,15 @@ func (s *Server) listUploadedChunkIndicesBySession(ctx context.Context, session 
 }
 
 func (s *Server) countUploadedChunksBySession(ctx context.Context, session store.UploadSession) (int, error) {
+	if session.TotalChunks <= 0 {
+		return 0, nil
+	}
+	if session.UploadedChunks > 0 {
+		return clampUploadedChunks(session.UploadedChunks, session.TotalChunks), nil
+	}
+	if session.Status == store.UploadSessionStatusCompleted {
+		return session.TotalChunks, nil
+	}
 	mode, err := s.resolveUploadSessionMode(ctx, session)
 	if err != nil {
 		return 0, err

@@ -1,251 +1,179 @@
-import { motion, AnimatePresence } from "framer-motion"
-import { Sun, Moon, Stars } from "lucide-react"
+import { AnimatePresence, motion } from "framer-motion"
+import { Monitor, Moon, Sun } from "lucide-react"
+import { useRef, useState, type FocusEvent } from "react"
+import { useI18n } from "@/components/i18n-provider"
 import { useAppTheme } from "@/hooks/use-app-theme"
+import type { AppTheme } from "@/lib/theme"
+import { cn } from "@/lib/utils"
 
-export function ThemeToggle() {
-  const { isDark, ready, toggleTheme } = useAppTheme()
+const PANEL_OFFSET_Y = 6
 
-  if (!ready) {
-    return (
-      <div className="w-16 h-8 rounded-full bg-secondary/50 animate-pulse" />
-    )
+type ThemeLabels = {
+  light: string
+  dark: string
+  auto: string
+  cycleTo: string
+}
+
+const THEME_LABELS: Record<"zh" | "en", ThemeLabels> = {
+  zh: {
+    light: "亮色",
+    dark: "暗色",
+    auto: "跟随系统",
+    cycleTo: "切换主题",
+  },
+  en: {
+    light: "Light",
+    dark: "Dark",
+    auto: "System",
+    cycleTo: "Switch theme",
+  },
+} as const
+
+function ThemeIcon({ theme }: { theme: AppTheme }) {
+  if (theme === "light") {
+    return <Sun className="h-4 w-4" />
   }
+  if (theme === "dark") {
+    return <Moon className="h-4 w-4" />
+  }
+  return <Monitor className="h-4 w-4" />
+}
 
-  const toggleLabel = isDark ? "切换到浅色模式" : "切换到深色模式"
-
+function ThemeOption({
+  active,
+  label,
+  theme,
+  onSelect,
+}: {
+  active: boolean
+  label: string
+  theme: AppTheme
+  onSelect: (theme: AppTheme) => void
+}) {
   return (
-    <motion.button
-      onClick={toggleTheme}
-      className="relative h-8 w-16 overflow-hidden rounded-full border border-border/60 p-1 transition-[background-color,border-color] duration-200 will-change-transform"
-      style={{
-        background: isDark
-          ? "linear-gradient(135deg, oklch(0.15 0.02 280), oklch(0.2 0.03 280))"
-          : "linear-gradient(135deg, oklch(0.85 0.1 60), oklch(0.9 0.08 40))",
-        boxShadow: isDark
-          ? "inset 0 1px 2px rgba(0,0,0,0.35)"
-          : "inset 0 1px 2px rgba(0,0,0,0.08)",
-      }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      aria-label={toggleLabel}
-      title={toggleLabel}
+    <button
+      type="button"
+      onClick={() => onSelect(theme)}
+      className={cn(
+        "flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors",
+        active
+          ? "bg-primary/12 text-primary"
+          : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground",
+      )}
     >
       <span
-        className={`pointer-events-none absolute inset-0 transition-opacity duration-200 ${
-          isDark ? "opacity-100" : "opacity-0"
-        }`}
+        className={cn(
+          "flex h-8 w-8 items-center justify-center rounded-lg border transition-colors",
+          active
+            ? "border-primary/30 bg-primary/10"
+            : "border-border/50 bg-background/60",
+        )}
       >
-        <span className="absolute top-1.5 right-3 h-1 w-1 rounded-full bg-white/60" />
-        <span className="absolute top-3 right-5 h-0.5 w-0.5 rounded-full bg-white/45" />
-        <span className="absolute bottom-2 right-4 h-0.5 w-0.5 rounded-full bg-white/50" />
+        <ThemeIcon theme={theme} />
       </span>
+      <span>{label}</span>
+    </button>
+  )
+}
 
-      {/* Toggle ball */}
-      <motion.div
-        className="relative z-10 flex h-6 w-6 items-center justify-center rounded-full will-change-transform"
-        animate={{
-          x: isDark ? 0 : 32,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 420,
-          damping: 32,
-          mass: 0.6,
-        }}
-        style={{
-          background: isDark
-            ? "linear-gradient(135deg, oklch(0.3 0.05 280), oklch(0.25 0.04 280))"
-            : "linear-gradient(135deg, oklch(0.95 0.05 60), oklch(0.98 0.02 60))",
-          boxShadow: isDark
-            ? "0 1px 4px rgba(0,0,0,0.35), inset 0 -1px 2px rgba(0,0,0,0.2)"
-            : "0 1px 4px rgba(180, 120, 60, 0.28), inset 0 -1px 2px rgba(0,0,0,0.05)",
-        }}
-      >
-        <AnimatePresence mode="sync" initial={false}>
-          {isDark ? (
-            <motion.div
-              key="moon"
-              initial={{ opacity: 0, scale: 0.7, y: 2 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.7, y: -2 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Moon className="w-3.5 h-3.5 text-neon-cyan" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="sun"
-              initial={{ opacity: 0, scale: 0.7, y: 2 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.7, y: -2 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Sun className="w-3.5 h-3.5 text-neon-orange" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+function ThemePanel({
+  labels,
+  open,
+  theme,
+  onSelect,
+}: {
+  labels: ThemeLabels
+  open: boolean
+  theme: AppTheme
+  onSelect: (theme: AppTheme) => void
+}) {
+  return (
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          initial={{ opacity: 0, y: PANEL_OFFSET_Y, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: PANEL_OFFSET_Y, scale: 0.96 }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute right-0 top-full hidden pt-3 lg:block"
+        >
+          <div className="w-44 rounded-2xl border border-border/60 bg-background/92 p-2 shadow-2xl backdrop-blur-xl">
+            <ThemeOption active={theme === "light"} label={labels.light} theme="light" onSelect={onSelect} />
+            <ThemeOption active={theme === "dark"} label={labels.dark} theme="dark" onSelect={onSelect} />
+            <ThemeOption active={theme === "auto"} label={labels.auto} theme="auto" onSelect={onSelect} />
+          </div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  )
+}
+
+function ThemeTrigger({
+  label,
+  theme,
+  onClick,
+}: {
+  label: string
+  theme: AppTheme
+  onClick: () => void
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileHover={{ y: -1 }}
+      whileTap={{ scale: 0.96 }}
+      aria-label={label}
+      title={label}
+      className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-secondary/55 text-foreground shadow-sm transition-colors hover:bg-secondary/80"
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={theme}
+          initial={{ opacity: 0, scale: 0.8, y: PANEL_OFFSET_Y / 2 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: -PANEL_OFFSET_Y / 2 }}
+          transition={{ duration: 0.16 }}
+          className="flex items-center justify-center"
+        >
+          <ThemeIcon theme={theme} />
+        </motion.span>
+      </AnimatePresence>
     </motion.button>
   )
 }
 
-// Larger, more elaborate toggle for hero sections
-export function ThemeToggleLarge() {
-  const { isDark, ready, toggleTheme } = useAppTheme()
+export function ThemeToggle() {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [open, setOpen] = useState(false)
+  const { locale } = useI18n()
+  const { theme, ready, toggleTheme, setTheme } = useAppTheme()
+  const labels = THEME_LABELS[locale]
+
+  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
+    const nextTarget = event.relatedTarget
+    if (nextTarget instanceof Node && containerRef.current?.contains(nextTarget)) {
+      return
+    }
+    setOpen(false)
+  }
 
   if (!ready) {
-    return (
-      <div className="w-24 h-12 rounded-2xl bg-secondary/50 animate-pulse" />
-    )
+    return <div className="h-9 w-9 animate-pulse rounded-xl bg-secondary/50" />
   }
 
   return (
-    <motion.button
-      onClick={toggleTheme}
-      className="relative w-24 h-12 rounded-2xl p-1.5 overflow-hidden"
-      style={{
-        background: isDark 
-          ? "linear-gradient(135deg, oklch(0.12 0.02 280), oklch(0.18 0.03 280))"
-          : "linear-gradient(135deg, oklch(0.88 0.08 60), oklch(0.92 0.06 40))",
-        border: isDark 
-          ? "1px solid oklch(0.3 0.04 280 / 0.5)"
-          : "1px solid oklch(0.7 0.1 60 / 0.3)",
-      }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      aria-label={isDark ? "切换到浅色模式" : "切换到深色模式"}
+    <div
+      ref={containerRef}
+      className="relative z-50"
+      onBlur={handleBlur}
+      onFocus={() => setOpen(true)}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
     >
-      {/* Animated background stars/rays */}
-      <div className="absolute inset-0 overflow-hidden">
-        <AnimatePresence>
-          {isDark ? (
-            // Stars for dark mode
-            <>
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={`star-${i}`}
-                  className="absolute w-1 h-1 rounded-full bg-white/60"
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ 
-                    opacity: [0.3, 0.8, 0.3], 
-                    scale: [0.8, 1.2, 0.8],
-                  }}
-                  exit={{ opacity: 0, scale: 0 }}
-                  transition={{ 
-                    duration: 2 + i * 0.3,
-                    repeat: Infinity,
-                    delay: i * 0.2,
-                  }}
-                  style={{
-                    top: `${15 + (i % 3) * 25}%`,
-                    right: `${10 + (i % 4) * 15}%`,
-                  }}
-                />
-              ))}
-            </>
-          ) : (
-            // Rays for light mode
-            <>
-              {[...Array(8)].map((_, i) => (
-                <motion.div
-                  key={`ray-${i}`}
-                  className="absolute w-0.5 h-6 origin-bottom"
-                  style={{
-                    background: "linear-gradient(to top, oklch(0.75 0.2 60 / 0.4), transparent)",
-                    top: "50%",
-                    left: "25%",
-                    transform: `rotate(${i * 45}deg)`,
-                  }}
-                  initial={{ opacity: 0, scaleY: 0 }}
-                  animate={{ 
-                    opacity: [0.2, 0.5, 0.2], 
-                    scaleY: [0.5, 1, 0.5],
-                  }}
-                  exit={{ opacity: 0, scaleY: 0 }}
-                  transition={{ 
-                    duration: 3,
-                    repeat: Infinity,
-                    delay: i * 0.1,
-                  }}
-                />
-              ))}
-            </>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Toggle ball */}
-      <motion.div
-        className="relative w-9 h-9 rounded-xl flex items-center justify-center z-10"
-        animate={{
-          x: isDark ? 0 : 48,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 30,
-        }}
-        style={{
-          background: isDark
-            ? "linear-gradient(135deg, oklch(0.2 0.03 280), oklch(0.25 0.04 280))"
-            : "linear-gradient(135deg, oklch(0.98 0.02 60), oklch(0.95 0.04 40))",
-          boxShadow: isDark
-            ? "0 4px 12px rgba(0,0,0,0.5), 0 0 20px oklch(0.7 0.25 180 / 0.3)"
-            : "0 4px 12px oklch(0.75 0.2 60 / 0.4), 0 0 20px oklch(0.75 0.2 60 / 0.2)",
-        }}
-      >
-        <AnimatePresence mode="wait">
-          {isDark ? (
-            <motion.div
-              key="moon-large"
-              initial={{ rotate: -45, opacity: 0, scale: 0.5 }}
-              animate={{ rotate: 0, opacity: 1, scale: 1 }}
-              exit={{ rotate: 45, opacity: 0, scale: 0.5 }}
-              transition={{ duration: 0.4, type: "spring" }}
-              className="relative"
-            >
-              <Moon className="w-5 h-5 text-neon-cyan" />
-              <Stars className="absolute -top-1 -right-1 w-3 h-3 text-neon-pink opacity-70" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="sun-large"
-              initial={{ rotate: 45, opacity: 0, scale: 0.5 }}
-              animate={{ rotate: 0, opacity: 1, scale: 1 }}
-              exit={{ rotate: -45, opacity: 0, scale: 0.5 }}
-              transition={{ duration: 0.4, type: "spring" }}
-            >
-              <Sun className="w-5 h-5 text-neon-orange" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
-      {/* Labels */}
-      <div className="absolute inset-0 flex items-center justify-between px-3 pointer-events-none">
-        <motion.span
-          className="text-[10px] font-medium"
-          animate={{
-            opacity: isDark ? 0 : 1,
-            x: isDark ? -10 : 0,
-            color: isDark ? "oklch(0.5 0.02 280)" : "oklch(0.4 0.1 60)",
-          }}
-          transition={{ duration: 0.3 }}
-        >
-          日间
-        </motion.span>
-        <motion.span
-          className="text-[10px] font-medium"
-          animate={{
-            opacity: isDark ? 1 : 0,
-            x: isDark ? 0 : 10,
-            color: isDark ? "oklch(0.7 0.1 180)" : "oklch(0.5 0.02 280)",
-          }}
-          transition={{ duration: 0.3 }}
-        >
-          夜间
-        </motion.span>
-      </div>
-    </motion.button>
+      <ThemeTrigger label={`${labels.cycleTo}: ${labels[theme]}`} theme={theme} onClick={toggleTheme} />
+      <ThemePanel labels={labels} open={open} theme={theme} onSelect={setTheme} />
+    </div>
   )
 }

@@ -121,7 +121,7 @@ func Load() (Config, error) {
 	cfg.CookieMaxAge = intFromEnv("COOKIE_MAX_AGE_SECONDS", 7*24*3600)
 	cfg.CookieSecure = boolFromEnv("COOKIE_SECURE", false)
 	cfg.ChunkSizeBytes = int64FromEnv("CHUNK_SIZE_BYTES", 20*1024*1024)
-	cfg.UploadConcurrencyDefault = intFromEnv("UPLOAD_CONCURRENCY", 1)
+	cfg.UploadConcurrencyDefault = intFromEnv("UPLOAD_CONCURRENCY", 4)
 	cfg.DownloadConcurrencyDefault = intFromEnv("DOWNLOAD_CONCURRENCY", 2)
 	cfg.ReservedDiskBytesDefault = int64FromEnv("RESERVED_DISK_BYTES", 2*1024*1024*1024)
 	cfg.UploadSessionTTL = time.Duration(intFromEnv("UPLOAD_SESSION_TTL_HOURS", 24)) * time.Hour

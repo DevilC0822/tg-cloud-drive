@@ -13,8 +13,8 @@ import (
 func (s *Store) CreateUploadSession(ctx context.Context, session UploadSession) error {
 	const q = `
 INSERT INTO upload_sessions(
-  id, item_id, transfer_batch_id, file_name, mime_type, file_size, chunk_size, total_chunks, access_method, upload_mode, status, created_at, updated_at
-) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+  id, item_id, transfer_batch_id, file_name, mime_type, file_size, chunk_size, total_chunks, uploaded_chunks_count, access_method, upload_mode, status, created_at, updated_at
+) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 `
 	_, err := s.db.Exec(
 		ctx,
@@ -27,6 +27,7 @@ INSERT INTO upload_sessions(
 		session.FileSize,
 		session.ChunkSize,
 		session.TotalChunks,
+		session.UploadedChunks,
 		session.AccessMethod,
 		string(session.UploadMode),
 		string(session.Status),
@@ -38,7 +39,7 @@ INSERT INTO upload_sessions(
 
 func (s *Store) GetUploadSession(ctx context.Context, id uuid.UUID) (UploadSession, error) {
 	const q = `
-SELECT id, item_id, transfer_batch_id, file_name, mime_type, file_size, chunk_size, total_chunks, access_method, upload_mode, status, created_at, updated_at
+SELECT id, item_id, transfer_batch_id, file_name, mime_type, file_size, chunk_size, total_chunks, uploaded_chunks_count, access_method, upload_mode, status, created_at, updated_at
 FROM upload_sessions
 WHERE id = $1
 `
@@ -56,6 +57,7 @@ WHERE id = $1
 		&out.FileSize,
 		&out.ChunkSize,
 		&out.TotalChunks,
+		&out.UploadedChunks,
 		&out.AccessMethod,
 		&mode,
 		&status,
@@ -89,6 +91,23 @@ func (s *Store) TouchUploadSession(ctx context.Context, id uuid.UUID, now time.T
 
 func (s *Store) SetUploadSessionStatus(ctx context.Context, id uuid.UUID, status UploadSessionStatus, now time.Time) error {
 	ct, err := s.db.Exec(ctx, `UPDATE upload_sessions SET status = $2, updated_at = $3 WHERE id = $1`, id, string(status), now)
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (s *Store) SetUploadSessionProgress(ctx context.Context, id uuid.UUID, uploadedChunks int, now time.Time) error {
+	ct, err := s.db.Exec(
+		ctx,
+		`UPDATE upload_sessions SET uploaded_chunks_count = $2, updated_at = $3 WHERE id = $1`,
+		id,
+		uploadedChunks,
+		now,
+	)
 	if err != nil {
 		return err
 	}
@@ -143,7 +162,7 @@ func (s *Store) ListExpiredUploadSessions(ctx context.Context, updatedBefore tim
 	}
 
 	const q = `
-SELECT id, item_id, transfer_batch_id, file_name, mime_type, file_size, chunk_size, total_chunks, access_method, upload_mode, status, created_at, updated_at
+SELECT id, item_id, transfer_batch_id, file_name, mime_type, file_size, chunk_size, total_chunks, uploaded_chunks_count, access_method, upload_mode, status, created_at, updated_at
 FROM upload_sessions
 WHERE status <> $1 AND updated_at < $2
 ORDER BY updated_at ASC
@@ -171,6 +190,7 @@ LIMIT $3
 			&session.FileSize,
 			&session.ChunkSize,
 			&session.TotalChunks,
+			&session.UploadedChunks,
 			&session.AccessMethod,
 			&mode,
 			&status,
@@ -200,7 +220,7 @@ type UploadBatchProgress struct {
 
 func (s *Store) ListUploadSessionsByBatch(ctx context.Context, batchID uuid.UUID) ([]UploadSession, error) {
 	const q = `
-SELECT id, item_id, transfer_batch_id, file_name, mime_type, file_size, chunk_size, total_chunks, access_method, upload_mode, status, created_at, updated_at
+SELECT id, item_id, transfer_batch_id, file_name, mime_type, file_size, chunk_size, total_chunks, uploaded_chunks_count, access_method, upload_mode, status, created_at, updated_at
 FROM upload_sessions
 WHERE transfer_batch_id = $1
 ORDER BY created_at ASC, updated_at ASC
@@ -257,11 +277,12 @@ func parseUploadSessionMode(raw string) UploadSessionMode {
 }
 
 type FinalizeUploadSessionInput struct {
-	SessionID uuid.UUID
-	ItemID    uuid.UUID
-	ItemSize  int64
-	UpdatedAt time.Time
-	Chunk     *Chunk
+	SessionID      uuid.UUID
+	ItemID         uuid.UUID
+	ItemSize       int64
+	UploadedChunks int
+	UpdatedAt      time.Time
+	Chunk          *Chunk
 }
 
 func (s *Store) FinalizeUploadSession(ctx context.Context, input FinalizeUploadSessionInput) (Item, error) {
@@ -277,7 +298,7 @@ func (s *Store) FinalizeUploadSession(ctx context.Context, input FinalizeUploadS
 	if err := updateUploadItemSizeTx(ctx, tx, input.ItemID, input.ItemSize, input.UpdatedAt); err != nil {
 		return Item{}, err
 	}
-	if err := updateUploadSessionStatusTx(ctx, tx, input.SessionID, UploadSessionStatusCompleted, input.UpdatedAt); err != nil {
+	if err := updateUploadSessionStatusTx(ctx, tx, input.SessionID, UploadSessionStatusCompleted, input.UploadedChunks, input.UpdatedAt); err != nil {
 		return Item{}, err
 	}
 	item, err := getItemTx(ctx, tx, input.ItemID)
@@ -348,6 +369,7 @@ func scanUploadSessionRow(scanner uploadSessionScanner) (UploadSession, error) {
 		&out.FileSize,
 		&out.ChunkSize,
 		&out.TotalChunks,
+		&out.UploadedChunks,
 		&out.AccessMethod,
 		&mode,
 		&status,
@@ -365,8 +387,22 @@ func scanUploadSessionRow(scanner uploadSessionScanner) (UploadSession, error) {
 	return out, nil
 }
 
-func updateUploadSessionStatusTx(ctx context.Context, tx pgx.Tx, sessionID uuid.UUID, status UploadSessionStatus, now time.Time) error {
-	ct, err := tx.Exec(ctx, `UPDATE upload_sessions SET status = $2, updated_at = $3 WHERE id = $1`, sessionID, string(status), now)
+func updateUploadSessionStatusTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	sessionID uuid.UUID,
+	status UploadSessionStatus,
+	uploadedChunks int,
+	now time.Time,
+) error {
+	ct, err := tx.Exec(
+		ctx,
+		`UPDATE upload_sessions SET status = $2, uploaded_chunks_count = $3, updated_at = $4 WHERE id = $1`,
+		sessionID,
+		string(status),
+		uploadedChunks,
+		now,
+	)
 	if err != nil {
 		return err
 	}

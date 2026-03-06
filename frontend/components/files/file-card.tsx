@@ -14,6 +14,7 @@ import {
   Share2,
 } from "lucide-react"
 import { FileActionsDropdown, type FileAction } from "@/components/files/file-actions-menu"
+import { getFileToneClasses, themeToneClasses } from "@/lib/palette"
 import { cn } from "@/lib/utils"
 import type { FileItem } from "@/lib/files"
 import { formatFileSize, formatRelativeTime } from "@/lib/files"
@@ -44,17 +45,6 @@ function getFileIcon(type: FileItem["type"]) {
   return FileText
 }
 
-function getIconStyle(type: FileItem["type"]) {
-  if (type === "folder") return { bg: "bg-amber-500/12", icon: "text-amber-500" }
-  if (type === "image") return { bg: "bg-emerald-500/12", icon: "text-emerald-500" }
-  if (type === "document") return { bg: "bg-blue-500/12", icon: "text-blue-500" }
-  if (type === "video") return { bg: "bg-rose-500/12", icon: "text-rose-500" }
-  if (type === "audio") return { bg: "bg-violet-500/12", icon: "text-violet-500" }
-  if (type === "archive") return { bg: "bg-orange-500/12", icon: "text-orange-500" }
-  if (type === "code") return { bg: "bg-cyan-500/12", icon: "text-cyan-500" }
-  return { bg: "bg-muted/40", icon: "text-muted-foreground" }
-}
-
 export function FileCard({
   file,
   viewMode,
@@ -67,7 +57,8 @@ export function FileCard({
   onAction,
 }: FileCardProps) {
   const Icon = getFileIcon(file.type)
-  const iconStyle = getIconStyle(file.type)
+  const tone = getFileToneClasses(file.type)
+  const starTone = themeToneClasses.archive
   const sizeLabel = file.type === "folder" ? "—" : formatFileSize(file.size)
   const updatedLabel = formatRelativeTime(file.updatedAt)
 
@@ -93,14 +84,14 @@ export function FileCard({
           {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
         </div>
 
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", iconStyle.bg)}>
-          <Icon className={cn("h-5 w-5", iconStyle.icon)} />
+        <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl border", tone.bg, tone.border)}>
+          <Icon className={cn("h-5 w-5", tone.text)} />
         </div>
 
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="truncate text-sm font-medium text-foreground">{file.name}</span>
-            {file.starred ? <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" /> : null}
+            {file.starred ? <Star className={cn("h-3.5 w-3.5", starTone.text, starTone.fill)} /> : null}
             {file.isShared ? <Share2 className="h-3.5 w-3.5 text-primary" /> : null}
           </div>
         </div>
@@ -144,7 +135,7 @@ export function FileCard({
       onDoubleClick={onOpen}
       className={cn(
         "group relative overflow-hidden rounded-2xl border border-border/50 bg-card/90 p-3 transition-all",
-        "hover:border-border hover:shadow-lg hover:shadow-black/10 dark:hover:shadow-black/30",
+        "hover:border-[var(--tone-info-border)] hover:shadow-[0_18px_48px_var(--shadow-floating)]",
         isSelected && "ring-2 ring-primary/45",
       )}
     >
@@ -182,15 +173,15 @@ export function FileCard({
         ) : null}
       </div>
 
-      <div className={cn("mb-3 flex aspect-[4/3] items-center justify-center rounded-xl", iconStyle.bg)}>
-        <Icon className={cn("h-10 w-10", iconStyle.icon)} />
+      <div className={cn("mb-3 flex aspect-[4/3] items-center justify-center rounded-xl border", tone.bg, tone.border)}>
+        <Icon className={cn("h-10 w-10", tone.text)} />
       </div>
 
       <div className="space-y-1">
         <div className="flex items-start gap-2">
           <h4 className="line-clamp-2 min-h-[2.5rem] flex-1 text-sm font-medium text-foreground">{file.name}</h4>
           <div className="flex items-center gap-1">
-            {file.starred ? <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" /> : null}
+            {file.starred ? <Star className={cn("h-3.5 w-3.5", starTone.text, starTone.fill)} /> : null}
             {file.isShared ? <Share2 className="h-3.5 w-3.5 text-primary" /> : null}
           </div>
         </div>

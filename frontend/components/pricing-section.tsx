@@ -29,7 +29,7 @@ export function PricingSection() {
           </motion.span>
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="text-foreground">{text.titleLead} </span>
-            <span className="bg-gradient-to-r from-primary via-accent to-neon-orange bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-[var(--tone-document-text)] to-[var(--tone-archive-text)] bg-clip-text text-transparent">
               {text.titleHighlight}
             </span>
           </h2>
@@ -51,7 +51,7 @@ export function PricingSection() {
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-                  <div className="flex items-center gap-1.5 bg-gradient-to-r from-primary to-accent text-primary-foreground text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg shadow-primary/30">
+                  <div className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-[var(--tone-document-text)] px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-lg shadow-primary/30">
                     <Sparkles className="w-3.5 h-3.5" />
                     {text.popularBadge}
                   </div>
@@ -89,7 +89,7 @@ export function PricingSection() {
                 <ul className="space-y-3 mb-8 flex-grow">
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-3">
-                      <div className="mt-0.5 p-0.5 rounded-full bg-gradient-to-r from-primary to-accent">
+                      <div className="mt-0.5 rounded-full bg-gradient-to-r from-primary to-[var(--tone-document-text)] p-0.5">
                         <Check className="w-3.5 h-3.5 text-primary-foreground" />
                       </div>
                       <span className="text-sm text-muted-foreground">{feature}</span>
@@ -101,7 +101,7 @@ export function PricingSection() {
                   <Button 
                     className={`w-full py-6 ${
                       plan.popular 
-                        ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/30' 
+                        ? 'bg-gradient-to-r from-primary to-[var(--tone-document-text)] text-primary-foreground shadow-lg shadow-primary/30' 
                         : 'bg-secondary/50 text-foreground hover:bg-secondary'
                     }`}
                   >

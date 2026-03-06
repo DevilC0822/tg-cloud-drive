@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"tg-cloud-drive-api/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"tg-cloud-drive-api/internal/store"
 )
 
 const (
@@ -75,20 +75,20 @@ func (s *Server) handleTransferStream(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	flusher.Flush()
 
+	subscriptionID, events := s.subscribeTransferEvents()
+	defer s.unsubscribeTransferEvents(subscriptionID)
+
 	snapshot, err := s.listActiveTransferViews(r.Context())
 	if err != nil {
 		s.logger.Warn("load transfer stream snapshot failed", "error", err.Error())
 	}
-	for _, item := range snapshot {
-		event := transferStreamEvent{Type: "job_upsert", Item: &item}
-		if err := writeTransferSSEEvent(w, event); err != nil {
-			return
-		}
-		flusher.Flush()
+	if err := writeTransferSSEEvent(w, transferStreamEvent{
+		Type:  "active_snapshot",
+		Items: snapshot,
+	}); err != nil {
+		return
 	}
-
-	subscriptionID, events := s.subscribeTransferEvents()
-	defer s.unsubscribeTransferEvents(subscriptionID)
+	flusher.Flush()
 
 	keepAlive := time.NewTicker(transferStreamKeepAliveEvery)
 	defer keepAlive.Stop()

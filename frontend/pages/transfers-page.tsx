@@ -9,7 +9,29 @@ import { useTransfers } from "@/hooks/use-transfers"
 import { useToast } from "@/hooks/use-toast"
 import { transferMessages } from "@/lib/i18n"
 
-const SECTION_TRANSITION = { duration: 0.24, ease: [0.22, 1, 0.36, 1] as const }
+const CONTAINER_VARIANTS = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.05,
+    },
+  },
+}
+
+const ITEM_VARIANTS = {
+  hidden: { opacity: 0, y: 24, filter: "blur(8px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.6,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  },
+}
 
 export default function TransfersPage() {
   const { locale } = useI18n()
@@ -42,10 +64,15 @@ export default function TransfersPage() {
   }
 
   return (
-    <main className="relative mt-24 px-3 pb-6 md:mt-28 md:px-4 lg:px-5">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+    <main className="relative mt-24 px-3 pb-8 md:mt-28 md:px-4 lg:px-5">
+      <motion.div
+        variants={CONTAINER_VARIANTS}
+        initial="hidden"
+        animate="visible"
+        className="mx-auto flex w-full max-w-7xl flex-col gap-8 md:gap-10"
+      >
         <I18nFade locale={locale}>
-          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={SECTION_TRANSITION}>
+          <motion.div variants={ITEM_VARIANTS}>
             <TransferHero
               activeTransfers={transfers.activeTransfers}
               historyTransfers={transfers.historyTransfers}
@@ -56,10 +83,11 @@ export default function TransfersPage() {
         </I18nFade>
 
         <I18nFade locale={locale}>
-          <motion.div initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SECTION_TRANSITION, delay: 0.04 }}>
+          <motion.div variants={ITEM_VARIANTS}>
             <LiveTransferList
               items={transfers.activeTransfers}
-              loading={transfers.activeLoading}
+              initialLoading={transfers.activeInitialLoading}
+              refreshing={transfers.activeRefreshing}
               text={text}
               onOpenDetail={(id) => void openDetail(id)}
             />
@@ -67,12 +95,13 @@ export default function TransfersPage() {
         </I18nFade>
 
         <I18nFade locale={locale}>
-          <motion.div initial={{ opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SECTION_TRANSITION, delay: 0.08 }}>
+          <motion.div variants={ITEM_VARIANTS}>
             <HistoryTransferList
               items={transfers.historyTransfers}
               query={transfers.historyQuery}
               pagination={transfers.historyPagination}
-              loading={transfers.historyLoading}
+              initialLoading={transfers.historyInitialLoading}
+              refreshing={transfers.historyRefreshing}
               text={text}
               onChangeFilters={transfers.updateFilters}
               onChangePage={transfers.changePage}
@@ -82,7 +111,7 @@ export default function TransfersPage() {
             />
           </motion.div>
         </I18nFade>
-      </div>
+      </motion.div>
 
       <TransferDetailSheet
         open={transfers.detail.open}

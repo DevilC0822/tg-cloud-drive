@@ -3,6 +3,14 @@ export type Locale = "en" | "zh"
 export const DEFAULT_LOCALE: Locale = "en"
 export const LOCALE_STORAGE_KEY = "nexus-locale"
 
+function normalizeLocale(value: string | null | undefined) {
+  return value?.trim().toLowerCase() ?? ""
+}
+
+function isSupportedLocale(value: string) {
+  return value === "zh" || value.startsWith("zh-") || value === "en" || value.startsWith("en-")
+}
+
 export const headerMessages: Record<
   Locale,
   {
@@ -482,9 +490,27 @@ export const uploadMessages: Record<
     localDropTitle: string
     localDropHint: string
     localDropActive: string
+    localChooseFiles: string
+    localChooseFolder: string
+    folderPickerUnsupported: string
+    folderDropUnsupported: string
+    localSelectionTitle: string
+    localSelectionEmpty: string
+    localSelectionFiles: (count: number) => string
+    localSelectionFolder: (name: string, files: number, directories: number) => string
+    confirmUpload: string
+    changeSelection: string
+    uploadQueuedTitle: string
+    uploadQueuedDescription: string
     torrentUrlLabel: string
     torrentUrlPlaceholder: string
     torrentFileLabel: string
+    torrentDropTitle: string
+    torrentDropHint: string
+    torrentDropActive: string
+    torrentSelectedSource: string
+    torrentQueuedTitle: string
+    torrentQueuedDescription: string
     torrentPreview: string
     torrentCreate: string
     torrentChooseFiles: string
@@ -504,11 +530,29 @@ export const uploadMessages: Record<
     tabLocal: "Local Files",
     tabTorrent: "Torrent",
     localDropTitle: "Drop files here",
-    localDropHint: "or click to choose files",
+    localDropHint: "or click here to choose files. You can also pick or drop a folder",
     localDropActive: "Release to upload",
+    localChooseFiles: "Choose files",
+    localChooseFolder: "Choose folder",
+    folderPickerUnsupported: "Your browser does not support native folder selection.",
+    folderDropUnsupported: "Folder drag-and-drop currently supports a single root directory only.",
+    localSelectionTitle: "Pending upload",
+    localSelectionEmpty: "Choose files or a folder first, then confirm the upload.",
+    localSelectionFiles: (count) => `${count} files selected`,
+    localSelectionFolder: (name, files, directories) => `${name} · ${files} files · ${directories} directories`,
+    confirmUpload: "Start upload",
+    changeSelection: "Change selection",
+    uploadQueuedTitle: "Upload started",
+    uploadQueuedDescription: "The upload continues in the background. Check the Transfers page for live progress.",
     torrentUrlLabel: "Torrent URL",
     torrentUrlPlaceholder: "https://example.com/file.torrent",
     torrentFileLabel: "Torrent file",
+    torrentDropTitle: "Drop a .torrent file here",
+    torrentDropHint: "or click here to choose a .torrent file",
+    torrentDropActive: "Release to use this torrent file",
+    torrentSelectedSource: "Selected torrent file",
+    torrentQueuedTitle: "Torrent task created",
+    torrentQueuedDescription: "The task is running in the background. Check the Transfers page for live progress.",
     torrentPreview: "Preview",
     torrentCreate: "Create task",
     torrentChooseFiles: "Select files",
@@ -527,11 +571,29 @@ export const uploadMessages: Record<
     tabLocal: "本地文件",
     tabTorrent: "种子任务",
     localDropTitle: "拖拽文件到此处",
-    localDropHint: "或点击选择文件",
+    localDropHint: "或点击此处选择文件，也可以选择或拖拽文件夹",
     localDropActive: "释放以上传",
+    localChooseFiles: "选择文件",
+    localChooseFolder: "选择文件夹",
+    folderPickerUnsupported: "当前浏览器不支持原生目录选择。",
+    folderDropUnsupported: "当前仅支持拖入单个根目录。",
+    localSelectionTitle: "待上传内容",
+    localSelectionEmpty: "先选择文件或文件夹，再手动确认上传。",
+    localSelectionFiles: (count) => `已选择 ${count} 个文件`,
+    localSelectionFolder: (name, files, directories) => `${name} · ${files} 个文件 · ${directories} 个目录`,
+    confirmUpload: "确认上传",
+    changeSelection: "重新选择",
+    uploadQueuedTitle: "已开始上传",
+    uploadQueuedDescription: "上传会在后台继续进行，请前往传输页面查看实时进度。",
     torrentUrlLabel: "种子 URL",
     torrentUrlPlaceholder: "https://example.com/file.torrent",
     torrentFileLabel: "种子文件",
+    torrentDropTitle: "拖拽 .torrent 文件到此处",
+    torrentDropHint: "或点击此处选择 .torrent 文件",
+    torrentDropActive: "释放以使用这个种子文件",
+    torrentSelectedSource: "已选择的种子文件",
+    torrentQueuedTitle: "种子任务已创建",
+    torrentQueuedDescription: "任务会在后台继续运行，请前往传输页面查看实时进度。",
     torrentPreview: "预览",
     torrentCreate: "创建任务",
     torrentChooseFiles: "选择文件",
@@ -593,6 +655,7 @@ export const transferMessages: Record<
     emptyLiveDescription: string
     emptyHistoryTitle: string
     emptyHistoryDescription: string
+    syncing: string
     openDetail: string
     deleteHistory: string
     loadMore: string
@@ -600,6 +663,8 @@ export const transferMessages: Record<
     sessions: string
     sessionDetail: string
     batchDetail: string
+    folderDetail: string
+    folderEntries: string
     torrentDetail: string
     downloadDetail: string
     uploadedChunks: string
@@ -610,6 +675,8 @@ export const transferMessages: Record<
     targetFile: string
     totalSize: string
     itemCount: string
+    directoryCount: string
+    activeFiles: string
     startedAt: string
     updatedAt: string
     finishedAt: string
@@ -618,6 +685,8 @@ export const transferMessages: Record<
     failed: string
     canceled: string
     noIssues: string
+    rootFolder: string
+    emptyFolder: string
     pageSize: string
     prevPage: string
     nextPage: string
@@ -669,6 +738,7 @@ export const transferMessages: Record<
     emptyLiveDescription: "New uploads, downloads, and torrent jobs will appear here in real time.",
     emptyHistoryTitle: "No archived transfers",
     emptyHistoryDescription: "Completed or failed jobs will land here once the server finalizes them.",
+    syncing: "Syncing",
     openDetail: "Details",
     deleteHistory: "Delete",
     loadMore: "Load",
@@ -676,6 +746,8 @@ export const transferMessages: Record<
     sessions: "Sessions",
     sessionDetail: "Upload session detail",
     batchDetail: "Batch session detail",
+    folderDetail: "Folder upload detail",
+    folderEntries: "Folder tree",
     torrentDetail: "Torrent file detail",
     downloadDetail: "Download detail",
     uploadedChunks: "Uploaded chunks",
@@ -686,6 +758,8 @@ export const transferMessages: Record<
     targetFile: "Target file",
     totalSize: "Total size",
     itemCount: "Item count",
+    directoryCount: "Directories",
+    activeFiles: "Active files",
     startedAt: "Started",
     updatedAt: "Updated",
     finishedAt: "Finished",
@@ -694,6 +768,8 @@ export const transferMessages: Record<
     failed: "Failed",
     canceled: "Canceled",
     noIssues: "No issues",
+    rootFolder: "Root folder",
+    emptyFolder: "This directory is empty.",
     pageSize: "Page size",
     prevPage: "Previous",
     nextPage: "Next",
@@ -744,6 +820,7 @@ export const transferMessages: Record<
     emptyLiveDescription: "新的上传、下载或种子任务开始后，会实时出现在这里。",
     emptyHistoryTitle: "暂无历史记录",
     emptyHistoryDescription: "服务端完成归档后，已结束任务会出现在这里。",
+    syncing: "同步中",
     openDetail: "查看明细",
     deleteHistory: "删除",
     loadMore: "加载",
@@ -751,6 +828,8 @@ export const transferMessages: Record<
     sessions: "会话",
     sessionDetail: "上传会话明细",
     batchDetail: "批量子会话",
+    folderDetail: "目录上传详情",
+    folderEntries: "目录树",
     torrentDetail: "种子文件明细",
     downloadDetail: "下载详情",
     uploadedChunks: "已上传分片",
@@ -761,6 +840,8 @@ export const transferMessages: Record<
     targetFile: "目标文件",
     totalSize: "总大小",
     itemCount: "项目数",
+    directoryCount: "目录数",
+    activeFiles: "活动文件",
     startedAt: "开始时间",
     updatedAt: "最近更新",
     finishedAt: "结束时间",
@@ -769,16 +850,53 @@ export const transferMessages: Record<
     failed: "失败",
     canceled: "取消",
     noIssues: "无异常",
+    rootFolder: "根目录",
+    emptyFolder: "当前目录为空。",
     pageSize: "每页数量",
     prevPage: "上一页",
     nextPage: "下一页",
   },
 }
 
-export function parseLocale(value: string | null): Locale {
-  if (value === "zh") {
+export function parseLocale(value: string | null | undefined): Locale {
+  const normalized = normalizeLocale(value)
+
+  if (normalized === "zh" || normalized.startsWith("zh-")) {
     return "zh"
   }
 
   return "en"
+}
+
+export function getStoredLocale(): Locale | null {
+  if (typeof window === "undefined") {
+    return null
+  }
+
+  const storedLocale = normalizeLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY))
+  if (!storedLocale || !isSupportedLocale(storedLocale)) {
+    return null
+  }
+
+  return parseLocale(storedLocale)
+}
+
+export function getBrowserLocale(): Locale {
+  if (typeof navigator === "undefined") {
+    return DEFAULT_LOCALE
+  }
+
+  const candidates = [...(navigator.languages ?? []), navigator.language]
+  for (const candidate of candidates) {
+    const normalized = normalizeLocale(candidate)
+    if (isSupportedLocale(normalized)) {
+      return parseLocale(normalized)
+    }
+  }
+
+  return DEFAULT_LOCALE
+}
+
+export function getPreferredLocale(): Locale {
+  return getStoredLocale() ?? getBrowserLocale()
 }

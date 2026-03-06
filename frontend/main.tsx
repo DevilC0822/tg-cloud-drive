@@ -9,7 +9,12 @@ import "@fontsource/jetbrains-mono/500.css"
 import "@fontsource/jetbrains-mono/700.css"
 import "./styles/globals.css"
 import App from "./App"
-import { applyThemeToDocument, getStoredTheme } from "@/lib/theme"
+import {
+  applyPrimaryHueToDocument,
+  applyThemeToDocument,
+  getStoredPrimaryHue,
+  getStoredTheme,
+} from "@/lib/theme"
 
 const rootElement = document.getElementById("root")
 
@@ -18,6 +23,7 @@ if (!rootElement) {
 }
 
 applyThemeToDocument(getStoredTheme())
+applyPrimaryHueToDocument(getStoredPrimaryHue())
 
 createRoot(rootElement).render(
   <StrictMode>

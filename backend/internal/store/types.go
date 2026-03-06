@@ -87,11 +87,58 @@ type UploadSession struct {
 	FileSize        int64
 	ChunkSize       int
 	TotalChunks     int
+	UploadedChunks  int
 	AccessMethod    string
 	UploadMode      UploadSessionMode
 	Status          UploadSessionStatus
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+}
+
+type UploadFolderEntryType string
+
+const (
+	UploadFolderEntryTypeFolder UploadFolderEntryType = "folder"
+	UploadFolderEntryTypeFile   UploadFolderEntryType = "file"
+)
+
+type UploadFolderEntryStatus string
+
+const (
+	UploadFolderEntryStatusPending   UploadFolderEntryStatus = "pending"
+	UploadFolderEntryStatusUploading UploadFolderEntryStatus = "uploading"
+	UploadFolderEntryStatusCompleted UploadFolderEntryStatus = "completed"
+	UploadFolderEntryStatusFailed    UploadFolderEntryStatus = "failed"
+)
+
+type UploadFolderBatch struct {
+	TransferBatchID  uuid.UUID
+	RootName         string
+	RootParentID     *uuid.UUID
+	RootItemID       uuid.UUID
+	TotalDirectories int
+	TotalFiles       int
+	TotalSize        int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+type UploadFolderEntry struct {
+	ID                 uuid.UUID
+	TransferBatchID    uuid.UUID
+	EntryType          UploadFolderEntryType
+	RelativePath       string
+	ParentRelativePath *string
+	Name               string
+	Depth              int
+	Size               int64
+	MimeType           *string
+	ItemID             *uuid.UUID
+	UploadSessionID    *uuid.UUID
+	Status             UploadFolderEntryStatus
+	Error              *string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 type TransferDirection string

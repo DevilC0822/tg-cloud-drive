@@ -1,12 +1,12 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
   <style>
     @media (prefers-color-scheme: light) {
-      .background { fill: black; }
-      .foreground { fill: white; }
+      .background { fill: CanvasText; }
+      .foreground { fill: Canvas; }
     }
     @media (prefers-color-scheme: dark) {
-      .background { fill: white; }
-      .foreground { fill: black; }
+      .background { fill: Canvas; }
+      .foreground { fill: CanvasText; }
     }
   </style>
   <g clip-path="url(#clip0_7960_43945)">
@@ -20,7 +20,7 @@
   </g>
   <defs>
     <clipPath id="clip0_7960_43945">
-      <rect width="180" height="180" fill="white" />
+      <rect width="180" height="180" fill="Canvas" />
     </clipPath>
   </defs>
 </svg>

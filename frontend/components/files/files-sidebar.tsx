@@ -102,7 +102,7 @@ export function FilesSidebar({
         <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="mb-4">
           <Button
             onClick={() => setUploadOpen(!uploadOpen)}
-            className="w-full gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground"
+            className="w-full gap-2 bg-gradient-to-r from-primary to-[var(--tone-document-text)] text-primary-foreground"
           >
             <Upload className="h-4 w-4" />
             {text.uploadButton}

@@ -17,11 +17,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeHuePicker } from "@/components/theme-hue-picker"
 import { useI18n } from "@/components/i18n-provider"
 import { useAuth } from "@/hooks/use-auth"
 import { useHeaderProfile } from "@/hooks/use-header-profile"
 import { formatFileSize } from "@/lib/files"
 import { headerMessages, parseLocale } from "@/lib/i18n"
+import { getServiceToneClasses } from "@/lib/palette"
 import { mobileMenuOpenAtom } from "@/stores/ui-atoms"
 
 const FADE_DURATION_SECONDS = 0.24
@@ -108,14 +110,14 @@ function getServiceLabel(accessMethod: string, text: (typeof headerMessages)["en
     return {
       label: text.serviceSelfHosted,
       Icon: ServerCog,
-      className: "border-emerald-300/70 text-emerald-600 dark:text-emerald-300",
+      className: getServiceToneClasses("self_hosted_bot_api"),
     }
   }
 
   return {
     label: text.serviceOfficial,
     Icon: ShieldCheck,
-    className: "border-sky-300/70 text-sky-600 dark:text-sky-300",
+    className: getServiceToneClasses("official_bot_api"),
   }
 }
 
@@ -176,7 +178,7 @@ export function Header() {
               <motion.div className="flex items-center gap-3" whileHover={{ scale: 1.05 }}>
                 <div className="relative">
                   <div className="absolute inset-0 rounded-xl bg-primary/50 blur-lg transition-colors group-hover:bg-primary/70" />
-                  <div className="relative rounded-xl bg-gradient-to-br from-primary to-accent p-2">
+                  <div className="relative rounded-xl bg-gradient-to-br from-primary to-[var(--tone-document-text)] p-2">
                     <Cloud className="h-6 w-6 text-primary-foreground" />
                   </div>
                 </div>
@@ -216,6 +218,8 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              <ThemeHuePicker />
+
               <ThemeToggle />
 
               <div className="hidden items-center gap-3 md:flex">
@@ -223,7 +227,7 @@ export function Header() {
                   <HoverCard openDelay={120} closeDelay={100} onOpenChange={setProfileOpen}>
                     <HoverCardTrigger asChild>
                       <button className="rounded-full">
-                        <Avatar className="h-9 w-9 border border-border/60 bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-lg shadow-primary/20">
+                        <Avatar className="h-9 w-9 border border-border/60 bg-gradient-to-br from-primary to-[var(--tone-document-text)] text-primary-foreground shadow-lg shadow-primary/20">
                           <AvatarFallback className="bg-transparent text-sm font-semibold text-primary-foreground">
                             A
                           </AvatarFallback>
@@ -233,7 +237,7 @@ export function Header() {
                     <HoverCardContent align="end" className="glass-card w-[340px] border-border/60 p-0">
                       <div className="border-b border-border/50 px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-11 w-11 border border-border/50 bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                          <Avatar className="h-11 w-11 border border-border/50 bg-gradient-to-br from-primary to-[var(--tone-document-text)] text-primary-foreground">
                             <AvatarFallback className="bg-transparent font-semibold text-primary-foreground">A</AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">
@@ -333,6 +337,10 @@ export function Header() {
                   <FadeText text={item.label} />
                 </Link>
               ))}
+              <div className="flex items-center gap-3 pt-2">
+                <ThemeHuePicker />
+                <ThemeToggle />
+              </div>
               <div className="space-y-3 border-t border-border pt-4">
                 {authenticated ? (
                   <Button

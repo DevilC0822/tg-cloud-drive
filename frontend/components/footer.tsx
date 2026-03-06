@@ -33,7 +33,7 @@ export function Footer() {
             >
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/50 rounded-xl blur-lg group-hover:bg-primary/70 transition-colors" />
-                <div className="relative bg-gradient-to-br from-primary to-accent p-2 rounded-xl">
+                <div className="relative rounded-xl bg-gradient-to-br from-primary to-[var(--tone-document-text)] p-2">
                   <Cloud className="w-6 h-6 text-primary-foreground" />
                 </div>
               </div>

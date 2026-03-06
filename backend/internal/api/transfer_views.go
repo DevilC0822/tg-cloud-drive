@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"tg-cloud-drive-api/internal/store"
 	"github.com/google/uuid"
+	"tg-cloud-drive-api/internal/store"
 )
 
 const (
@@ -27,11 +27,12 @@ type transferProgressDTO struct {
 }
 
 type transferPreviewItemDTO struct {
-	ID      string  `json:"id"`
-	Name    string  `json:"name"`
-	Status  string  `json:"status"`
-	Percent int     `json:"percent"`
-	Error   *string `json:"error,omitempty"`
+	ID           string  `json:"id"`
+	Name         string  `json:"name"`
+	RelativePath *string `json:"relativePath,omitempty"`
+	Status       string  `json:"status"`
+	Percent      int     `json:"percent"`
+	Error        *string `json:"error,omitempty"`
 }
 
 type transferJobViewDTO struct {
@@ -53,6 +54,9 @@ type transferJobViewDTO struct {
 	FinishedAt     time.Time                `json:"finishedAt"`
 	CreatedAt      time.Time                `json:"createdAt"`
 	UpdatedAt      time.Time                `json:"updatedAt"`
+	BatchMode      string                   `json:"batchMode,omitempty"`
+	DirectoryCount int                      `json:"directoryCount,omitempty"`
+	ActiveCount    int                      `json:"activeCount,omitempty"`
 	Phase          string                   `json:"phase"`
 	Progress       transferProgressDTO      `json:"progress"`
 	PreviewItems   []transferPreviewItemDTO `json:"previewItems,omitempty"`
@@ -81,6 +85,17 @@ type transferUploadBatchDetailDTO struct {
 	Sessions []transferUploadSessionItemDTO `json:"sessions"`
 }
 
+type transferFolderUploadDetailDTO struct {
+	RootItemID     string `json:"rootItemId"`
+	RootName       string `json:"rootName"`
+	DirectoryCount int    `json:"directoryCount"`
+	FileCount      int    `json:"fileCount"`
+	CompletedCount int    `json:"completedCount"`
+	FailedCount    int    `json:"failedCount"`
+	ActiveCount    int    `json:"activeCount"`
+	TotalSize      int64  `json:"totalSize"`
+}
+
 type transferDownloadDetailDTO struct {
 	ItemID   *string             `json:"itemId"`
 	FileName string              `json:"fileName"`
@@ -92,6 +107,7 @@ type transferDetailDTO struct {
 	Item          transferJobViewDTO              `json:"item"`
 	UploadSession *transferUploadSessionDetailDTO `json:"uploadSession,omitempty"`
 	UploadBatch   *transferUploadBatchDetailDTO   `json:"uploadBatch,omitempty"`
+	FolderUpload  *transferFolderUploadDetailDTO  `json:"folderUpload,omitempty"`
 	TorrentTask   *torrentTaskDTO                 `json:"torrentTask,omitempty"`
 	DownloadTask  *transferDownloadDetailDTO      `json:"downloadTask,omitempty"`
 }
@@ -185,6 +201,9 @@ func (s *Server) buildUploadBatchTransferJobView(
 	batchID, err := uuid.Parse(strings.TrimSpace(job.SourceRef))
 	if err != nil {
 		return dto, nil
+	}
+	if folderDTO, ok, folderErr := s.buildFolderUploadBatchTransferJobView(ctx, job, batchID); ok || folderErr != nil {
+		return folderDTO, folderErr
 	}
 	sessions, err := store.New(s.db).ListUploadSessionsByBatch(ctx, batchID)
 	if err != nil {
@@ -434,6 +453,11 @@ func (s *Server) buildTransferDetailDTO(ctx context.Context, job store.TransferJ
 			detail.UploadSession = sessionDetail
 		}
 	case store.TransferSourceKindUploadBatch:
+		folderDetail, ok, folderErr := s.buildFolderUploadDetail(ctx, job.SourceRef)
+		if folderErr == nil && ok {
+			detail.FolderUpload = folderDetail
+			break
+		}
 		batchDetail, batchErr := s.buildUploadBatchDetail(ctx, job.SourceRef)
 		if batchErr == nil {
 			detail.UploadBatch = batchDetail

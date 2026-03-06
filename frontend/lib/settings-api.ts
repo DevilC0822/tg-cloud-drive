@@ -90,6 +90,10 @@ interface SettingsResponse {
   switchResult?: ServiceSwitchResult
 }
 
+interface RuntimeSettingsResponse {
+  runtime: RuntimeSettings
+}
+
 export interface PatchSettingsPayload {
   runtime?: PatchRuntimeSettingsPayload
   serviceAccess?: PatchServiceAccessPayload
@@ -119,6 +123,14 @@ export async function fetchSettings() {
   const response = await apiFetchJson<SettingsResponse>("/api/settings")
   assertSettingsResponse(response)
   return response.settings
+}
+
+export async function fetchRuntimeSettings() {
+  const response = await apiFetchJson<RuntimeSettingsResponse>("/api/settings/runtime")
+  if (!isObject(response) || !isObject(response.runtime)) {
+    throw new Error("Invalid /api/settings/runtime response: missing runtime")
+  }
+  return response.runtime
 }
 
 export async function patchSettings(payload: PatchSettingsPayload) {

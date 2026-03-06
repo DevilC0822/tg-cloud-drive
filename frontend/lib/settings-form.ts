@@ -8,7 +8,7 @@ export const BYTES_PER_MB = 1024 * 1024
 const MAX_DELETE_MINUTES = 10080
 
 export const DEFAULT_RUNTIME_SETTINGS: RuntimeSettings = {
-  uploadConcurrency: 1,
+  uploadConcurrency: 4,
   downloadConcurrency: 1,
   reservedDiskBytes: 0,
   uploadSessionTtlHours: 24,

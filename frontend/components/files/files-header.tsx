@@ -122,7 +122,7 @@ export function FilesHeader({
 
         {/* Upload Button */}
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button className="bg-gradient-to-r from-primary to-accent text-primary-foreground gap-2 shadow-lg shadow-primary/20">
+          <Button className="bg-gradient-to-r from-primary to-[var(--tone-document-text)] text-primary-foreground gap-2 shadow-lg shadow-primary/20">
             <Upload className="w-4 h-4" />
             上传
           </Button>
@@ -131,14 +131,14 @@ export function FilesHeader({
         {/* Notifications */}
         <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
           <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
+          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" />
         </button>
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 p-1 rounded-xl hover:bg-secondary/50 transition-colors">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-[var(--tone-document-text)]">
                 <User className="w-4 h-4 text-primary-foreground" />
               </div>
             </button>
