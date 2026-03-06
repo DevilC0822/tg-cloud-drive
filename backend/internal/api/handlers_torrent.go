@@ -304,6 +304,19 @@ func (s *Server) handleCreateTorrentTask(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "internal_error", "初始化 Torrent 文件列表失败")
 		return
 	}
+	if err := s.upsertTorrentTransferJobFromTask(
+		r.Context(),
+		created,
+		taskFiles,
+		store.TransferJobStatusRunning,
+		"",
+	); err != nil {
+		_ = st.DeleteTorrentTask(context.Background(), taskID)
+		_ = os.Remove(torrentPath)
+		s.logger.Error("init torrent transfer job failed", "error", err.Error(), "task_id", taskID.String())
+		writeError(w, http.StatusInternalServerError, "internal_error", "初始化传输历史失败")
+		return
+	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"task": toTorrentTaskDTO(created, taskFiles),
@@ -428,6 +441,9 @@ func (s *Server) handleDeleteTorrentTask(w http.ResponseWriter, r *http.Request)
 		s.logger.Error("delete torrent task failed", "error", err.Error(), "task_id", taskID.String())
 		writeError(w, http.StatusInternalServerError, "internal_error", "删除 Torrent 任务失败")
 		return
+	}
+	if err := st.DeleteTransferJobByID(r.Context(), taskID); err == nil {
+		s.publishTransferDeletion(taskID)
 	}
 
 	resp := map[string]any{
@@ -607,6 +623,15 @@ func (s *Server) handleDispatchTorrentTask(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusInternalServerError, "internal_error", "读取文件列表失败")
 		return
 	}
+	if err := s.upsertTorrentTransferJobFromTask(
+		r.Context(),
+		updated,
+		files,
+		store.TransferJobStatusRunning,
+		"",
+	); err != nil {
+		s.logger.Warn("sync torrent transfer job after dispatch failed", "error", err.Error(), "task_id", taskID.String())
+	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"task": toTorrentTaskDTO(updated, files),
@@ -632,22 +657,60 @@ func (s *Server) handleRetryTorrentTask(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if task.Status != store.TorrentTaskStatusError {
-		writeError(w, http.StatusConflict, "conflict", "仅失败状态的任务允许重新下载")
+		writeError(w, http.StatusConflict, "conflict", "仅失败状态的任务允许重试")
+		return
+	}
+
+	pendingFiles, err := st.ListTorrentTaskPendingUploadFiles(r.Context(), taskID)
+	if err != nil {
+		s.logger.Error("list torrent pending upload files failed", "error", err.Error(), "task_id", taskID.String())
+		writeError(w, http.StatusInternalServerError, "internal_error", "读取待上传文件失败")
+		return
+	}
+
+	// 优先复用本地已下载文件，避免重复下载。
+	now := time.Now()
+	if canRetryTorrentTaskByDirectUpload(pendingFiles) {
+		cleanupWarnings := s.cleanupTorrentTaskRetryQBTorrent(r.Context(), task)
+		if err := st.PrepareTorrentTaskForUploadRetry(r.Context(), taskID, now); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				writeError(w, http.StatusNotFound, "not_found", "Torrent 任务不存在")
+				return
+			}
+			s.logger.Error("prepare torrent task for upload retry failed", "error", err.Error(), "task_id", taskID.String())
+			writeError(w, http.StatusInternalServerError, "internal_error", "准备上传重试失败")
+			return
+		}
+		updated, err := st.GetTorrentTask(r.Context(), taskID)
+		if err != nil {
+			s.logger.Error("load retried torrent task failed", "error", err.Error(), "task_id", taskID.String())
+			writeError(w, http.StatusInternalServerError, "internal_error", "读取重试任务失败")
+			return
+		}
+		s.refreshTorrentTransferJobByTaskID(r.Context(), taskID, store.TransferJobStatusRunning, "")
+		resp := map[string]any{
+			"task":      toTorrentTaskDTO(updated, nil),
+			"retryMode": "upload",
+		}
+		if len(cleanupWarnings) > 0 {
+			resp["cleanupWarnings"] = cleanupWarnings
+		}
+		writeJSON(w, http.StatusOK, resp)
 		return
 	}
 
 	torrentPath := strings.TrimSpace(task.TorrentFilePath)
 	if torrentPath == "" {
-		writeError(w, http.StatusBadRequest, "bad_request", "任务缺少 torrent 元文件路径，无法重试")
+		writeError(w, http.StatusBadRequest, "bad_request", "任务缺少 torrent 元文件路径，无法重新下载重试")
 		return
 	}
 	if stat, statErr := os.Stat(torrentPath); statErr != nil || stat.IsDir() {
-		writeError(w, http.StatusBadRequest, "bad_request", "任务的 torrent 元文件缺失或不可用，无法重试")
+		writeError(w, http.StatusBadRequest, "bad_request", "任务的 torrent 元文件缺失或不可用，无法重新下载重试")
 		return
 	}
 
 	cleanupWarnings := s.cleanupTorrentTaskRetryResources(r.Context(), st, task)
-	if err := st.ResetTorrentTaskForRetry(r.Context(), taskID, time.Now()); err != nil {
+	if err := st.ResetTorrentTaskForRetry(r.Context(), taskID, now); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "Torrent 任务不存在")
 			return
@@ -663,6 +726,7 @@ func (s *Server) handleRetryTorrentTask(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusInternalServerError, "internal_error", "读取重试任务失败")
 		return
 	}
+	s.refreshTorrentTransferJobByTaskID(r.Context(), taskID, store.TransferJobStatusRunning, "")
 
 	resp := map[string]any{
 		"task": toTorrentTaskDTO(updated, nil),
@@ -671,6 +735,58 @@ func (s *Server) handleRetryTorrentTask(w http.ResponseWriter, r *http.Request) 
 		resp["cleanupWarnings"] = cleanupWarnings
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func canRetryTorrentTaskByDirectUpload(files []store.TorrentTaskFile) bool {
+	if len(files) == 0 {
+		return false
+	}
+	for _, file := range files {
+		if !torrentTaskFileLocalReady(file) {
+			return false
+		}
+	}
+	return true
+}
+
+func torrentTaskFileLocalReady(file store.TorrentTaskFile) bool {
+	filePath := strings.TrimSpace(file.FilePath)
+	if filePath == "" {
+		return false
+	}
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return false
+	}
+	if info.IsDir() {
+		return false
+	}
+	return info.Size() > 0
+}
+
+func (s *Server) cleanupTorrentTaskRetryQBTorrent(ctx context.Context, task store.TorrentTask) []string {
+	warnings := make([]string, 0, 2)
+	hash := ""
+	if task.QBTorrentHash != nil {
+		hash = strings.TrimSpace(*task.QBTorrentHash)
+	}
+	if hash == "" {
+		hash = strings.TrimSpace(task.InfoHash)
+	}
+	if hash == "" {
+		return warnings
+	}
+	qbt, err := s.newQBittorrentClient(ctx)
+	if err != nil {
+		return append(warnings, "创建 qBittorrent 客户端失败："+err.Error())
+	}
+	if err := qbt.Authenticate(ctx); err != nil {
+		return append(warnings, "qBittorrent 认证失败："+err.Error())
+	}
+	if err := qbt.DeleteTorrent(ctx, hash, true); err != nil {
+		return append(warnings, "删除 qBittorrent 旧任务失败："+err.Error())
+	}
+	return warnings
 }
 
 func (s *Server) parseCreateTorrentTaskPayload(r *http.Request) (createTorrentTaskPayload, error) {
@@ -686,25 +802,7 @@ func (s *Server) cleanupTorrentTaskRetryResources(
 	st *store.Store,
 	task store.TorrentTask,
 ) []string {
-	warnings := make([]string, 0, 4)
-
-	hash := ""
-	if task.QBTorrentHash != nil {
-		hash = strings.TrimSpace(*task.QBTorrentHash)
-	}
-	if hash == "" {
-		hash = strings.TrimSpace(task.InfoHash)
-	}
-	if hash != "" {
-		qbt, err := s.newQBittorrentClient(ctx)
-		if err != nil {
-			warnings = append(warnings, "创建 qBittorrent 客户端失败："+err.Error())
-		} else if err := qbt.Authenticate(ctx); err != nil {
-			warnings = append(warnings, "qBittorrent 认证失败："+err.Error())
-		} else if err := qbt.DeleteTorrent(ctx, hash, true); err != nil {
-			warnings = append(warnings, "删除 qBittorrent 旧任务失败："+err.Error())
-		}
-	}
+	warnings := s.cleanupTorrentTaskRetryQBTorrent(ctx, task)
 
 	files, err := st.ListTorrentTaskFiles(ctx, task.ID)
 	if err != nil {

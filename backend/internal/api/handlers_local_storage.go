@@ -211,7 +211,10 @@ func (s *Server) inspectLocalResidualFile(taskID string, file store.TorrentTaskF
 	}
 
 	dto.ExistsOnDisk = true
-	dto.FileSize = max(file.FileSize, 0)
+	dto.FileSize = file.FileSize
+	if dto.FileSize < 0 {
+		dto.FileSize = 0
+	}
 	s.logger.Warn("stat local residual file failed", "error", err.Error(), "task_id", taskID, "file_path", filePath)
 	return dto
 }

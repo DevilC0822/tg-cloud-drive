@@ -36,31 +36,72 @@ func (s *Server) resolveUploadAccessMethod(ctx context.Context) (string, error) 
 	return normalizeUploadAccessMethod(cfg.AccessMethod), nil
 }
 
-func (s *Server) listUploadedChunkIndicesBySession(ctx context.Context, session store.UploadSession) ([]int, error) {
-	if normalizeUploadAccessMethod(session.AccessMethod) == setupAccessMethodSelfHosted {
-		return s.listLocalUploadedChunkIndices(session)
+func resolveUploadSessionModeForCreate(accessMethod string, fileName string, mimeType string, fileSize int64) store.UploadSessionMode {
+	if normalizeUploadAccessMethod(accessMethod) == setupAccessMethodSelfHosted {
+		return store.UploadSessionModeLocalStaged
 	}
-	if useLocal, err := s.shouldUseLocalStagingForOfficialSession(ctx, session); err != nil {
+	limit := officialBotAPISingleUploadLimitBytes(fileName, mimeType)
+	if fileSize > 0 && fileSize <= limit {
+		return store.UploadSessionModeLocalStaged
+	}
+	return store.UploadSessionModeDirectChunk
+}
+
+func (s *Server) resolveUploadSessionMode(ctx context.Context, session store.UploadSession) (store.UploadSessionMode, error) {
+	if session.UploadMode == store.UploadSessionModeDirectChunk || session.UploadMode == store.UploadSessionModeLocalStaged {
+		return session.UploadMode, nil
+	}
+	return s.resolveLegacyUploadSessionMode(ctx, session)
+}
+
+func (s *Server) resolveLegacyUploadSessionMode(ctx context.Context, session store.UploadSession) (store.UploadSessionMode, error) {
+	if normalizeUploadAccessMethod(session.AccessMethod) == setupAccessMethodSelfHosted {
+		return store.UploadSessionModeLocalStaged, nil
+	}
+	useLocal, err := s.shouldUseLocalStagingForOfficialLegacySession(ctx, session)
+	if err != nil {
+		return "", err
+	}
+	if useLocal {
+		return store.UploadSessionModeLocalStaged, nil
+	}
+	return store.UploadSessionModeDirectChunk, nil
+}
+
+func (s *Server) listUploadedChunkIndicesBySession(ctx context.Context, session store.UploadSession) ([]int, error) {
+	mode, err := s.resolveUploadSessionMode(ctx, session)
+	if err != nil {
 		return nil, err
-	} else if useLocal {
+	}
+	if mode == store.UploadSessionModeLocalStaged {
 		return s.listLocalUploadedChunkIndices(session)
 	}
 	return store.New(s.db).ListUploadedChunkIndices(ctx, session.ItemID)
 }
 
-func (s *Server) hasUploadedChunkBySession(ctx context.Context, session store.UploadSession, chunkIndex int) (bool, error) {
-	if normalizeUploadAccessMethod(session.AccessMethod) == setupAccessMethodSelfHosted {
-		return s.hasLocalSessionChunk(session.ID, chunkIndex)
+func (s *Server) countUploadedChunksBySession(ctx context.Context, session store.UploadSession) (int, error) {
+	mode, err := s.resolveUploadSessionMode(ctx, session)
+	if err != nil {
+		return 0, err
 	}
-	if useLocal, err := s.shouldUseLocalStagingForOfficialSession(ctx, session); err != nil {
+	if mode == store.UploadSessionModeLocalStaged {
+		return s.countLocalUploadedChunks(session)
+	}
+	return store.New(s.db).CountUploadedChunks(ctx, session.ItemID)
+}
+
+func (s *Server) hasUploadedChunkBySession(ctx context.Context, session store.UploadSession, chunkIndex int) (bool, error) {
+	mode, err := s.resolveUploadSessionMode(ctx, session)
+	if err != nil {
 		return false, err
-	} else if useLocal {
+	}
+	if mode == store.UploadSessionModeLocalStaged {
 		return s.hasLocalSessionChunk(session.ID, chunkIndex)
 	}
 	return store.New(s.db).HasChunkIndex(ctx, session.ItemID, chunkIndex)
 }
 
-func (s *Server) shouldUseLocalStagingForOfficialSession(ctx context.Context, session store.UploadSession) (bool, error) {
+func (s *Server) shouldUseLocalStagingForOfficialLegacySession(ctx context.Context, session store.UploadSession) (bool, error) {
 	if normalizeUploadAccessMethod(session.AccessMethod) != setupAccessMethodOfficial {
 		return false, nil
 	}
@@ -177,13 +218,8 @@ func (s *Server) listLocalUploadedChunkIndices(session store.UploadSession) ([]i
 		if entry.IsDir() {
 			continue
 		}
-		name := entry.Name()
-		if !strings.HasPrefix(name, uploadSessionChunkPrefix) || !strings.HasSuffix(name, uploadSessionChunkSuffix) {
-			continue
-		}
-		trimmed := strings.TrimSuffix(strings.TrimPrefix(name, uploadSessionChunkPrefix), uploadSessionChunkSuffix)
-		idx, parseErr := strconv.Atoi(trimmed)
-		if parseErr != nil || idx < 0 || idx >= session.TotalChunks {
+		idx, ok := parseUploadSessionChunkIndex(entry.Name(), session.TotalChunks)
+		if !ok {
 			continue
 		}
 		indices = append(indices, idx)
@@ -191,6 +227,40 @@ func (s *Server) listLocalUploadedChunkIndices(session store.UploadSession) ([]i
 
 	sort.Ints(indices)
 	return indices, nil
+}
+
+func (s *Server) countLocalUploadedChunks(session store.UploadSession) (int, error) {
+	chunkDir := s.uploadSessionChunkDir(session.ID)
+	entries, err := os.ReadDir(chunkDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	count := 0
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if _, ok := parseUploadSessionChunkIndex(entry.Name(), session.TotalChunks); ok {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func parseUploadSessionChunkIndex(name string, totalChunks int) (int, bool) {
+	if !strings.HasPrefix(name, uploadSessionChunkPrefix) || !strings.HasSuffix(name, uploadSessionChunkSuffix) {
+		return 0, false
+	}
+	trimmed := strings.TrimSuffix(strings.TrimPrefix(name, uploadSessionChunkPrefix), uploadSessionChunkSuffix)
+	idx, err := strconv.Atoi(trimmed)
+	if err != nil || idx < 0 || idx >= totalChunks {
+		return 0, false
+	}
+	return idx, true
 }
 
 func (s *Server) mergeLocalSessionChunks(session store.UploadSession) (string, error) {

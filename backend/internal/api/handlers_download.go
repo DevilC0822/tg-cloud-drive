@@ -67,7 +67,20 @@ func (s *Server) handleItemContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = st.TouchItem(r.Context(), it.ID, time.Now())
-	s.serveChunkedDownload(w, r, it, chunks)
+	tracker, err := s.prepareDownloadTransferTracking(r.Context(), r, it)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+
+	streamWriter := w
+	if tracker != nil {
+		streamWriter = tracker.wrap(w)
+	}
+	streamErr := s.serveChunkedDownload(streamWriter, r, it, chunks)
+	if tracker != nil {
+		tracker.finish(streamErr)
+	}
 }
 
 func (s *Server) handleSharedDownload(w http.ResponseWriter, r *http.Request) {
@@ -122,10 +135,10 @@ func (s *Server) handleSharedDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = st.TouchItem(r.Context(), it.ID, time.Now())
-	s.serveChunkedDownload(w, r, it, chunks)
+	_ = s.serveChunkedDownload(w, r, it, chunks)
 }
 
-func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it store.Item, chunks []store.Chunk) {
+func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it store.Item, chunks []store.Chunk) error {
 	size := it.Size
 	if size <= 0 {
 		var sum int64
@@ -136,7 +149,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 	}
 	if size < 0 {
 		writeError(w, http.StatusInternalServerError, "internal_error", "文件元数据异常")
-		return
+		return errors.New("文件元数据异常")
 	}
 	if len(chunks) == 1 {
 		remoteSize, err := s.resolveSingleChunkRemoteSize(r.Context(), chunks[0])
@@ -167,7 +180,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 		default:
 			writeError(w, http.StatusBadRequest, "bad_request", "Range 头非法")
 		}
-		return
+		return err
 	}
 
 	contentLen := int64(0)
@@ -197,7 +210,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 			w.Header().Set(k, v)
 		}
 		w.WriteHeader(status)
-		return
+		return nil
 	}
 
 	ctx := r.Context()
@@ -217,7 +230,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 
 	if contentLen == 0 {
 		writeHeaders()
-		return
+		return nil
 	}
 
 	type chunkSpan struct {
@@ -240,7 +253,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 		// 元数据与分块不一致，避免返回错误内容
 		s.logger.Error("chunk size mismatch", "item_id", it.ID.String(), "declared_size", size, "sum_chunks", offset)
 		writeError(w, http.StatusInternalServerError, "internal_error", "文件分块缺失")
-		return
+		return errors.New("文件分块缺失")
 	}
 
 	// 逐块拉取并拼接输出（只支持单 Range）
@@ -252,7 +265,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 	tgClient := s.telegramClient()
 	if tgClient == nil {
 		writeError(w, http.StatusServiceUnavailable, "setup_required", "系统尚未初始化，请先完成初始化配置")
-		return
+		return errors.New("telegram client unavailable")
 	}
 
 	for _, sp := range spans {
@@ -288,7 +301,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 			if !wroteHeader {
 				writeError(w, http.StatusInternalServerError, "internal_error", "文件元数据异常，请重新上传该文件")
 			}
-			return
+			return err
 		}
 
 		filePath, err := s.getCachedFilePath(ctx, chunkFileID)
@@ -297,7 +310,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 			if !wroteHeader {
 				writeError(w, http.StatusBadGateway, "bad_gateway", "上游文件服务不可用")
 			}
-			return
+			return err
 		}
 
 		// 优先尝试本地文件读取（支持绝对路径与 local 模式下的相对路径映射），
@@ -311,7 +324,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 					if !wroteHeader {
 						writeError(w, http.StatusBadGateway, "bad_gateway", "上游文件服务异常")
 					}
-					return
+					return seekErr
 				}
 			}
 
@@ -321,7 +334,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 			if _, copyErr := io.CopyN(w, localFile, subLen); copyErr != nil {
 				_ = localFile.Close()
 				s.logger.Error("stream local telegram file failed", "error", copyErr.Error())
-				return
+				return copyErr
 			}
 			_ = localFile.Close()
 			if flusher != nil {
@@ -336,7 +349,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 			if !wroteHeader {
 				writeError(w, http.StatusInternalServerError, "internal_error", "请求初始化失败")
 			}
-			return
+			return err
 		}
 
 		// 尽量对 Telegram file endpoint 也使用 Range，减少带宽；若不支持则回退读/丢弃。
@@ -350,10 +363,10 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 			if !wroteHeader {
 				writeError(w, http.StatusBadGateway, "bad_gateway", "上游文件服务不可用")
 			}
-			return
+			return err
 		}
 
-		func() {
+		if err := func() error {
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
@@ -361,7 +374,7 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 				if !wroteHeader {
 					writeError(w, http.StatusBadGateway, "bad_gateway", "上游文件服务异常")
 				}
-				return
+				return errors.New("telegram file endpoint bad status")
 			}
 
 			if !wroteHeader {
@@ -373,27 +386,31 @@ func (s *Server) serveChunkedDownload(w http.ResponseWriter, r *http.Request, it
 				// Range 不生效，丢弃前置字节
 				if _, err := io.CopyN(io.Discard, body, subStart); err != nil {
 					s.logger.Error("discard prefix failed", "error", err.Error())
-					return
+					return err
 				}
 			}
 
 			if _, err := io.CopyN(w, body, subLen); err != nil {
 				// 客户端断开也会走到这里，不再额外写错误
 				s.logger.Error("stream copy failed", "error", err.Error())
-				return
+				return err
 			}
 
 			if flusher != nil {
 				flusher.Flush()
 			}
-		}()
+			return nil
+		}(); err != nil {
+			return err
+		}
 
 		select {
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		default:
 		}
 	}
+	return nil
 }
 
 func (s *Server) ensureChunkFileID(ctx context.Context, c store.Chunk) (string, error) {

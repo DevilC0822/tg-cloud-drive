@@ -146,6 +146,39 @@ func (s *Store) UpdateItemVault(ctx context.Context, id uuid.UUID, inVault bool,
 	return s.GetItem(ctx, id)
 }
 
+func (s *Store) UpdateItemsVaultByPathPrefix(ctx context.Context, prefix string, inVault bool, now time.Time) (int64, error) {
+	trimmed := strings.TrimSpace(prefix)
+	if trimmed == "" || !strings.HasPrefix(trimmed, "/") {
+		return 0, ErrBadInput
+	}
+
+	ct, err := s.db.Exec(
+		ctx,
+		`UPDATE items
+SET in_vault = $2, updated_at = $3
+WHERE (path = $1 OR path LIKE $1 || '/%')
+  AND in_vault <> $2`,
+		trimmed,
+		inVault,
+		now,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return ct.RowsAffected(), nil
+}
+
+func (s *Store) UpdateItemStarred(ctx context.Context, id uuid.UUID, starred bool, now time.Time) (Item, error) {
+	ct, err := s.db.Exec(ctx, `UPDATE items SET starred = $2, updated_at = $3 WHERE id = $1`, id, starred, now)
+	if err != nil {
+		return Item{}, err
+	}
+	if ct.RowsAffected() == 0 {
+		return Item{}, ErrNotFound
+	}
+	return s.GetItem(ctx, id)
+}
+
 func (s *Store) UpdateChunkTelegramRef(ctx context.Context, id uuid.UUID, tgMessageID int64, tgFileID string, tgFileUniqueID string, chunkSize int) error {
 	ct, err := s.db.Exec(
 		ctx,
@@ -185,13 +218,13 @@ func (s *Store) PatchItemMoveRename(ctx context.Context, id uuid.UUID, input Pat
 	var current Item
 	err = tx.QueryRow(ctx, `
 SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
-       shared_code, shared_enabled, created_at, updated_at
+       starred, shared_code, shared_enabled, created_at, updated_at
 FROM items
 WHERE id = $1
 FOR UPDATE
 `, id).Scan(
 		&current.ID, &current.Type, &current.Name, &current.ParentID, &current.Path, &current.Size, &current.MimeType, &current.InVault,
-		&current.LastAccessedAt, &current.SharedCode, &current.SharedEnabled, &current.CreatedAt, &current.UpdatedAt,
+		&current.LastAccessedAt, &current.Starred, &current.SharedCode, &current.SharedEnabled, &current.CreatedAt, &current.UpdatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

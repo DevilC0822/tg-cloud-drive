@@ -1,34 +1,22 @@
-# 构建阶段
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# 复制 package 文件
-COPY package*.json ./
+RUN corepack enable
 
-# 安装依赖
-RUN npm ci
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# 复制源代码
 COPY . .
 
-# 提高构建阶段 Node 堆上限，避免在资源较紧的机器上 vite build OOM
 ARG NODE_OPTIONS="--max_old_space_size=4096"
+RUN NODE_OPTIONS="${NODE_OPTIONS}" pnpm run build
 
-# 构建应用
-RUN NODE_OPTIONS="${NODE_OPTIONS}" npm run build
-
-# 生产阶段
 FROM nginx:alpine
 
-# 复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# 复制 nginx 配置
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# 暴露端口
 EXPOSE 80
 
-# 启动 nginx
 CMD ["nginx", "-g", "daemon off;"]

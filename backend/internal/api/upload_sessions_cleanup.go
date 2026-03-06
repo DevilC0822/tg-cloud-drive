@@ -3,15 +3,20 @@ package api
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/const/tg-cloud-drive/backend/internal/store"
+	"github.com/google/uuid"
 )
 
 const (
 	expiredUploadSessionCleanupBatchSize = 32
 	expiredUploadSessionCleanupMaxRounds = 12
+	localUploadSessionSweepMaxDirs       = 256
+	localUploadSessionOrphanGracePeriod  = 6 * time.Hour
 )
 
 func (s *Server) startUploadSessionCleanupLoop() {
@@ -110,6 +115,10 @@ func (s *Server) runExpiredUploadSessionCleanup(ttl time.Duration) {
 	if totalCleaned > 0 {
 		s.logger.Info("expired upload sessions cleaned", "count", totalCleaned)
 	}
+	orphanCleaned := s.cleanupLocalUploadSessionDirs(ctx, st, time.Now())
+	if orphanCleaned > 0 {
+		s.logger.Info("orphan local upload session dirs cleaned", "count", orphanCleaned)
+	}
 }
 
 func (s *Server) cleanupExpiredUploadSession(ctx context.Context, st *store.Store, session store.UploadSession) error {
@@ -154,4 +163,93 @@ func (s *Server) cleanupExpiredUploadSession(ctx context.Context, st *store.Stor
 	}
 
 	return st.DeleteItemsByPathPrefix(ctx, item.Path)
+}
+
+func (s *Server) cleanupLocalUploadSessionDirs(ctx context.Context, st *store.Store, now time.Time) int {
+	baseDir := s.uploadSessionBaseDir()
+	entries, err := os.ReadDir(baseDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return 0
+		}
+		s.logger.Warn("scan local upload session dirs failed", "error", err.Error(), "base_dir", baseDir)
+		return 0
+	}
+
+	cleaned := 0
+	scannedDirs := 0
+	for _, entry := range entries {
+		if ctx.Err() != nil {
+			break
+		}
+		if !entry.IsDir() {
+			continue
+		}
+		scannedDirs++
+		if scannedDirs > localUploadSessionSweepMaxDirs {
+			break
+		}
+		sessionID, parseErr := uuid.Parse(entry.Name())
+		if parseErr != nil {
+			continue
+		}
+		input := localUploadSessionDirCleanupInput{
+			Ctx:       ctx,
+			Store:     st,
+			Now:       now,
+			BaseDir:   baseDir,
+			SessionID: sessionID,
+			Entry:     entry,
+		}
+		if s.cleanupSingleLocalUploadSessionDir(input) {
+			cleaned++
+		}
+	}
+	return cleaned
+}
+
+type localUploadSessionDirCleanupInput struct {
+	Ctx       context.Context
+	Store     *store.Store
+	Now       time.Time
+	BaseDir   string
+	SessionID uuid.UUID
+	Entry     os.DirEntry
+}
+
+func (s *Server) cleanupSingleLocalUploadSessionDir(input localUploadSessionDirCleanupInput) bool {
+	session, err := input.Store.GetUploadSession(input.Ctx, input.SessionID)
+	if err == nil {
+		if isUploadSessionTerminal(session.Status) {
+			if cleanupErr := s.clearLocalUploadSession(input.SessionID); cleanupErr != nil {
+				s.logger.Warn("cleanup terminal upload session dir failed", "error", cleanupErr.Error(), "session_id", input.SessionID.String())
+				return false
+			}
+			return true
+		}
+		return false
+	}
+	if !errors.Is(err, store.ErrNotFound) {
+		s.logger.Warn("lookup upload session for local dir failed", "error", err.Error(), "session_id", input.SessionID.String())
+		return false
+	}
+
+	info, infoErr := input.Entry.Info()
+	if infoErr != nil {
+		s.logger.Warn("stat local upload session dir failed", "error", infoErr.Error(), "session_id", input.SessionID.String())
+		return false
+	}
+	if input.Now.Sub(info.ModTime()) < localUploadSessionOrphanGracePeriod {
+		return false
+	}
+	dirPath := filepath.Join(input.BaseDir, input.SessionID.String())
+	if cleanupErr := os.RemoveAll(dirPath); cleanupErr != nil {
+		s.logger.Warn("cleanup orphan local upload session dir failed", "error", cleanupErr.Error(), "dir", dirPath)
+		return false
+	}
+	return true
+}
+
+func isUploadSessionTerminal(status store.UploadSessionStatus) bool {
+	return status == store.UploadSessionStatusCompleted || status == store.UploadSessionStatusFailed
 }

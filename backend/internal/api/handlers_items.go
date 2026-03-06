@@ -14,7 +14,6 @@ import (
 
 	"github.com/const/tg-cloud-drive/backend/internal/share"
 	"github.com/const/tg-cloud-drive/backend/internal/store"
-	"github.com/const/tg-cloud-drive/backend/internal/telegram"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -26,12 +25,6 @@ func (s *Server) handleListItems(w http.ResponseWriter, r *http.Request) {
 	view := store.View(q.Get("view"))
 	if view == "" {
 		view = store.ViewFiles
-	}
-
-	if view == store.ViewVault {
-		if !s.requireVaultUnlocked(w, r) {
-			return
-		}
 	}
 
 	var parentID *uuid.UUID
@@ -55,6 +48,21 @@ func (s *Server) handleListItems(w http.ResponseWriter, r *http.Request) {
 
 	page := intFromQuery(q.Get("page"), 1)
 	pageSize := intFromQuery(q.Get("pageSize"), 50)
+	var vaultStatus *vaultStatusResponse
+
+	if view == store.ViewVault {
+		status, err := s.getVaultStatusResponse(r)
+		if err != nil {
+			s.logger.Error("get vault status failed", "error", err.Error())
+			writeError(w, http.StatusInternalServerError, "internal_error", "读取密码箱状态失败")
+			return
+		}
+		vaultStatus = &status
+		if !status.Enabled || !status.Unlocked {
+			writeItemsListResponse(w, nil, newPaginationResponse(page, pageSize, 0), vaultStatus)
+			return
+		}
+	}
 
 	st := store.New(s.db)
 	items, total, err := st.ListItems(r.Context(), store.ListParams{
@@ -76,44 +84,48 @@ func (s *Server) handleListItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dtos := make([]ItemDTO, 0, len(items))
-	for _, it := range items {
-		dtos = append(dtos, toItemDTO(it))
-	}
-
-	totalPages := int64(1)
-	if pageSize > 0 {
-		totalPages = (total + int64(pageSize) - 1) / int64(pageSize)
-		if totalPages <= 0 {
-			totalPages = 1
-		}
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"items": dtos,
-		"pagination": map[string]any{
-			"page":       page,
-			"pageSize":   pageSize,
-			"totalCount": total,
-			"totalPages": totalPages,
-		},
-	})
+	writeItemsListResponse(w, toItemDTOs(items), newPaginationResponse(page, pageSize, total), vaultStatus)
 }
 
 func (s *Server) handleListFolders(w http.ResponseWriter, r *http.Request) {
-	st := store.New(s.db)
-	folders, err := st.ListFolders(r.Context())
+	scope, err := parseFolderScope(r.URL.Query().Get("scope"))
 	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "scope 非法")
+		return
+	}
+	var vaultStatus *vaultStatusResponse
+	switch scope {
+	case store.FolderScopeVault:
+		status, err := s.getVaultStatusResponse(r)
+		if err != nil {
+			s.logger.Error("get vault status failed", "error", err.Error())
+			writeError(w, http.StatusInternalServerError, "internal_error", "读取密码箱状态失败")
+			return
+		}
+		vaultStatus = &status
+		if !status.Enabled || !status.Unlocked {
+			writeFoldersListResponse(w, nil, vaultStatus)
+			return
+		}
+	case store.FolderScopeAll:
+		if !s.requireVaultUnlocked(w, r) {
+			return
+		}
+	}
+
+	st := store.New(s.db)
+	folders, err := st.ListFolders(r.Context(), scope)
+	if err != nil {
+		if errors.Is(err, store.ErrBadInput) {
+			writeError(w, http.StatusBadRequest, "bad_request", "scope 非法")
+			return
+		}
 		s.logger.Error("list folders failed", "error", err.Error())
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询失败")
 		return
 	}
 
-	dtos := make([]ItemDTO, 0, len(folders))
-	for _, it := range folders {
-		dtos = append(dtos, toItemDTO(it))
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": dtos})
+	writeFoldersListResponse(w, toItemDTOs(folders), vaultStatus)
 }
 
 func (s *Server) handleCreateFolder(w http.ResponseWriter, r *http.Request) {
@@ -352,17 +364,39 @@ func (s *Server) handleSetItemVault(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询失败")
 		return
 	}
-	if it.Type == store.ItemTypeFolder {
-		writeError(w, http.StatusBadRequest, "bad_request", "目录暂不支持移入密码箱")
-		return
-	}
 
 	targetEnabled := *req.Enabled
-	if it.InVault == targetEnabled {
+	progressMode := isVaultProgressStreamRequested(r.URL.Query().Get("progress"))
+	if progressMode && it.Type != store.ItemTypeFolder {
+		writeError(w, http.StatusBadRequest, "bad_request", "progress 仅支持目录操作")
+		return
+	}
+	if it.Type != store.ItemTypeFolder && it.InVault == targetEnabled {
 		writeJSON(w, http.StatusOK, map[string]any{
 			"item":            toItemDTO(it),
 			"spoilerApplied":  false,
 			"spoilerEligible": isVaultSpoilerTypeSupported(it),
+		})
+		return
+	}
+
+	now := time.Now()
+	if it.Type == store.ItemTypeFolder {
+		if progressMode {
+			s.streamFolderVaultSync(w, r, st, it, targetEnabled, now)
+			return
+		}
+		updated, summary, syncErr := s.setFolderVaultBestEffort(r.Context(), st, it, targetEnabled, now)
+		if syncErr != nil {
+			s.logger.Error("sync folder vault failed", "error", syncErr.Error(), "item_id", it.ID.String())
+			writeError(w, http.StatusBadGateway, "bad_gateway", syncErr.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"item":            toItemDTO(updated),
+			"spoilerApplied":  summary.AppliedSpoilerFiles > 0,
+			"spoilerEligible": summary.EligibleSpoilerFiles > 0,
+			"summary":         summary,
 		})
 		return
 	}
@@ -374,7 +408,7 @@ func (s *Server) handleSetItemVault(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := st.UpdateItemVault(r.Context(), it.ID, targetEnabled, time.Now())
+	updated, err := st.UpdateItemVault(r.Context(), it.ID, targetEnabled, now)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "文件不存在")
@@ -390,6 +424,42 @@ func (s *Server) handleSetItemVault(w http.ResponseWriter, r *http.Request) {
 		"spoilerApplied":  spoilerApplied,
 		"spoilerEligible": spoilerEligible,
 	})
+}
+
+type vaultFolderSyncFailure struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Error string `json:"error"`
+}
+
+type vaultFolderSyncSummary struct {
+	TotalItems           int                      `json:"totalItems"`
+	UpdatedItems         int64                    `json:"updatedItems"`
+	EligibleSpoilerFiles int                      `json:"eligibleSpoilerFiles"`
+	AppliedSpoilerFiles  int                      `json:"appliedSpoilerFiles"`
+	SkippedSpoilerFiles  int                      `json:"skippedSpoilerFiles"`
+	FailedSpoilerFiles   int                      `json:"failedSpoilerFiles"`
+	Failures             []vaultFolderSyncFailure `json:"failures"`
+}
+
+func changedVaultItems(items []store.Item, enabled bool) []store.Item {
+	out := make([]store.Item, 0, len(items))
+	for _, item := range items {
+		if item.InVault != enabled {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+func (s *Server) setFolderVaultBestEffort(
+	ctx context.Context,
+	st *store.Store,
+	root store.Item,
+	enabled bool,
+	now time.Time,
+) (store.Item, vaultFolderSyncSummary, error) {
+	return s.setFolderVaultInternal(ctx, st, root, enabled, now, nil)
 }
 
 type vaultSpoilerMode string
@@ -445,15 +515,14 @@ func (s *Server) syncVaultSpoilerForItem(ctx context.Context, st *store.Store, i
 		return false, false, nil
 	}
 
-	chunks, err := st.ListChunks(ctx, it.ID)
+	chunk, hasSingleChunk, err := resolveSingleChunkForVaultSync(ctx, st, it.ID)
 	if err != nil {
 		return false, true, fmt.Errorf("查询文件分片失败")
 	}
-	if len(chunks) != 1 {
+	if !hasSingleChunk {
 		return false, true, nil
 	}
 
-	chunk := chunks[0]
 	chatID := strings.TrimSpace(chunk.TGChatID)
 	if chatID == "" {
 		chatID = strings.TrimSpace(s.cfg.TGStorageChatID)
@@ -461,59 +530,56 @@ func (s *Server) syncVaultSpoilerForItem(ctx context.Context, st *store.Store, i
 	if chatID == "" {
 		return false, true, fmt.Errorf("频道配置缺失")
 	}
+	if chunk.TGMessageID <= 0 {
+		return false, true, fmt.Errorf("文件消息引用缺失")
+	}
 
 	caption := fmt.Sprintf("tgcd:%s", it.ID.String())
 	fileID := strings.TrimSpace(chunk.TGFileID)
 	if fileID == "" {
-		var idErr error
-		fileID, idErr = s.ensureChunkFileID(ctx, chunk)
-		if idErr != nil {
+		fileID, err = s.ensureChunkFileID(ctx, chunk)
+		if err != nil {
 			return false, true, fmt.Errorf("获取文件标识失败")
 		}
 	}
 
-	var msg telegram.Message
-	switch mode {
-	case vaultSpoilerModeVideo:
-		msg, err = s.sendVideoByFileIDWithRetry(ctx, chatID, fileID, caption, enabled)
-	case vaultSpoilerModeAnimation:
-		msg, err = s.sendAnimationByFileIDWithRetry(ctx, chatID, fileID, caption, enabled)
-	default:
-		msg, err = s.sendPhotoByFileIDWithRetry(ctx, chatID, fileID, caption, enabled)
-	}
-	if err != nil {
+	if err := s.editVaultSpoilerByMode(ctx, mode, chatID, chunk.TGMessageID, fileID, caption, enabled); err != nil {
 		return false, true, fmt.Errorf("更新 Telegram 模糊状态失败")
 	}
-
-	doc, docErr := s.resolveMessageDocument(ctx, msg)
-	if docErr != nil {
-		if msg.MessageID > 0 {
-			_ = s.deleteMessageWithRetry(ctx, chatID, msg.MessageID)
-		}
-		return false, true, fmt.Errorf("更新 Telegram 模糊状态失败（缺少文件标识）")
-	}
-
-	newChunkSize := chunk.ChunkSize
-	if doc.FileSize > 0 && doc.FileSize < int64(^uint(0)>>1) {
-		newChunkSize = int(doc.FileSize)
-	}
-
-	if err := st.UpdateChunkTelegramRef(ctx, chunk.ID, msg.MessageID, doc.FileID, doc.FileUniqueID, newChunkSize); err != nil {
-		if msg.MessageID > 0 {
-			_ = s.deleteMessageWithRetry(ctx, chatID, msg.MessageID)
-		}
-		return false, true, fmt.Errorf("写入分片元数据失败")
-	}
-
-	if err := s.deleteMessageWithRetry(ctx, chatID, chunk.TGMessageID); err != nil {
-		_ = st.UpdateChunkTelegramRef(ctx, chunk.ID, chunk.TGMessageID, chunk.TGFileID, chunk.TGFileUniqueID, chunk.ChunkSize)
-		if msg.MessageID > 0 {
-			_ = s.deleteMessageWithRetry(ctx, chatID, msg.MessageID)
-		}
-		return false, true, fmt.Errorf("清理原始 Telegram 消息失败")
-	}
-
 	return true, true, nil
+}
+
+func resolveSingleChunkForVaultSync(ctx context.Context, st *store.Store, itemID uuid.UUID) (store.Chunk, bool, error) {
+	chunks, err := st.ListChunks(ctx, itemID)
+	if err != nil {
+		return store.Chunk{}, false, err
+	}
+	if len(chunks) != 1 {
+		return store.Chunk{}, false, nil
+	}
+	return chunks[0], true, nil
+}
+
+func (s *Server) editVaultSpoilerByMode(
+	ctx context.Context,
+	mode vaultSpoilerMode,
+	chatID string,
+	messageID int64,
+	fileID string,
+	caption string,
+	enabled bool,
+) error {
+	switch mode {
+	case vaultSpoilerModeVideo:
+		_, err := s.editVideoMessageByFileIDWithRetry(ctx, chatID, messageID, fileID, caption, enabled)
+		return err
+	case vaultSpoilerModeAnimation:
+		_, err := s.editAnimationMessageByFileIDWithRetry(ctx, chatID, messageID, fileID, caption, enabled)
+		return err
+	default:
+		_, err := s.editPhotoMessageByFileIDWithRetry(ctx, chatID, messageID, fileID, caption, enabled)
+		return err
+	}
 }
 
 func intFromQuery(raw string, def int) int {
@@ -534,6 +600,19 @@ func parseUUIDParam(raw string) (uuid.UUID, error) {
 		return uuid.UUID{}, errBadID
 	}
 	return uuid.Parse(raw)
+}
+
+func parseFolderScope(raw string) (store.FolderScope, error) {
+	scope := store.FolderScope(strings.TrimSpace(raw))
+	if scope == "" {
+		return store.FolderScopeFiles, nil
+	}
+	switch scope {
+	case store.FolderScopeFiles, store.FolderScopeVault, store.FolderScopeAll:
+		return scope, nil
+	default:
+		return "", store.ErrBadInput
+	}
 }
 
 func publicBaseURL(r *http.Request, configured string, header string) string {

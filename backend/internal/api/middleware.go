@@ -56,6 +56,10 @@ type responseRecorder struct {
 	bytes  int
 }
 
+func (r *responseRecorder) Unwrap() http.ResponseWriter {
+	return r.ResponseWriter
+}
+
 func (r *responseRecorder) WriteHeader(code int) {
 	r.status = code
 	r.ResponseWriter.WriteHeader(code)
@@ -81,7 +85,7 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 			w.Header().Set("Vary", "Origin")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,HEAD,OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Range, X-TGCD-Chunked, X-TGCD-Parent-Id")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Range")
 			w.Header().Set("Access-Control-Expose-Headers", "Accept-Ranges, Content-Range, Content-Length, Content-Type, Content-Disposition, ETag")
 		}
 

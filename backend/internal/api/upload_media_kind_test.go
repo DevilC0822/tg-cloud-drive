@@ -1,6 +1,9 @@
 package api
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestSelectTelegramUploadKind(t *testing.T) {
 	tests := []struct {
@@ -187,6 +190,44 @@ func TestOfficialBotAPISingleUploadLimitBytes(t *testing.T) {
 			got := officialBotAPISingleUploadLimitBytes(tc.fileName, tc.mimeType)
 			if got != tc.want {
 				t.Fatalf("officialBotAPISingleUploadLimitBytes() = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsTelegramImageProcessFailed(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil 错误返回 false",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "包含 IMAGE_PROCESS_FAILED 返回 true",
+			err:  errors.New("sendPhoto(local_path) 失败: Bad Request: IMAGE_PROCESS_FAILED"),
+			want: true,
+		},
+		{
+			name: "大小写不敏感",
+			err:  errors.New("bad request: image_process_failed"),
+			want: true,
+		},
+		{
+			name: "其他错误返回 false",
+			err:  errors.New("sendPhoto(local_path) 失败: Bad Request: wrong file identifier"),
+			want: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := isTelegramImageProcessFailed(tc.err)
+			if got != tc.want {
+				t.Fatalf("isTelegramImageProcessFailed() = %v, want %v", got, tc.want)
 			}
 		})
 	}

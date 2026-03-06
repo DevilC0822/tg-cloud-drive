@@ -653,7 +653,7 @@ WITH picked AS (
   SELECT id
   FROM torrent_tasks
   WHERE status = ANY($1::text[])
-  ORDER BY created_at ASC
+  ORDER BY updated_at ASC, created_at ASC
   LIMIT 1
   FOR UPDATE SKIP LOCKED
 )
@@ -882,6 +882,54 @@ WHERE id = $1`,
 	}
 
 	if _, err := tx.Exec(ctx, `DELETE FROM torrent_task_files WHERE task_id = $1`, id); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Store) PrepareTorrentTaskForUploadRetry(ctx context.Context, id uuid.UUID, now time.Time) error {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	ct, err := tx.Exec(
+		ctx,
+		`UPDATE torrent_tasks
+SET status = $2,
+    error = NULL,
+    finished_at = NULL,
+    source_cleanup_due_at = NULL,
+    source_cleanup_done = FALSE,
+    updated_at = $3
+WHERE id = $1`,
+		id,
+		string(TorrentTaskStatusUploading),
+		now,
+	)
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`UPDATE torrent_task_files
+SET error = NULL,
+    updated_at = $2
+WHERE task_id = $1
+  AND selected = TRUE
+  AND uploaded = FALSE`,
+		id,
+		now,
+	); err != nil {
 		return err
 	}
 

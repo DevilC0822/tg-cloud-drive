@@ -11,6 +11,7 @@ import (
 	"github.com/const/tg-cloud-drive/backend/internal/config"
 	"github.com/const/tg-cloud-drive/backend/internal/telegram"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -35,10 +36,18 @@ type Server struct {
 	filePathMu    sync.Mutex
 	filePathCache map[string]cachedFilePath
 
-	transferMu          sync.Mutex
-	activeUploads       int
-	activeDownloads     int
-	activeThumbnailJobs int
+	transferMu            sync.Mutex
+	activeUploads         int
+	activeDownloads       int
+	activeThumbnailJobs   int
+	transferEventsMu      sync.RWMutex
+	transferSubscribers   map[uint64]chan transferStreamEvent
+	transferSubscriberSeq atomic.Uint64
+	downloadProgressMu    sync.RWMutex
+	downloadProgress      map[uuid.UUID]downloadTransferProgress
+
+	chunkUploadMu       sync.Mutex
+	chunkUploadInFlight map[string]struct{}
 
 	cleanupMu      sync.Mutex
 	cleanupRunning bool
@@ -72,11 +81,14 @@ func NewServer(deps ServerDeps) (*Server, error) {
 	}
 
 	srv := &Server{
-		logger:          l,
-		cfg:             deps.Cfg,
-		db:              deps.DB,
-		filePathCache:   map[string]cachedFilePath{},
-		thumbGenerating: map[string]chan struct{}{},
+		logger:              l,
+		cfg:                 deps.Cfg,
+		db:                  deps.DB,
+		filePathCache:       map[string]cachedFilePath{},
+		transferSubscribers: map[uint64]chan transferStreamEvent{},
+		downloadProgress:    map[uuid.UUID]downloadTransferProgress{},
+		thumbGenerating:     map[string]chan struct{}{},
+		chunkUploadInFlight: map[string]struct{}{},
 	}
 
 	if deps.DB != nil {
@@ -112,19 +124,22 @@ func (s *Server) Router() http.Handler {
 			pr.Use(s.authMiddleware)
 
 			pr.Get("/items", s.handleListItems)
+			pr.Get("/items/{id}", s.handleGetItem)
 			pr.Get("/folders", s.handleListFolders)
 			pr.Get("/settings", s.handleGetSettings)
-			pr.Get("/settings/access", s.handleGetServiceAccess)
 			pr.Get("/storage/stats", s.handleGetStorageStats)
 			pr.Get("/storage/local-residual", s.handleListLocalResidual)
 			pr.Post("/storage/local-residual/{id}/cleanup", s.handleCleanupLocalResidual)
 			pr.Get("/vault/status", s.handleVaultStatus)
+			pr.Get("/transfers/active", s.handleGetActiveTransfers)
 			pr.Get("/transfers/history", s.handleGetTransferHistory)
+			pr.Get("/transfers/stream", s.handleTransferStream)
+			pr.Get("/transfers/{id}", s.handleGetTransferDetail)
 			pr.Post("/folders", s.handleCreateFolder)
 			pr.Patch("/settings", s.handlePatchSettings)
-			pr.Patch("/settings/access", s.handlePatchServiceAccess)
 			pr.Post("/vault/unlock", s.handleVaultUnlock)
 			pr.Post("/vault/lock", s.handleVaultLock)
+			pr.Post("/transfers/downloads", s.handleCreateDownloadTransfer)
 			pr.Post("/transfers/history", s.handleUpsertTransferHistory)
 			pr.Delete("/transfers/history/{id}", s.handleDeleteTransferHistoryItem)
 			pr.Post("/torrents/preview", s.handlePreviewTorrent)
@@ -136,19 +151,20 @@ func (s *Server) Router() http.Handler {
 			pr.Post("/torrents/tasks/{id}/retry", s.handleRetryTorrentTask)
 
 			pr.Patch("/items/{id}", s.handlePatchItem)
+			pr.Post("/items/{id}/star", s.handleSetItemStar)
 			pr.Post("/items/{id}/vault", s.handleSetItemVault)
+			pr.Post("/items/vault/batch", s.handleBatchSetItemsVault)
 			pr.Delete("/items/{id}", s.handleDeleteItemPermanently)
 			pr.Post("/items/{id}/copy", s.handleCopyItem)
 
 			pr.Post("/items/{id}/share", s.handleShareItem)
 			pr.Delete("/items/{id}/share", s.handleUnshareItem)
 
+			pr.Post("/uploads/batches", s.handleCreateUploadBatch)
 			pr.Post("/uploads", s.handleCreateUploadSession)
 			pr.Get("/uploads/{id}", s.handleGetUploadSession)
 			pr.Post("/uploads/{id}/chunks/{index}", s.handleUploadSessionChunk)
 			pr.Post("/uploads/{id}/complete", s.handleCompleteUploadSession)
-
-			pr.Post("/files/upload", s.handleUploadFile)
 
 			pr.MethodFunc(http.MethodGet, "/items/{id}/content", s.handleItemContent)
 			pr.MethodFunc(http.MethodHead, "/items/{id}/content", s.handleItemContent)

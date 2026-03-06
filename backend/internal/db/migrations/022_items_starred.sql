@@ -1,0 +1,4 @@
+ALTER TABLE items
+  ADD COLUMN IF NOT EXISTS starred BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE INDEX IF NOT EXISTS idx_items_starred ON items(starred);

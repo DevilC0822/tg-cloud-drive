@@ -28,6 +28,7 @@ type Item struct {
 	Size           int64
 	MimeType       *string
 	InVault        bool
+	Starred        bool
 	LastAccessedAt *time.Time
 	SharedCode     *string
 	SharedEnabled  bool
@@ -70,18 +71,27 @@ const (
 	UploadSessionStatusFailed    UploadSessionStatus = "failed"
 )
 
+type UploadSessionMode string
+
+const (
+	UploadSessionModeDirectChunk UploadSessionMode = "direct_chunk"
+	UploadSessionModeLocalStaged UploadSessionMode = "local_staged"
+)
+
 type UploadSession struct {
-	ID           uuid.UUID
-	ItemID       uuid.UUID
-	FileName     string
-	MimeType     *string
-	FileSize     int64
-	ChunkSize    int
-	TotalChunks  int
-	AccessMethod string
-	Status       UploadSessionStatus
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID              uuid.UUID
+	ItemID          uuid.UUID
+	TransferBatchID *uuid.UUID
+	FileName        string
+	MimeType        *string
+	FileSize        int64
+	ChunkSize       int
+	TotalChunks     int
+	AccessMethod    string
+	UploadMode      UploadSessionMode
+	Status          UploadSessionStatus
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 type TransferDirection string
@@ -98,6 +108,52 @@ const (
 	TransferStatusError     TransferStatus = "error"
 	TransferStatusCanceled  TransferStatus = "canceled"
 )
+
+type TransferSourceKind string
+
+const (
+	TransferSourceKindUploadSession TransferSourceKind = "upload_session"
+	TransferSourceKindUploadBatch   TransferSourceKind = "upload_batch"
+	TransferSourceKindTorrentTask   TransferSourceKind = "torrent_task"
+	TransferSourceKindDownloadTask  TransferSourceKind = "download_task"
+)
+
+type TransferUnitKind string
+
+const (
+	TransferUnitKindFile   TransferUnitKind = "file"
+	TransferUnitKindFolder TransferUnitKind = "folder"
+)
+
+type TransferJobStatus string
+
+const (
+	TransferJobStatusRunning   TransferJobStatus = "running"
+	TransferJobStatusCompleted TransferJobStatus = "completed"
+	TransferJobStatusError     TransferJobStatus = "error"
+	TransferJobStatusCanceled  TransferJobStatus = "canceled"
+)
+
+type TransferJob struct {
+	ID             uuid.UUID
+	Direction      TransferDirection
+	SourceKind     TransferSourceKind
+	SourceRef      string
+	UnitKind       TransferUnitKind
+	Name           string
+	TargetItemID   *uuid.UUID
+	TotalSize      int64
+	ItemCount      int
+	CompletedCount int
+	ErrorCount     int
+	CanceledCount  int
+	Status         TransferJobStatus
+	LastError      *string
+	StartedAt      time.Time
+	FinishedAt     time.Time
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
 
 type TransferHistory struct {
 	ID                           uuid.UUID
@@ -196,6 +252,14 @@ type View string
 const (
 	ViewFiles View = "files"
 	ViewVault View = "vault"
+)
+
+type FolderScope string
+
+const (
+	FolderScopeFiles FolderScope = "files"
+	FolderScopeVault FolderScope = "vault"
+	FolderScopeAll   FolderScope = "all"
 )
 
 type SortBy string

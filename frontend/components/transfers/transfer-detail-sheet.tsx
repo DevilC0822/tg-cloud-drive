@@ -1,0 +1,220 @@
+import { FileStack, RadioTower, Rows3, Server } from "lucide-react"
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useIsMobile } from "@/hooks/use-mobile"
+import type { TransferJobDetail, TransferUploadSessionItem } from "@/lib/transfers-api"
+import type { transferMessages } from "@/lib/i18n"
+import { formatFileSize, formatRelativeTime } from "@/lib/files"
+import {
+  getTransferDirectionLabel,
+  getTransferPhaseLabel,
+  getTransferProgressLabel,
+  getTransferSourceLabel,
+  getTransferStatusLabel,
+  getTransferStatusTone,
+} from "@/components/transfers/transfer-presenters"
+import { cn } from "@/lib/utils"
+
+interface TransferDetailSheetProps {
+  open: boolean
+  loading: boolean
+  detail: TransferJobDetail | null
+  text: (typeof transferMessages)["en"]
+  onOpenChange: (open: boolean) => void
+}
+
+function DetailProgress({ percent }: { percent: number }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">progress</span>
+        <span className="font-mono text-sm text-foreground">{percent}%</span>
+      </div>
+      <Progress value={percent} className="h-2.5 bg-primary/12" />
+    </div>
+  )
+}
+
+function SessionRow({ item }: { item: TransferUploadSessionItem }) {
+  return (
+    <div className="rounded-2xl border border-border/50 bg-secondary/20 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">{item.fileName}</p>
+          <p className="text-xs text-muted-foreground">
+            {item.uploadedCount}/{item.totalChunks} · {formatFileSize(item.fileSize)}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-mono text-sm text-foreground">{item.progress.percent}%</p>
+          <p className="text-xs text-muted-foreground">{formatRelativeTime(item.updatedAt)}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DetailBody({ detail, text }: { detail: TransferJobDetail; text: (typeof transferMessages)["en"] }) {
+  const item = detail.item
+
+  return (
+    <ScrollArea className="h-full">
+      <div className="space-y-5 p-4">
+        <div className="rounded-[28px] border border-border/60 bg-secondary/15 p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className={cn("rounded-full px-2.5 py-1", getTransferStatusTone(item.status))}>
+              {getTransferStatusLabel(item.status, text)}
+            </Badge>
+            <Badge variant="outline" className="rounded-full border-border/50 bg-secondary/25 text-muted-foreground">
+              {getTransferDirectionLabel(item.direction, text)}
+            </Badge>
+            <Badge variant="outline" className="rounded-full border-border/50 bg-secondary/25 text-muted-foreground">
+              {getTransferSourceLabel(item.sourceKind, text)}
+            </Badge>
+            <Badge variant="outline" className="rounded-full border-border/50 bg-secondary/25 text-muted-foreground">
+              {getTransferPhaseLabel(item.phase, text)}
+            </Badge>
+          </div>
+
+          <h3 className="mt-3 text-xl font-semibold text-foreground">{item.name}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{getTransferProgressLabel(item)}</p>
+          <div className="mt-4">
+            <DetailProgress percent={item.progress.percent} />
+          </div>
+
+          <div className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+            <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.totalSize}: {item.totalSize > 0 ? formatFileSize(item.totalSize) : "—"}</div>
+            <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.itemCount}: {item.itemCount}</div>
+            <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.startedAt}: {formatRelativeTime(item.startedAt)}</div>
+            <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.updatedAt}: {formatRelativeTime(item.updatedAt)}</div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5 text-sm text-muted-foreground">
+            {text.lastError}: {item.lastError?.trim() || text.noIssues}
+          </div>
+        </div>
+
+        {detail.uploadSession ? (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Rows3 className="h-4 w-4 text-primary" />
+              {text.sessionDetail}
+            </div>
+            <SessionRow item={detail.uploadSession.session} />
+            <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">
+                {text.uploadedChunks}: {detail.uploadSession.uploadedChunks.join(", ") || "—"}
+              </div>
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">
+                {text.missingChunks}: {detail.uploadSession.missingChunks.join(", ") || "—"}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {detail.uploadBatch ? (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <FileStack className="h-4 w-4 text-primary" />
+              {text.batchDetail}
+            </div>
+            <div className="grid gap-2">
+              {detail.uploadBatch.sessions.map((session) => (
+                <SessionRow key={session.id} item={session} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {detail.torrentTask ? (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <RadioTower className="h-4 w-4 text-primary" />
+              {text.torrentDetail}
+            </div>
+            <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.selectedFiles}: {detail.torrentTask.files.filter((file) => file.selected).length}</div>
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.trackerHosts}: {detail.torrentTask.trackerHosts.join(", ") || "—"}</div>
+            </div>
+            <div className="grid gap-2">
+              {detail.torrentTask.files.filter((file) => file.selected).map((file) => (
+                <div key={`${detail.torrentTask!.id}-${file.fileIndex}`} className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-foreground">{file.fileName}</p>
+                      <p className="truncate text-xs text-muted-foreground">{file.filePath}</p>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground">
+                      <p>{formatFileSize(file.fileSize)}</p>
+                      <p>{file.uploaded ? text.statusCompleted : file.error ? text.statusError : text.statusRunning}</p>
+                    </div>
+                  </div>
+                  {file.error ? <p className="mt-2 text-xs text-rose-200">{file.error}</p> : null}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {detail.downloadTask ? (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Server className="h-4 w-4 text-primary" />
+              {text.downloadDetail}
+            </div>
+            <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.targetFile}: {detail.downloadTask.fileName}</div>
+              <div className="rounded-2xl border border-border/50 bg-secondary/15 px-3 py-2.5">{text.totalSize}: {getTransferProgressLabel({ ...item, progress: detail.downloadTask.progress })}</div>
+            </div>
+          </section>
+        ) : null}
+      </div>
+    </ScrollArea>
+  )
+}
+
+function DetailLoading() {
+  return (
+    <div className="space-y-4 p-4">
+      <Skeleton className="h-32 rounded-[28px]" />
+      <Skeleton className="h-24 rounded-[24px]" />
+      <Skeleton className="h-24 rounded-[24px]" />
+    </div>
+  )
+}
+
+export function TransferDetailSheet({ open, loading, detail, text, onOpenChange }: TransferDetailSheetProps) {
+  const isMobile = useIsMobile()
+  const title = detail?.item.name || text.detailTitle
+  const description = detail ? text.detailSubtitle : text.detailTitle
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="glass-card border-border/60 bg-background/95">
+          <DrawerHeader>
+            <DrawerTitle>{title}</DrawerTitle>
+            <DrawerDescription>{description}</DrawerDescription>
+          </DrawerHeader>
+          {loading || !detail ? <DetailLoading /> : <DetailBody detail={detail} text={text} />}
+        </DrawerContent>
+      </Drawer>
+    )
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="glass-card w-full border-border/60 bg-background/95 p-0 sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+          <SheetDescription>{description}</SheetDescription>
+        </SheetHeader>
+        {loading || !detail ? <DetailLoading /> : <DetailBody detail={detail} text={text} />}
+      </SheetContent>
+    </Sheet>
+  )
+}

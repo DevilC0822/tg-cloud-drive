@@ -66,6 +66,7 @@ func (s *Server) runOneTorrentTaskCycle(ctx context.Context) (bool, error) {
 				msg = "下载任务处理失败"
 			}
 			_ = st.FinishTorrentTask(context.Background(), queuedTask.ID, store.TorrentTaskStatusError, &msg, time.Now())
+			s.refreshTorrentTransferJobByTaskID(context.Background(), queuedTask.ID, store.TransferJobStatusError, msg)
 			return true, runErr
 		}
 		return true, nil
@@ -87,6 +88,7 @@ func (s *Server) runOneTorrentTaskCycle(ctx context.Context) (bool, error) {
 				msg = "下载任务处理失败"
 			}
 			_ = st.FinishTorrentTask(context.Background(), downloadingTask.ID, store.TorrentTaskStatusError, &msg, time.Now())
+			s.refreshTorrentTransferJobByTaskID(context.Background(), downloadingTask.ID, store.TransferJobStatusError, msg)
 			return true, runErr
 		}
 		return true, nil
@@ -111,6 +113,7 @@ func (s *Server) runOneTorrentTaskCycle(ctx context.Context) (bool, error) {
 				msg = "上传任务处理失败"
 			}
 			_ = st.FinishTorrentTask(context.Background(), uploadingTask.ID, store.TorrentTaskStatusError, &msg, time.Now())
+			s.refreshTorrentTransferJobByTaskID(context.Background(), uploadingTask.ID, store.TransferJobStatusError, msg)
 			return true, runErr
 		}
 		return true, nil
@@ -268,6 +271,7 @@ func (s *Server) processDownloadingTorrentTask(ctx context.Context, task store.T
 		return err
 	}
 	_ = st.UpdateTorrentTaskProgress(ctx, task.ID, estimated, estimated, 1, time.Now())
+	s.refreshTorrentTransferJobByTaskID(ctx, task.ID, store.TransferJobStatusRunning, "")
 	return nil
 }
 
@@ -456,6 +460,7 @@ func (s *Server) processUploadingTorrentTask(ctx context.Context, task store.Tor
 	if err != nil {
 		return err
 	}
+	s.refreshTorrentTransferJobByTaskID(ctx, task.ID, store.TransferJobStatusRunning, "")
 
 	for _, file := range files {
 		settings, setErr := s.getRuntimeSettings(ctx)
@@ -466,47 +471,27 @@ func (s *Server) processUploadingTorrentTask(ctx context.Context, task store.Tor
 			return err
 		}
 
-		startedAt := time.Now()
-		item, processMeta, uploadErr := s.uploadTorrentTaskFileToTelegram(ctx, task, file)
+		item, _, uploadErr := s.uploadTorrentTaskFileToTelegram(ctx, task, file)
 		s.releaseUpload()
 
 		finishedAt := time.Now()
 		if uploadErr != nil {
 			_ = st.MarkTorrentTaskFileError(ctx, task.ID, file.FileIndex, uploadErr.Error(), finishedAt)
-			s.recordTorrentTransferHistory(
-				context.Background(),
-				task,
-				file,
-				nil,
-				processMeta,
-				startedAt,
-				finishedAt,
-				store.TransferStatusError,
-				uploadErr.Error(),
-			)
+			s.refreshTorrentTransferJobByTaskID(ctx, task.ID, store.TransferJobStatusError, uploadErr.Error())
 			return uploadErr
 		}
 
 		if err := st.MarkTorrentTaskFileUploaded(ctx, task.ID, file.FileIndex, item.ID, finishedAt); err != nil {
 			return err
 		}
-		s.recordTorrentTransferHistory(
-			context.Background(),
-			task,
-			file,
-			&item.ID,
-			processMeta,
-			startedAt,
-			finishedAt,
-			store.TransferStatusCompleted,
-			"",
-		)
+		s.refreshTorrentTransferJobByTaskID(ctx, task.ID, store.TransferJobStatusRunning, "")
 	}
 
 	completedAt := time.Now()
 	if err := st.FinishTorrentTask(ctx, task.ID, store.TorrentTaskStatusCompleted, nil, completedAt); err != nil {
 		return err
 	}
+	s.refreshTorrentTransferJobByTaskID(ctx, task.ID, store.TransferJobStatusCompleted, "")
 	s.scheduleTorrentTaskSourceCleanup(ctx, st, task)
 	return nil
 }
@@ -880,63 +865,6 @@ func inferMimeTypeByPath(filePath string) string {
 		return ""
 	}
 	return normalizeMimeType(http.DetectContentType(buf[:n]))
-}
-
-func (s *Server) recordTorrentTransferHistory(
-	ctx context.Context,
-	task store.TorrentTask,
-	file store.TorrentTaskFile,
-	itemID *uuid.UUID,
-	processMeta *videoUploadProcessMeta,
-	startedAt time.Time,
-	finishedAt time.Time,
-	status store.TransferStatus,
-	errMsg string,
-) {
-	var (
-		errPtr            *string
-		faststartApplied  *bool
-		faststartFallback *bool
-		previewAttached   *bool
-		previewFallback   *bool
-	)
-	if trimmed := strings.TrimSpace(errMsg); trimmed != "" {
-		errPtr = &trimmed
-	}
-	if processMeta != nil {
-		faststartApplied = boolPtr(processMeta.FaststartApplied)
-		faststartFallback = boolPtr(processMeta.FaststartFallback)
-		previewAttached = boolPtr(processMeta.PreviewAttached)
-		previewFallback = boolPtr(processMeta.PreviewFallback)
-	}
-
-	sourceTaskID := fmt.Sprintf("torrent:%s:%d", task.ID.String(), file.FileIndex)
-	entry := store.TransferHistory{
-		ID:                           uuid.New(),
-		SourceTaskID:                 sourceTaskID,
-		Direction:                    store.TransferDirectionUpload,
-		FileID:                       itemID,
-		FileName:                     file.FileName,
-		Size:                         file.FileSize,
-		Status:                       status,
-		Error:                        errPtr,
-		UploadVideoFaststartApplied:  faststartApplied,
-		UploadVideoFaststartFallback: faststartFallback,
-		UploadVideoPreviewAttached:   previewAttached,
-		UploadVideoPreviewFallback:   previewFallback,
-		StartedAt:                    startedAt,
-		FinishedAt:                   finishedAt,
-		CreatedAt:                    finishedAt,
-		UpdatedAt:                    finishedAt,
-	}
-	if _, err := store.New(s.db).UpsertTransferHistory(ctx, entry); err != nil {
-		s.logger.Warn("upsert torrent transfer history failed", "error", err.Error(), "task_id", task.ID.String(), "file_index", file.FileIndex)
-	}
-}
-
-func boolPtr(v bool) *bool {
-	b := v
-	return &b
 }
 
 func (s *Server) newQBittorrentClient(ctx context.Context) (*itorrent.QBittorrentClient, error) {

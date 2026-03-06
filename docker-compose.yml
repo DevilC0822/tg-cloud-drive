@@ -88,13 +88,25 @@ services:
       - tgcd_torrent_data:/var/lib/tgcd-torrent-data
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: node:22-alpine
+    working_dir: /app
     depends_on:
       - backend
+    environment:
+      CI: "true"
+      CHOKIDAR_USEPOLLING: "true"
+      VITE_API_PROXY_TARGET: http://backend:8080
+    command: >
+      sh -c "corepack enable &&
+      corepack prepare pnpm@10.30.3 --activate &&
+      pnpm install --frozen-lockfile &&
+      pnpm run dev --host 0.0.0.0 --port 5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - frontend_pnpm_store:/root/.local/share/pnpm/store
     ports:
-      - "3000:80"
+      - "3000:5173"
 
 volumes:
   tgcd_pgdata:
@@ -103,3 +115,5 @@ volumes:
   tgcd_runtime:
   qbittorrent_config:
   tgcd_torrent_data:
+  frontend_node_modules:
+  frontend_pnpm_store:

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,14 +21,14 @@ func New(db *pgxpool.Pool) *Store {
 
 func (s *Store) GetItem(ctx context.Context, id uuid.UUID) (Item, error) {
 	const q = `
-SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
+SELECT id, type, name, parent_id, path, size, mime_type, in_vault, starred, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
 FROM items
 WHERE id = $1
 `
 	var it Item
 	err := s.db.QueryRow(ctx, q, id).Scan(
-		&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault,
+		&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault, &it.Starred,
 		&it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
 	)
 	if err != nil {
@@ -43,14 +42,14 @@ WHERE id = $1
 
 func (s *Store) GetItemByShareCode(ctx context.Context, code string) (Item, error) {
 	const q = `
-SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
+SELECT id, type, name, parent_id, path, size, mime_type, in_vault, starred, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
 FROM items
 WHERE shared_enabled = TRUE AND shared_code = $1
 `
 	var it Item
 	err := s.db.QueryRow(ctx, q, code).Scan(
-		&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault,
+		&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault, &it.Starred,
 		&it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
 	)
 	if err != nil {
@@ -62,14 +61,30 @@ WHERE shared_enabled = TRUE AND shared_code = $1
 	return it, nil
 }
 
-func (s *Store) ListFolders(ctx context.Context) ([]Item, error) {
-	const q = `
-SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
+func (s *Store) ListFolders(ctx context.Context, scope FolderScope) ([]Item, error) {
+	if scope == "" {
+		scope = FolderScopeFiles
+	}
+
+	whereClause := "i.in_vault = FALSE"
+	switch scope {
+	case FolderScopeFiles:
+		whereClause = "i.in_vault = FALSE"
+	case FolderScopeVault:
+		whereClause = vaultFolderVisibleSQL
+	case FolderScopeAll:
+		whereClause = sqlTrue
+	default:
+		return nil, ErrBadInput
+	}
+
+	q := fmt.Sprintf(`
+SELECT id, type, name, parent_id, path, size, mime_type, in_vault, starred, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
-FROM items
-WHERE type = 'folder' AND in_vault = FALSE
-ORDER BY path ASC
-`
+FROM items i
+WHERE i.type = 'folder' AND %s
+ORDER BY i.path ASC
+`, whereClause)
 	rows, err := s.db.Query(ctx, q)
 	if err != nil {
 		return nil, err
@@ -80,7 +95,7 @@ ORDER BY path ASC
 	for rows.Next() {
 		var it Item
 		if err := rows.Scan(
-			&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault,
+			&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault, &it.Starred,
 			&it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
 		); err != nil {
 			return nil, err
@@ -88,121 +103,6 @@ ORDER BY path ASC
 		out = append(out, it)
 	}
 	return out, rows.Err()
-}
-
-func (s *Store) ListItems(ctx context.Context, p ListParams) ([]Item, int64, error) {
-	view := p.View
-	if view == "" {
-		view = ViewFiles
-	}
-	if p.Page <= 0 {
-		p.Page = 1
-	}
-	if p.PageSize <= 0 || p.PageSize > 200 {
-		p.PageSize = 50
-	}
-
-	sortBy := p.SortBy
-	if sortBy == "" {
-		sortBy = SortByName
-	}
-	order := strings.ToLower(string(p.SortOrder))
-	if order != string(SortOrderAsc) && order != string(SortOrderDesc) {
-		order = string(SortOrderAsc)
-	}
-
-	where := []string{"1=1"}
-	args := []any{}
-	add := func(cond string, val any) {
-		args = append(args, val)
-		where = append(where, fmt.Sprintf(cond, len(args)))
-	}
-
-	// 仅 vault 视图展示密码箱文件；普通视图隐藏密码箱文件。
-	if view == ViewVault {
-		where = append(where, "in_vault = TRUE")
-	} else {
-		where = append(where, "in_vault = FALSE")
-	}
-
-	switch view {
-	case ViewFiles:
-		if p.ParentID == nil {
-			where = append(where, "parent_id IS NULL")
-		} else {
-			add("parent_id = $%d", *p.ParentID)
-		}
-	case ViewVault:
-		// 已在上方处理 in_vault 过滤
-	default:
-		return nil, 0, ErrBadInput
-	}
-
-	if q := strings.TrimSpace(p.Search); q != "" {
-		add("name ILIKE $%d", "%"+q+"%")
-	}
-
-	whereSQL := strings.Join(where, " AND ")
-
-	var total int64
-	if err := s.db.QueryRow(ctx, `SELECT count(*) FROM items WHERE `+whereSQL, args...).Scan(&total); err != nil {
-		return nil, 0, err
-	}
-
-	sortExpr := "name"
-	switch sortBy {
-	case SortByName:
-		sortExpr = "name"
-	case SortBySize:
-		sortExpr = "size"
-	case SortByType:
-		sortExpr = "type"
-	case SortByDate:
-		sortExpr = "updated_at"
-	default:
-		sortExpr = "name"
-	}
-
-	limit := p.PageSize
-	offset := (p.Page - 1) * p.PageSize
-	args = append(args, limit, offset)
-	limitArg := len(args) - 1
-	offsetArg := len(args)
-
-	query := fmt.Sprintf(`
-SELECT id, type, name, parent_id, path, size, mime_type, in_vault, last_accessed_at,
-       shared_code, shared_enabled, created_at, updated_at
-FROM items
-WHERE %s
-ORDER BY
-  CASE WHEN type = 'folder' THEN 0 ELSE 1 END,
-  %s %s,
-  name ASC,
-  id ASC
-LIMIT $%d OFFSET $%d
-`, whereSQL, sortExpr, order, limitArg, offsetArg)
-
-	rows, err := s.db.Query(ctx, query, args...)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-
-	var items []Item
-	for rows.Next() {
-		var it Item
-		if err := rows.Scan(
-			&it.ID, &it.Type, &it.Name, &it.ParentID, &it.Path, &it.Size, &it.MimeType, &it.InVault,
-			&it.LastAccessedAt, &it.SharedCode, &it.SharedEnabled, &it.CreatedAt, &it.UpdatedAt,
-		); err != nil {
-			return nil, 0, err
-		}
-		items = append(items, it)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, 0, err
-	}
-	return items, total, nil
 }
 
 func (s *Store) ListChunks(ctx context.Context, itemID uuid.UUID) ([]Chunk, error) {

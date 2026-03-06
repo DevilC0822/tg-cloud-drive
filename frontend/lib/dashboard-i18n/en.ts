@@ -1,0 +1,163 @@
+import type { DashboardMessages } from "@/lib/dashboard-i18n/types"
+
+export const dashboardEnMessages: DashboardMessages = {
+  hero: {
+    badge: "Decentralized Storage Protocol Live",
+    titleLead: "The Future of",
+    titleHighlight: "Cloud Storage",
+    subtitle:
+      "Store, share, and secure your files across a distributed network. Powered by blockchain technology for unmatched security and availability.",
+    ctaTrial: "Start Free Trial",
+    ctaDocs: "View Documentation",
+    stats: [
+      { label: "End-to-End Encrypted", value: "256-bit" },
+      { label: "Upload Speed", value: "10 Gbps" },
+      { label: "Global Nodes", value: "10,000+" },
+    ],
+  },
+  storage: {
+    titleLead: "Your",
+    titleHighlight: "Dashboard",
+    subtitle: "Access and manage all your files in one place. Seamlessly organized, instantly available.",
+    uploadFiles: "Upload Files",
+    storage: "Storage",
+    used: "Used",
+    usedValue: "67.3 GB / 100 GB",
+    available: "32.7 GB available",
+    quickAccess: "Quick Access",
+    quickAccessItems: [
+      { label: "Recent", count: 24 },
+      { label: "Starred", count: 8 },
+      { label: "Shared", count: 15 },
+      { label: "Trash", count: 3 },
+    ],
+    allFiles: "All Files",
+    actions: {
+      download: "Download",
+      share: "Share",
+      star: "Star",
+      delete: "Delete",
+    },
+    modifiedTimes: {
+      hours2: "2 hours ago",
+      day1: "1 day ago",
+      days3: "3 days ago",
+      week1: "1 week ago",
+      weeks2: "2 weeks ago",
+    },
+  },
+  features: {
+    badge: "Why Choose Nexus",
+    titleLead: "Built for the",
+    titleHighlight: "Next Generation",
+    subtitle: "Experience storage that adapts to you. Powerful features wrapped in elegant simplicity.",
+    learnMore: "Learn more",
+    items: [
+      {
+        title: "Military-Grade Encryption",
+        description: "Your files are protected with AES-256 encryption. Not even we can access your data.",
+      },
+      {
+        title: "Lightning Fast Transfers",
+        description: "Parallel chunk uploading across distributed nodes for blazing fast speeds.",
+      },
+      {
+        title: "Global CDN Network",
+        description: "Access your files from anywhere with our worldwide network of edge nodes.",
+      },
+      {
+        title: "Zero-Knowledge Protocol",
+        description: "Your encryption keys never leave your device. True end-to-end privacy.",
+      },
+      {
+        title: "Version History",
+        description: "Track every change with unlimited version history and instant rollbacks.",
+      },
+      {
+        title: "Auto-Sync Everywhere",
+        description: "Seamless synchronization across all your devices in real-time.",
+      },
+    ],
+  },
+  pricing: {
+    badge: "Simple Pricing",
+    titleLead: "Choose Your",
+    titleHighlight: "Plan",
+    subtitle: "Start free and scale as you grow. No hidden fees, cancel anytime.",
+    popularBadge: "Most Popular",
+    month: "/month",
+    trustPrefix: "Trusted by",
+    trustCount: "50,000+",
+    trustSuffix: "users worldwide",
+    plans: [
+      {
+        name: "Starter",
+        price: "0",
+        isCustom: false,
+        description: "Perfect for personal use and testing",
+        features: [
+          "15 GB Storage",
+          "Basic encryption",
+          "2 device sync",
+          "Community support",
+          "30-day version history",
+        ],
+        cta: "Get Started",
+        popular: false,
+      },
+      {
+        name: "Pro",
+        price: "12",
+        isCustom: false,
+        description: "For professionals who need more",
+        features: [
+          "2 TB Storage",
+          "Advanced encryption",
+          "Unlimited device sync",
+          "Priority support",
+          "Unlimited version history",
+          "Custom branding",
+          "Team sharing",
+        ],
+        cta: "Start Free Trial",
+        popular: true,
+      },
+      {
+        name: "Enterprise",
+        price: "Custom",
+        isCustom: true,
+        description: "For large teams and organizations",
+        features: [
+          "Unlimited storage",
+          "Military-grade encryption",
+          "Admin dashboard",
+          "24/7 dedicated support",
+          "SLA guarantee",
+          "Custom integrations",
+          "On-premise option",
+          "Compliance certifications",
+        ],
+        cta: "Contact Sales",
+        popular: false,
+      },
+    ],
+  },
+  footer: {
+    description: "The future of cloud storage. Secure, decentralized, and lightning fast.",
+    sections: {
+      product: { title: "Product", links: ["Features", "Pricing", "Security", "Integrations", "API"] },
+      company: { title: "Company", links: ["About", "Blog", "Careers", "Press", "Partners"] },
+      resources: {
+        title: "Resources",
+        links: ["Documentation", "Help Center", "Community", "Status", "Contact"],
+      },
+      legal: { title: "Legal", links: ["Privacy", "Terms", "Security", "Compliance"] },
+    },
+    copyright: "NEXUS Cloud. All rights reserved.",
+    bottomLinks: {
+      privacyPolicy: "Privacy Policy",
+      termsOfService: "Terms of Service",
+      cookies: "Cookies",
+    },
+  },
+}

@@ -12,51 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type transferHistoryDTO struct {
-	ID                           string    `json:"id"`
-	SourceTaskID                 string    `json:"sourceTaskId"`
-	Direction                    string    `json:"direction"`
-	FileID                       *string   `json:"fileId"`
-	FileName                     string    `json:"fileName"`
-	Size                         int64     `json:"size"`
-	Status                       string    `json:"status"`
-	Error                        *string   `json:"error"`
-	UploadVideoFaststartApplied  *bool     `json:"uploadVideoFaststartApplied"`
-	UploadVideoFaststartFallback *bool     `json:"uploadVideoFaststartFallback"`
-	UploadVideoPreviewAttached   *bool     `json:"uploadVideoPreviewAttached"`
-	UploadVideoPreviewFallback   *bool     `json:"uploadVideoPreviewFallback"`
-	StartedAt                    time.Time `json:"startedAt"`
-	FinishedAt                   time.Time `json:"finishedAt"`
-	CreatedAt                    time.Time `json:"createdAt"`
-	UpdatedAt                    time.Time `json:"updatedAt"`
-}
-
-func toTransferHistoryDTO(item store.TransferHistory) transferHistoryDTO {
-	var fileID *string
-	if item.FileID != nil {
-		v := item.FileID.String()
-		fileID = &v
-	}
-
-	return transferHistoryDTO{
-		ID:                           item.ID.String(),
-		SourceTaskID:                 item.SourceTaskID,
-		Direction:                    string(item.Direction),
-		FileID:                       fileID,
-		FileName:                     item.FileName,
-		Size:                         item.Size,
-		Status:                       string(item.Status),
-		Error:                        item.Error,
-		UploadVideoFaststartApplied:  item.UploadVideoFaststartApplied,
-		UploadVideoFaststartFallback: item.UploadVideoFaststartFallback,
-		UploadVideoPreviewAttached:   item.UploadVideoPreviewAttached,
-		UploadVideoPreviewFallback:   item.UploadVideoPreviewFallback,
-		StartedAt:                    item.StartedAt,
-		FinishedAt:                   item.FinishedAt,
-		CreatedAt:                    item.CreatedAt,
-		UpdatedAt:                    item.UpdatedAt,
-	}
-}
+type transferHistoryDTO = transferJobViewDTO
 
 func (s *Server) handleGetTransferHistory(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
@@ -84,16 +40,34 @@ func (s *Server) handleGetTransferHistory(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	items, total, err := store.New(s.db).ListTransferHistory(r.Context(), direction, page, pageSize)
+	status := parseOptionalTransferJobStatus(query.Get("status"))
+	sourceKind := parseOptionalTransferSourceKind(query.Get("sourceKind"))
+	searchQuery := strings.TrimSpace(query.Get("q"))
+
+	items, total, err := store.New(s.db).ListTransferJobsByQuery(r.Context(), store.TransferJobListParams{
+		Direction:    direction,
+		Status:       status,
+		SourceKind:   sourceKind,
+		Query:        searchQuery,
+		Page:         page,
+		PageSize:     pageSize,
+		TerminalOnly: true,
+	})
 	if err != nil {
-		s.logger.Error("list transfer history failed", "error", err.Error())
+		s.logger.Error("list transfer jobs failed", "error", err.Error())
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询传输历史失败")
 		return
 	}
 
 	dtos := make([]transferHistoryDTO, 0, len(items))
 	for _, item := range items {
-		dtos = append(dtos, toTransferHistoryDTO(item))
+		dto, buildErr := s.buildTransferJobViewDTO(r.Context(), item)
+		if buildErr != nil {
+			s.logger.Warn("build transfer history dto failed", "error", buildErr.Error(), "id", item.ID.String())
+			dtos = append(dtos, toTransferHistoryDTO(item))
+			continue
+		}
+		dtos = append(dtos, dto)
 	}
 	totalPages := int64(1)
 	if pageSize > 0 {
@@ -116,55 +90,89 @@ func (s *Server) handleGetTransferHistory(w http.ResponseWriter, r *http.Request
 
 func (s *Server) handleUpsertTransferHistory(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		SourceTaskID                 string  `json:"sourceTaskId"`
-		Direction                    string  `json:"direction"`
-		FileID                       *string `json:"fileId"`
-		FileName                     string  `json:"fileName"`
-		Size                         int64   `json:"size"`
-		Status                       string  `json:"status"`
-		Error                        *string `json:"error"`
-		UploadVideoFaststartApplied  *bool   `json:"uploadVideoFaststartApplied"`
-		UploadVideoFaststartFallback *bool   `json:"uploadVideoFaststartFallback"`
-		UploadVideoPreviewAttached   *bool   `json:"uploadVideoPreviewAttached"`
-		UploadVideoPreviewFallback   *bool   `json:"uploadVideoPreviewFallback"`
-		StartedAt                    string  `json:"startedAt"`
-		FinishedAt                   string  `json:"finishedAt"`
+		SourceKind string `json:"sourceKind"`
+		SourceRef  string `json:"sourceRef"`
+		UnitKind   string `json:"unitKind"`
+		Name       string `json:"name"`
+		TotalSize  int64  `json:"totalSize"`
+		ItemCount  int    `json:"itemCount"`
+
+		CompletedCount int `json:"completedCount"`
+		ErrorCount     int `json:"errorCount"`
+		CanceledCount  int `json:"canceledCount"`
+
+		Status       string  `json:"status"`
+		LastError    *string `json:"lastError"`
+		StartedAt    string  `json:"startedAt"`
+		FinishedAt   string  `json:"finishedAt"`
+		Direction    string  `json:"direction"`
+		TargetItemID *string `json:"targetItemId"`
+
+		// legacy fields
+		SourceTaskID string  `json:"sourceTaskId"`
+		FileID       *string `json:"fileId"`
+		FileName     string  `json:"fileName"`
+		Size         int64   `json:"size"`
+		Error        *string `json:"error"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "bad_request", "请求体不是合法 JSON")
 		return
 	}
 
-	sourceTaskID := strings.TrimSpace(req.SourceTaskID)
-	if sourceTaskID == "" {
-		writeError(w, http.StatusBadRequest, "bad_request", "sourceTaskId 不能为空")
-		return
-	}
-
 	direction := store.TransferDirection(strings.ToLower(strings.TrimSpace(req.Direction)))
-	switch direction {
-	case store.TransferDirectionUpload, store.TransferDirectionDownload:
-	default:
+	if direction != store.TransferDirectionUpload && direction != store.TransferDirectionDownload {
 		writeError(w, http.StatusBadRequest, "bad_request", "direction 仅支持 upload/download")
 		return
 	}
 
-	status := store.TransferStatus(strings.ToLower(strings.TrimSpace(req.Status)))
-	switch status {
-	case store.TransferStatusCompleted, store.TransferStatusError, store.TransferStatusCanceled:
-	default:
-		writeError(w, http.StatusBadRequest, "bad_request", "status 仅支持 completed/error/canceled")
+	sourceRef := strings.TrimSpace(req.SourceRef)
+	if sourceRef == "" {
+		sourceRef = strings.TrimSpace(req.SourceTaskID)
+	}
+	if sourceRef == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "sourceRef 不能为空")
 		return
 	}
 
-	fileName := strings.TrimSpace(req.FileName)
-	if fileName == "" {
-		writeError(w, http.StatusBadRequest, "bad_request", "fileName 不能为空")
+	sourceKind := parseTransferSourceKind(strings.TrimSpace(req.SourceKind))
+	if sourceKind == "" {
+		sourceKind = inferLegacyTransferSourceKind(sourceRef)
+	}
+	if sourceKind == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "sourceKind 非法")
 		return
 	}
-	if req.Size < 0 {
-		writeError(w, http.StatusBadRequest, "bad_request", "size 不能为负数")
+
+	unitKind := parseTransferUnitKind(strings.TrimSpace(req.UnitKind))
+	if unitKind == "" {
+		unitKind = store.TransferUnitKindFile
+	}
+
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		name = strings.TrimSpace(req.FileName)
+	}
+	if name == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "name 不能为空")
 		return
+	}
+
+	totalSize := req.TotalSize
+	if totalSize <= 0 {
+		totalSize = req.Size
+	}
+	if totalSize < 0 {
+		writeError(w, http.StatusBadRequest, "bad_request", "totalSize 不能为负数")
+		return
+	}
+
+	itemCount := req.ItemCount
+	if itemCount <= 0 {
+		itemCount = 1
+	}
+	if itemCount < 1 {
+		itemCount = 1
 	}
 
 	startedAt, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(req.StartedAt))
@@ -182,53 +190,54 @@ func (s *Server) handleUpsertTransferHistory(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var fileID *uuid.UUID
-	if req.FileID != nil {
-		raw := strings.TrimSpace(*req.FileID)
-		if raw != "" {
-			parsed, parseErr := uuid.Parse(raw)
-			if parseErr != nil {
-				writeError(w, http.StatusBadRequest, "bad_request", "fileId 非法")
-				return
-			}
-			fileID = &parsed
-		}
+	status := parseTransferJobStatus(strings.TrimSpace(req.Status))
+	if status == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "status 非法")
+		return
 	}
 
-	var errPtr *string
-	if req.Error != nil {
-		trimmed := strings.TrimSpace(*req.Error)
-		if trimmed != "" {
-			errPtr = &trimmed
-		}
+	completedCount, errorCount, canceledCount := normalizeTransferJobCounts(
+		req.CompletedCount,
+		req.ErrorCount,
+		req.CanceledCount,
+		itemCount,
+		status,
+	)
+	lastError := normalizeTransferError(req.LastError, req.Error)
+	targetItemID, parseErr := parseOptionalUUID(req.TargetItemID, req.FileID)
+	if parseErr != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", "targetItemId 非法")
+		return
 	}
 
 	now := time.Now()
-	entry := store.TransferHistory{
-		ID:                           uuid.New(),
-		SourceTaskID:                 sourceTaskID,
-		Direction:                    direction,
-		FileID:                       fileID,
-		FileName:                     fileName,
-		Size:                         req.Size,
-		Status:                       status,
-		Error:                        errPtr,
-		UploadVideoFaststartApplied:  req.UploadVideoFaststartApplied,
-		UploadVideoFaststartFallback: req.UploadVideoFaststartFallback,
-		UploadVideoPreviewAttached:   req.UploadVideoPreviewAttached,
-		UploadVideoPreviewFallback:   req.UploadVideoPreviewFallback,
-		StartedAt:                    startedAt,
-		FinishedAt:                   finishedAt,
-		CreatedAt:                    now,
-		UpdatedAt:                    now,
+	job := store.TransferJob{
+		ID:             uuid.New(),
+		Direction:      direction,
+		SourceKind:     sourceKind,
+		SourceRef:      sourceRef,
+		UnitKind:       unitKind,
+		Name:           name,
+		TargetItemID:   targetItemID,
+		TotalSize:      totalSize,
+		ItemCount:      itemCount,
+		CompletedCount: completedCount,
+		ErrorCount:     errorCount,
+		CanceledCount:  canceledCount,
+		Status:         status,
+		LastError:      lastError,
+		StartedAt:      startedAt,
+		FinishedAt:     finishedAt,
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
-
-	saved, err := store.New(s.db).UpsertTransferHistory(r.Context(), entry)
+	saved, err := store.New(s.db).UpsertTransferJob(r.Context(), job)
 	if err != nil {
-		s.logger.Error("upsert transfer history failed", "error", err.Error())
+		s.logger.Error("upsert transfer job failed", "error", err.Error())
 		writeError(w, http.StatusInternalServerError, "internal_error", "保存传输历史失败")
 		return
 	}
+	s.syncTransferJobEvent(r.Context(), saved)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"item": toTransferHistoryDTO(saved),
 	})
@@ -241,15 +250,173 @@ func (s *Server) handleDeleteTransferHistoryItem(w http.ResponseWriter, r *http.
 		return
 	}
 
-	err = store.New(s.db).DeleteTransferHistoryByID(r.Context(), id)
+	err = store.New(s.db).DeleteTransferJobByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "历史记录不存在")
 			return
 		}
-		s.logger.Error("delete transfer history item failed", "error", err.Error())
+		s.logger.Error("delete transfer job failed", "error", err.Error())
 		writeError(w, http.StatusInternalServerError, "internal_error", "删除历史记录失败")
 		return
 	}
+	s.publishTransferDeletion(id)
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func parseTransferSourceKind(raw string) store.TransferSourceKind {
+	switch store.TransferSourceKind(strings.ToLower(strings.TrimSpace(raw))) {
+	case store.TransferSourceKindUploadSession,
+		store.TransferSourceKindUploadBatch,
+		store.TransferSourceKindTorrentTask,
+		store.TransferSourceKindDownloadTask:
+		return store.TransferSourceKind(strings.ToLower(strings.TrimSpace(raw)))
+	default:
+		return ""
+	}
+}
+
+func inferLegacyTransferSourceKind(sourceRef string) store.TransferSourceKind {
+	ref := strings.ToLower(strings.TrimSpace(sourceRef))
+	switch {
+	case strings.HasPrefix(ref, "download:"):
+		return store.TransferSourceKindDownloadTask
+	case strings.HasPrefix(ref, "upload-session:"):
+		return store.TransferSourceKindUploadSession
+	case strings.HasPrefix(ref, "torrent:"):
+		return store.TransferSourceKindTorrentTask
+	default:
+		return store.TransferSourceKindDownloadTask
+	}
+}
+
+func parseTransferUnitKind(raw string) store.TransferUnitKind {
+	switch store.TransferUnitKind(strings.ToLower(strings.TrimSpace(raw))) {
+	case store.TransferUnitKindFile, store.TransferUnitKindFolder:
+		return store.TransferUnitKind(strings.ToLower(strings.TrimSpace(raw)))
+	default:
+		return ""
+	}
+}
+
+func parseTransferJobStatus(raw string) store.TransferJobStatus {
+	switch store.TransferJobStatus(strings.ToLower(strings.TrimSpace(raw))) {
+	case store.TransferJobStatusRunning,
+		store.TransferJobStatusCompleted,
+		store.TransferJobStatusError,
+		store.TransferJobStatusCanceled:
+		return store.TransferJobStatus(strings.ToLower(strings.TrimSpace(raw)))
+	default:
+		return ""
+	}
+}
+
+func parseOptionalTransferJobStatus(raw string) *store.TransferJobStatus {
+	value := strings.TrimSpace(strings.ToLower(raw))
+	if value == "" || value == "all" {
+		return nil
+	}
+	status := parseTransferJobStatus(value)
+	if status == "" {
+		return nil
+	}
+	return &status
+}
+
+func parseOptionalTransferSourceKind(raw string) *store.TransferSourceKind {
+	value := strings.TrimSpace(strings.ToLower(raw))
+	if value == "" || value == "all" {
+		return nil
+	}
+	sourceKind := parseTransferSourceKind(value)
+	if sourceKind == "" {
+		return nil
+	}
+	return &sourceKind
+}
+
+func normalizeTransferJobCounts(
+	completedCount int,
+	errorCount int,
+	canceledCount int,
+	itemCount int,
+	status store.TransferJobStatus,
+) (int, int, int) {
+	if completedCount < 0 {
+		completedCount = 0
+	}
+	if errorCount < 0 {
+		errorCount = 0
+	}
+	if canceledCount < 0 {
+		canceledCount = 0
+	}
+	if completedCount == 0 && errorCount == 0 && canceledCount == 0 {
+		switch status {
+		case store.TransferJobStatusCompleted:
+			completedCount = itemCount
+		case store.TransferJobStatusError:
+			errorCount = max(1, min(itemCount, 1))
+		case store.TransferJobStatusCanceled:
+			canceledCount = max(1, min(itemCount, 1))
+		}
+	}
+	if completedCount > itemCount {
+		completedCount = itemCount
+	}
+	if errorCount > itemCount {
+		errorCount = itemCount
+	}
+	if canceledCount > itemCount {
+		canceledCount = itemCount
+	}
+	return completedCount, errorCount, canceledCount
+}
+
+func normalizeTransferError(primary *string, legacy *string) *string {
+	if primary != nil {
+		trimmed := strings.TrimSpace(*primary)
+		if trimmed != "" {
+			return &trimmed
+		}
+	}
+	if legacy != nil {
+		trimmed := strings.TrimSpace(*legacy)
+		if trimmed != "" {
+			return &trimmed
+		}
+	}
+	return nil
+}
+
+func parseOptionalUUID(primary *string, legacy *string) (*uuid.UUID, error) {
+	raw := ""
+	if primary != nil {
+		raw = strings.TrimSpace(*primary)
+	}
+	if raw == "" && legacy != nil {
+		raw = strings.TrimSpace(*legacy)
+	}
+	if raw == "" {
+		return nil, nil
+	}
+	parsed, err := uuid.Parse(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}
+
+func min(a int, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a int, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

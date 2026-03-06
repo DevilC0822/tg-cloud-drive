@@ -18,30 +18,13 @@ import (
 const vaultCookieName = "tgcd_vault"
 
 func (s *Server) handleVaultStatus(w http.ResponseWriter, r *http.Request) {
-	settings, err := s.getRuntimeSettings(r.Context())
+	status, err := s.getVaultStatusResponse(r)
 	if err != nil {
 		s.logger.Error("get runtime settings failed", "error", err.Error())
 		writeError(w, http.StatusInternalServerError, "internal_error", "读取密码箱状态失败")
 		return
 	}
-
-	enabled := strings.TrimSpace(settings.VaultPasswordHash) != ""
-	unlocked := false
-	expiresAt := ""
-
-	if enabled {
-		ok, exp := s.isVaultUnlocked(r, settings, time.Now())
-		unlocked = ok
-		if ok {
-			expiresAt = exp.Format(time.RFC3339)
-		}
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"enabled":   enabled,
-		"unlocked":  unlocked,
-		"expiresAt": expiresAt,
-	})
+	writeJSON(w, http.StatusOK, status)
 }
 
 func (s *Server) handleVaultUnlock(w http.ResponseWriter, r *http.Request) {
