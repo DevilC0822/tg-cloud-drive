@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/const/tg-cloud-drive/backend/internal/store"
+	"tg-cloud-drive-api/internal/store"
 )
 
 func TestDetectVaultSpoilerMode(t *testing.T) {

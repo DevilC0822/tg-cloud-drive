@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/store"
+	"tg-cloud-drive-api/internal/store"
 	"github.com/go-chi/chi/v5"
 )
 

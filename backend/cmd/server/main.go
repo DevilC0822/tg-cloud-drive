@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/api"
-	"github.com/const/tg-cloud-drive/backend/internal/config"
-	"github.com/const/tg-cloud-drive/backend/internal/db"
+	"tg-cloud-drive-api/internal/api"
+	"tg-cloud-drive-api/internal/config"
+	"tg-cloud-drive-api/internal/db"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo } from "react"
 import { ArrowLeft, Download, ExternalLink, FileType2, Loader2, RefreshCcw } from "lucide-react"
 import { useLocation, useNavigate, useParams } from "react-router-dom"

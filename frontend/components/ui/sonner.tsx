@@ -1,5 +1,3 @@
-'use client'
-
 import { Toaster as Sonner, ToasterProps } from 'sonner'
 import { useAppTheme } from '@/hooks/use-app-theme'
 

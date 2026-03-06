@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/const/tg-cloud-drive/backend/internal/config"
+	"tg-cloud-drive-api/internal/config"
 )
 
 func TestCreatePreprocessTempFilePreferInputDir(t *testing.T) {

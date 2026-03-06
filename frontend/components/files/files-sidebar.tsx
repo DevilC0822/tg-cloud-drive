@@ -1,5 +1,3 @@
-"use client"
-
 import { motion } from "framer-motion"
 import { useAtom, useAtomValue } from "jotai"
 import { useCallback } from "react"

@@ -1,5 +1,3 @@
-"use client"
-
 import { Button } from "@/components/ui/button"
 import type { FilesPagination } from "@/lib/files"
 import type { filesMessages } from "@/lib/i18n"

@@ -1,5 +1,3 @@
-"use client"
-
 import { motion } from "framer-motion"
 import { Cloud, Github, Twitter, Linkedin, Mail } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"

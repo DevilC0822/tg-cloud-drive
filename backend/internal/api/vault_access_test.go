@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/config"
-	"github.com/const/tg-cloud-drive/backend/internal/store"
+	"tg-cloud-drive-api/internal/config"
+	"tg-cloud-drive-api/internal/store"
 )
 
 func TestBuildVaultStatusResponse(t *testing.T) {

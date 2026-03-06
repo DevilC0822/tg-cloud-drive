@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { AnimatePresence, motion, type Variants } from "framer-motion"
 import { Loader2, RefreshCcw, Save, SlidersHorizontal } from "lucide-react"

@@ -1,5 +1,3 @@
-"use client"
-
 import { AnimatePresence, motion } from "framer-motion"
 import { FolderOpen, Loader2 } from "lucide-react"
 import { FileActionsContextMenu, type FileAction } from "@/components/files/file-actions-menu"

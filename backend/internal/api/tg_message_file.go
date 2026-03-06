@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/const/tg-cloud-drive/backend/internal/telegram"
+	"tg-cloud-drive-api/internal/telegram"
 )
 
 // resolveMessageDocument 确保上传结果中拿到可持久化的 file_id。

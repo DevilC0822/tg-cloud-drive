@@ -62,6 +62,17 @@ npm --prefix "./frontend" run format:classes
 
 ## 快速开始（Docker，推荐）
 
+默认前端运行模式为 `build`，会使用 [frontend/Dockerfile](/Users/const/code/study/tg-cloud-drive/frontend/Dockerfile) 构建静态资源并由 Nginx 提供服务。
+如需本地前端热更新，可使用仓库根目录的 [compose.sh](/Users/const/code/study/tg-cloud-drive/compose.sh) 在最后追加 `dev` 或 `build` 模式：
+
+```bash
+# 默认 build 模式
+./compose.sh up --build
+
+# 前端切到 Vite dev 模式
+./compose.sh up --build dev
+```
+
 ### 1) 前置准备
 
 1. 创建 Telegram Bot（@BotFather）。
@@ -77,7 +88,7 @@ npm --prefix "./frontend" run format:classes
 
 ```bash
 cp ".env.example" ".env"   # 可选
-docker compose up --build
+./compose.sh up --build
 ```
 
 访问地址：
@@ -120,7 +131,7 @@ docker compose up --build
 
 前置条件：
 
-- 已执行 `docker compose up --build`，并可通过 `http://127.0.0.1:3000` 访问前端
+- 已执行 `./compose.sh up --build`，并可通过 `http://127.0.0.1:3000` 访问前端
 - 服务器放通 `80/443` 端口（云防火墙 + 系统防火墙）
 - 以 `root` 或 `sudo` 执行
 

@@ -1,5 +1,3 @@
-"use client"
-
 import { ReactNode } from "react"
 import { AnimatedBackground } from "@/components/animated-background"
 import { Header } from "@/components/header"

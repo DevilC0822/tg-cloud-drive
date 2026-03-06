@@ -3,80 +3,119 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Web3 Futuristic Dark Theme - Default */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --font-space-grotesk: "Space Grotesk";
+  --font-jetbrains-mono: "JetBrains Mono";
+  --background: oklch(0.08 0.02 280);
+  --foreground: oklch(0.98 0.01 280);
+  --card: oklch(0.12 0.02 280);
+  --card-foreground: oklch(0.98 0.01 280);
+  --popover: oklch(0.1 0.02 280);
+  --popover-foreground: oklch(0.98 0.01 280);
+  --primary: oklch(0.7 0.25 180);
+  --primary-foreground: oklch(0.08 0.02 280);
+  --secondary: oklch(0.18 0.03 280);
+  --secondary-foreground: oklch(0.98 0.01 280);
+  --muted: oklch(0.15 0.02 280);
+  --muted-foreground: oklch(0.6 0.02 280);
+  --accent: oklch(0.65 0.2 320);
+  --accent-foreground: oklch(0.98 0.01 280);
+  --destructive: oklch(0.6 0.25 25);
+  --destructive-foreground: oklch(0.98 0.01 280);
+  --border: oklch(0.25 0.03 280);
+  --input: oklch(0.18 0.02 280);
+  --ring: oklch(0.7 0.25 180);
+  --chart-1: oklch(0.7 0.25 180);
+  --chart-2: oklch(0.65 0.2 320);
+  --chart-3: oklch(0.7 0.2 60);
+  --chart-4: oklch(0.6 0.25 25);
+  --chart-5: oklch(0.65 0.18 280);
+  --radius: 1rem;
+  --sidebar: oklch(0.1 0.02 280);
+  --sidebar-foreground: oklch(0.98 0.01 280);
+  --sidebar-primary: oklch(0.7 0.25 180);
+  --sidebar-primary-foreground: oklch(0.08 0.02 280);
+  --sidebar-accent: oklch(0.18 0.03 280);
+  --sidebar-accent-foreground: oklch(0.98 0.01 280);
+  --sidebar-border: oklch(0.25 0.03 280);
+  --sidebar-ring: oklch(0.7 0.25 180);
+  
+  /* Custom Web3 Colors */
+  --neon-cyan: oklch(0.8 0.2 180);
+  --neon-pink: oklch(0.7 0.25 320);
+  --neon-orange: oklch(0.75 0.2 60);
+  --glass-bg: oklch(0.15 0.02 280 / 0.6);
+  --glass-border: oklch(0.4 0.05 280 / 0.3);
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+/* Web3 Light Theme - Optimized for Contrast */
+.light {
+  /* Background & Foreground - High Contrast */
+  --background: oklch(0.97 0.005 280);
+  --foreground: oklch(0.18 0.02 280);
+  
+  /* Card - Slightly elevated with good text contrast */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 280);
+  
+  /* Popover - Clean white with dark text */
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 280);
+  
+  /* Primary - Deeper teal for better visibility */
+  --primary: oklch(0.45 0.18 180);
+  --primary-foreground: oklch(1 0 0);
+  
+  /* Secondary - Soft gray with strong text contrast */
+  --secondary: oklch(0.94 0.01 280);
+  --secondary-foreground: oklch(0.22 0.02 280);
+  
+  /* Muted - Subtle background with readable text */
+  --muted: oklch(0.95 0.008 280);
+  --muted-foreground: oklch(0.38 0.02 280);
+  
+  /* Accent - Rich magenta for emphasis */
+  --accent: oklch(0.5 0.2 320);
+  --accent-foreground: oklch(1 0 0);
+  
+  /* Destructive - Clear red warning */
+  --destructive: oklch(0.5 0.22 25);
+  --destructive-foreground: oklch(1 0 0);
+  
+  /* Border - Visible but subtle */
+  --border: oklch(0.85 0.015 280);
+  --input: oklch(0.96 0.008 280);
+  --ring: oklch(0.45 0.18 180);
+  
+  /* Charts - Vibrant and distinguishable */
+  --chart-1: oklch(0.45 0.18 180);
+  --chart-2: oklch(0.5 0.2 320);
+  --chart-3: oklch(0.55 0.18 60);
+  --chart-4: oklch(0.5 0.22 25);
+  --chart-5: oklch(0.45 0.15 280);
+  
+  /* Sidebar - Clean with good hierarchy */
+  --sidebar: oklch(0.98 0.005 280);
+  --sidebar-foreground: oklch(0.18 0.02 280);
+  --sidebar-primary: oklch(0.45 0.18 180);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.94 0.01 280);
+  --sidebar-accent-foreground: oklch(0.22 0.02 280);
+  --sidebar-border: oklch(0.88 0.015 280);
+  --sidebar-ring: oklch(0.45 0.18 180);
+  
+  /* Custom Web3 Colors - Light Mode - Enhanced */
+  --neon-cyan: oklch(0.42 0.18 180);
+  --neon-pink: oklch(0.48 0.2 320);
+  --neon-orange: oklch(0.55 0.18 60);
+  --glass-bg: oklch(1 0 0 / 0.85);
+  --glass-border: oklch(0.82 0.02 280 / 0.5);
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-space-grotesk), 'Geist', 'Geist Fallback';
+  --font-mono: var(--font-jetbrains-mono), 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -113,6 +152,13 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Custom Web3 Colors */
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-pink: var(--neon-pink);
+  --color-neon-orange: var(--neon-orange);
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
 }
 
 @layer base {
@@ -121,5 +167,194 @@
   }
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
+}
+
+/* Theme transition for all elements */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              fill 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Custom Web3 Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px oklch(0.7 0.25 180 / 0.3),
+                0 0 40px oklch(0.7 0.25 180 / 0.2),
+                0 0 60px oklch(0.7 0.25 180 / 0.1);
+  }
+  50% { 
+    box-shadow: 0 0 30px oklch(0.7 0.25 180 / 0.5),
+                0 0 60px oklch(0.7 0.25 180 / 0.3),
+                0 0 90px oklch(0.7 0.25 180 / 0.2);
+  }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+/* Glassmorphism */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, var(--glass-bg), oklch(from var(--glass-bg) l c h / 0.4));
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.light .glass-card {
+  background: linear-gradient(135deg, oklch(1 0 0 / 0.95), oklch(0.98 0.005 280 / 0.85));
+  border: 1px solid oklch(0.82 0.02 280 / 0.4);
+  box-shadow: 
+    0 4px 24px oklch(0.45 0.1 180 / 0.08),
+    0 1px 3px oklch(0.2 0.02 280 / 0.06),
+    inset 0 1px 0 oklch(1 0 0 / 0.5);
+}
+
+.light .glass {
+  background: oklch(1 0 0 / 0.9);
+  border: 1px solid oklch(0.85 0.015 280 / 0.5);
+  box-shadow: 
+    0 2px 12px oklch(0.45 0.1 180 / 0.06),
+    0 1px 2px oklch(0.2 0.02 280 / 0.04);
+}
+
+/* Neon Text Effects - Dark Mode */
+.neon-text {
+  text-shadow: 
+    0 0 10px oklch(0.8 0.2 180 / 0.8),
+    0 0 20px oklch(0.8 0.2 180 / 0.6),
+    0 0 40px oklch(0.8 0.2 180 / 0.4);
+}
+
+.neon-text-pink {
+  text-shadow: 
+    0 0 10px oklch(0.7 0.25 320 / 0.8),
+    0 0 20px oklch(0.7 0.25 320 / 0.6),
+    0 0 40px oklch(0.7 0.25 320 / 0.4);
+}
+
+/* Neon Text Effects - Light Mode (Subtle glow) */
+.light .neon-text {
+  text-shadow: 
+    0 0 8px oklch(0.45 0.18 180 / 0.3),
+    0 0 16px oklch(0.45 0.18 180 / 0.15);
+}
+
+.light .neon-text-pink {
+  text-shadow: 
+    0 0 8px oklch(0.48 0.2 320 / 0.3),
+    0 0 16px oklch(0.48 0.2 320 / 0.15);
+}
+
+/* Gradient Borders */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, oklch(0.8 0.2 180), oklch(0.7 0.25 320), oklch(0.75 0.2 60));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.light .gradient-border::before {
+  background: linear-gradient(135deg, oklch(0.45 0.18 180), oklch(0.48 0.2 320), oklch(0.55 0.18 60));
+}
+
+/* Scrollbar Styling - Using CSS variables for theme support */
+:root {
+  --scrollbar-track: oklch(0.12 0.02 280);
+  --scrollbar-thumb: oklch(0.35 0.08 260);
+  --scrollbar-thumb-hover: oklch(0.45 0.12 220);
+}
+
+.light {
+  --scrollbar-track: oklch(0.95 0.005 280);
+  --scrollbar-thumb: oklch(0.75 0.04 260);
+  --scrollbar-thumb-hover: oklch(0.65 0.08 220);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
+
+/* Firefox Scrollbar Support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }

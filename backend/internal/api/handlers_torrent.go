@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/store"
-	itorrent "github.com/const/tg-cloud-drive/backend/internal/torrent"
+	"tg-cloud-drive-api/internal/store"
+	itorrent "tg-cloud-drive-api/internal/torrent"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )

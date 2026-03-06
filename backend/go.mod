@@ -1,4 +1,4 @@
-module github.com/const/tg-cloud-drive/backend
+module tg-cloud-drive-api
 
 go 1.23.0
 

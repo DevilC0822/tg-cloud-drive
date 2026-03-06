@@ -1,5 +1,3 @@
-"use client"
-
 import { motion } from "framer-motion"
 import { ArrowRight, Shield, Zap, Globe } from "lucide-react"
 import { Button } from "@/components/ui/button"

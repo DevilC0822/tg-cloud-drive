@@ -6,7 +6,7 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/telegram"
+	"tg-cloud-drive-api/internal/telegram"
 )
 
 const (

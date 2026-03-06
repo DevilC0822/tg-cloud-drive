@@ -1,5 +1,3 @@
-"use client"
-
 import { useRef, type ChangeEvent } from "react"
 import { useAtom, useAtomValue } from "jotai"
 import { AnimatePresence, motion } from "framer-motion"

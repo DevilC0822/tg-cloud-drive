@@ -1,5 +1,3 @@
-"use client"
-
 import { ChevronRight, Home } from "lucide-react"
 import type { BreadcrumbItem } from "@/lib/files"
 import type { filesMessages } from "@/lib/i18n"

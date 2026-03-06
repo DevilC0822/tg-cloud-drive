@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/store"
-	"github.com/const/tg-cloud-drive/backend/internal/telegram"
+	"tg-cloud-drive-api/internal/store"
+	"tg-cloud-drive-api/internal/telegram"
 	"github.com/google/uuid"
 )
 

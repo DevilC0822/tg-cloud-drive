@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/share"
-	"github.com/const/tg-cloud-drive/backend/internal/store"
+	"tg-cloud-drive-api/internal/share"
+	"tg-cloud-drive-api/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"

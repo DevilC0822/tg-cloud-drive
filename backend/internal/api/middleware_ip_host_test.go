@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/const/tg-cloud-drive/backend/internal/config"
+	"tg-cloud-drive-api/internal/config"
 )
 
 func TestNormalizeRequestHost(t *testing.T) {

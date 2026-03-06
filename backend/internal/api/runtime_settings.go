@@ -5,7 +5,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/store"
+	"tg-cloud-drive-api/internal/store"
 )
 
 func (s *Server) defaultRuntimeSettings() store.RuntimeSettings {

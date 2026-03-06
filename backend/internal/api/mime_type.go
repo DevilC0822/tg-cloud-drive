@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/const/tg-cloud-drive/backend/internal/store"
+	"tg-cloud-drive-api/internal/store"
 	"mime"
 	"path/filepath"
 	"strings"

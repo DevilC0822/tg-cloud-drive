@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect } from "react"
 import { useAtom } from "jotai"
 import { LOCALE_STORAGE_KEY, parseLocale, type Locale } from "@/lib/i18n"

@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, type ComponentType, type ReactNode } from "react"
 import { AlertTriangle, ArrowRightLeft, CheckCircle2, Clock3, Eye, EyeOff, HardDrive, KeyRound, Magnet, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"

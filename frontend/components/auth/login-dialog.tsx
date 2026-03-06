@@ -1,5 +1,3 @@
-"use client"
-
 import { FormEvent, useEffect, useState } from "react"
 import { LockKeyhole } from "lucide-react"
 import { useI18n } from "@/components/i18n-provider"

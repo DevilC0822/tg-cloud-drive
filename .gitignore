@@ -48,6 +48,7 @@ temp/
 node_modules/
 dist/
 .vite/
+.next/
 coverage/
 .eslintcache
 *.tsbuildinfo

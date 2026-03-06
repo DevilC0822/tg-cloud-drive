@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/const/tg-cloud-drive/backend/internal/store"
+	"tg-cloud-drive-api/internal/store"
 )
 
 func TestCanRetryTorrentTaskByDirectUpload(t *testing.T) {

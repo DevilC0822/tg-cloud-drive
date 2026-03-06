@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useRef, useState } from "react"
 import { useAppTheme } from "@/hooks/use-app-theme"
 

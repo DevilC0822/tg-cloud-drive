@@ -1,5 +1,3 @@
-"use client"
-
 import { ReactNode, useEffect } from "react"
 import { useLocation } from "react-router-dom"
 import { useI18n } from "@/components/i18n-provider"

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/store"
+	"tg-cloud-drive-api/internal/store"
 )
 
 const minimumPaginationTotalPages int64 = 1

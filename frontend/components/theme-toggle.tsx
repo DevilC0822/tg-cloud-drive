@@ -1,5 +1,3 @@
-"use client"
-
 import { motion, AnimatePresence } from "framer-motion"
 import { Sun, Moon, Stars } from "lucide-react"
 import { useAppTheme } from "@/hooks/use-app-theme"

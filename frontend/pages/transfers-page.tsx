@@ -1,5 +1,3 @@
-"use client"
-
 import { motion } from "framer-motion"
 import { I18nFade } from "@/components/i18n-fade"
 import { useI18n } from "@/components/i18n-provider"

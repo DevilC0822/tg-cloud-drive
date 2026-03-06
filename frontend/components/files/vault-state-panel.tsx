@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo } from "react"
 import { KeyRound, Lock, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"

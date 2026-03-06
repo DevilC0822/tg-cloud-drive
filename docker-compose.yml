@@ -88,6 +88,18 @@ services:
       - tgcd_torrent_data:/var/lib/tgcd-torrent-data
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+
+  frontend-dev:
+    profiles:
+      - dev
     image: node:22-alpine
     working_dir: /app
     depends_on:
@@ -96,6 +108,7 @@ services:
       CI: "true"
       CHOKIDAR_USEPOLLING: "true"
       VITE_API_PROXY_TARGET: http://backend:8080
+      VITE_ALLOWED_HOSTS: ${VITE_ALLOWED_HOSTS:-cd.mihouo.com}
     command: >
       sh -c "corepack enable &&
       corepack prepare pnpm@10.30.3 --activate &&

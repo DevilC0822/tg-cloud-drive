@@ -1,5 +1,3 @@
-"use client"
-
 import { useInitializeTheme } from "@/hooks/use-app-theme"
 
 interface ThemeProviderProps {

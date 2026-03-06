@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 
-	"github.com/const/tg-cloud-drive/backend/internal/telegram"
+	"tg-cloud-drive-api/internal/telegram"
 )
 
 func (s *Server) editPhotoMessageByFileIDWithRetry(

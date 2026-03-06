@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/const/tg-cloud-drive/backend/internal/config"
-	"github.com/const/tg-cloud-drive/backend/internal/telegram"
+	"tg-cloud-drive-api/internal/config"
+	"tg-cloud-drive-api/internal/telegram"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
