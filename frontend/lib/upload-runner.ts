@@ -32,23 +32,63 @@ interface UploadRunnerResult {
   uploadProcess?: UploadProcess
 }
 
-export async function uploadFileToExistingSession(input: UploadExistingSessionInput): Promise<UploadRunnerResult> {
+interface UploadPreparedSessionResult {
+  session: UploadSession
+  uploadProcess?: UploadProcess
+}
+
+interface UploadFinalizeResult {
+  item: FileItem
+  uploadProcess?: UploadProcess
+}
+
+export async function uploadFileChunksToExistingSession(input: UploadExistingSessionInput): Promise<UploadPreparedSessionResult> {
   const session = await fetchUploadSession(input.sessionId)
   input.callbacks?.onSessionResolved?.({ session })
-  return uploadFileToResolvedSession(input.file, session, input.callbacks)
+  const uploadProcess = await uploadFileChunksToResolvedSession(input.file, session, input.callbacks)
+  return { session, uploadProcess }
+}
+
+export async function uploadFileChunksToNewSession(input: UploadNewSessionInput): Promise<UploadPreparedSessionResult> {
+  const created = await createUploadSession(input.file, input.parentId, input.transferBatchId)
+  input.callbacks?.onSessionResolved?.(created)
+  const uploadProcess = await uploadFileChunksToResolvedSession(input.file, created.session, input.callbacks)
+  return { session: created.session, uploadProcess }
+}
+
+export async function finalizeUploadSession(sessionId: string): Promise<UploadFinalizeResult> {
+  const completed = await completeUploadSession(sessionId)
+  return {
+    item: completed.item,
+    uploadProcess: completed.uploadProcess,
+  }
+}
+
+export async function uploadFileToExistingSession(input: UploadExistingSessionInput): Promise<UploadRunnerResult> {
+  const prepared = await uploadFileChunksToExistingSession(input)
+  const completed = await finalizeUploadSession(prepared.session.id)
+  return {
+    item: completed.item,
+    session: prepared.session,
+    uploadProcess: completed.uploadProcess ?? prepared.uploadProcess,
+  }
 }
 
 export async function uploadFileToNewSession(input: UploadNewSessionInput): Promise<UploadRunnerResult> {
-  const created = await createUploadSession(input.file, input.parentId, input.transferBatchId)
-  input.callbacks?.onSessionResolved?.(created)
-  return uploadFileToResolvedSession(input.file, created.session, input.callbacks)
+  const prepared = await uploadFileChunksToNewSession(input)
+  const completed = await finalizeUploadSession(prepared.session.id)
+  return {
+    item: completed.item,
+    session: prepared.session,
+    uploadProcess: completed.uploadProcess ?? prepared.uploadProcess,
+  }
 }
 
-async function uploadFileToResolvedSession(
+async function uploadFileChunksToResolvedSession(
   file: File,
   session: UploadSession,
   callbacks?: UploadRunnerCallbacks,
-): Promise<UploadRunnerResult> {
+): Promise<UploadProcess | undefined> {
   const uploadedSet = new Set(session.uploadedChunks || [])
   callbacks?.onChunkProgress?.({
     uploadedCount: uploadedSet.size,
@@ -76,10 +116,5 @@ async function uploadFileToResolvedSession(
     })
   }
 
-  const completed = await completeUploadSession(session.id)
-  return {
-    item: completed.item,
-    session,
-    uploadProcess: completed.uploadProcess ?? latestProcess,
-  }
+  return latestProcess
 }
