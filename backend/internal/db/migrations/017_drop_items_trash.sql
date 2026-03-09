@@ -1,6 +1,15 @@
 -- 回收站功能移除后，将历史软删除数据清理并移除 trashed_at 列。
-DELETE FROM items
-WHERE trashed_at IS NOT NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'items' AND column_name = 'trashed_at'
+  ) THEN
+    DELETE FROM items
+    WHERE trashed_at IS NOT NULL;
+  END IF;
+END $$;
 
 DROP INDEX IF EXISTS idx_items_parent_trashed_name;
 DROP INDEX IF EXISTS idx_items_trashed_at;
