@@ -61,7 +61,7 @@ func resolveUploadFolderEntryStatus(
 	if status == store.UploadSessionStatusFailed {
 		return store.UploadFolderEntryStatusFailed
 	}
-	if status == store.UploadSessionStatusCompleted || uploadedCount >= totalChunks {
+	if status == store.UploadSessionStatusCompleted {
 		return store.UploadFolderEntryStatusCompleted
 	}
 	if uploadedCount > 0 {
