@@ -43,14 +43,18 @@ func readSmallPartValue(part *multipart.Part, max int64) (string, error) {
 
 var errInsufficientTempSpace = errors.New("insufficient_temp_space")
 
-func ensureTempSpaceAvailable(reservedBytes int64, requiredBytes int64) error {
+func ensureDiskSpaceAvailableAt(path string, reservedBytes int64, requiredBytes int64) error {
 	if reservedBytes < 0 {
 		reservedBytes = 0
 	}
 	if requiredBytes < 0 {
 		requiredBytes = 0
 	}
-	freeBytes, err := getAvailableDiskBytes(os.TempDir())
+	checkPath := strings.TrimSpace(path)
+	if checkPath == "" {
+		checkPath = os.TempDir()
+	}
+	freeBytes, err := getAvailableDiskBytes(checkPath)
 	if err != nil {
 		return err
 	}
@@ -58,6 +62,10 @@ func ensureTempSpaceAvailable(reservedBytes int64, requiredBytes int64) error {
 		return errInsufficientTempSpace
 	}
 	return nil
+}
+
+func ensureTempSpaceAvailable(reservedBytes int64, requiredBytes int64) error {
+	return ensureDiskSpaceAvailableAt(os.TempDir(), reservedBytes, requiredBytes)
 }
 
 func copyPartToTempFileWithReserve(src io.Reader, dst *os.File, reservedBytes int64) (int64, error) {

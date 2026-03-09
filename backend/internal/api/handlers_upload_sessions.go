@@ -369,32 +369,9 @@ func (s *Server) handleUploadSessionChunk(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	chunkPart, err := findMultipartChunkPart(r)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
-		return
-	}
-	defer chunkPart.Close()
-
 	expectedChunkSize := chunkSizeForIndex(session, chunkIndex)
 	if expectedChunkSize <= 0 {
 		writeError(w, http.StatusInternalServerError, "internal_error", "分片大小计算失败")
-		return
-	}
-	if err := ensureTempSpaceAvailable(settings.ReservedDiskBytes, int64(expectedChunkSize)); err != nil {
-		writeError(w, http.StatusInsufficientStorage, "insufficient_storage", "服务器可用磁盘不足，请稍后重试或调低预留空间")
-		return
-	}
-
-	tmpFile, err := createChunkTempFile(chunkPart, int64(expectedChunkSize))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
-		return
-	}
-	defer os.Remove(tmpFile.path)
-
-	if tmpFile.size != int64(expectedChunkSize) {
-		writeError(w, http.StatusBadRequest, "bad_request", fmt.Sprintf("分片大小不匹配，期望 %d 字节", expectedChunkSize))
 		return
 	}
 
@@ -406,6 +383,43 @@ func (s *Server) handleUploadSessionChunk(w http.ResponseWriter, r *http.Request
 		return
 	}
 	useLocalChunkStaging := uploadMode == store.UploadSessionModeLocalStaged
+
+	tmpDir := ""
+	spaceCheckPath := os.TempDir()
+	if useLocalChunkStaging {
+		tmpDir = s.uploadSessionDir(session.ID)
+		spaceCheckPath = tmpDir
+		if err := os.MkdirAll(tmpDir, 0o755); err != nil {
+			s.logger.Error("create upload session dir failed", "error", err.Error(), "session_id", session.ID.String())
+			recordChunkFailure("创建上传会话目录失败", nil)
+			writeError(w, http.StatusInternalServerError, "internal_error", "创建上传会话目录失败")
+			return
+		}
+	}
+
+	if err := ensureDiskSpaceAvailableAt(spaceCheckPath, settings.ReservedDiskBytes, int64(expectedChunkSize)); err != nil {
+		writeError(w, http.StatusInsufficientStorage, "insufficient_storage", "服务器可用磁盘不足，请稍后重试或调低预留空间")
+		return
+	}
+
+	chunkPart, err := findMultipartChunkPart(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	defer chunkPart.Close()
+
+	tmpFile, err := createChunkTempFile(chunkPart, tmpDir, int64(expectedChunkSize))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+	defer os.Remove(tmpFile.path)
+
+	if tmpFile.size != int64(expectedChunkSize) {
+		writeError(w, http.StatusBadRequest, "bad_request", fmt.Sprintf("分片大小不匹配，期望 %d 字节", expectedChunkSize))
+		return
+	}
 
 	if useLocalChunkStaging {
 		if err := s.saveLocalSessionChunk(session, chunkIndex, tmpFile.path); err != nil {
@@ -886,8 +900,8 @@ type tempChunkFile struct {
 	size int64
 }
 
-func createChunkTempFile(part *multipart.Part, maxExpected int64) (tempChunkFile, error) {
-	tmp, err := os.CreateTemp("", "tgcd-session-chunk-*")
+func createChunkTempFile(part *multipart.Part, dir string, maxExpected int64) (tempChunkFile, error) {
+	tmp, err := os.CreateTemp(dir, "tgcd-session-chunk-*")
 	if err != nil {
 		return tempChunkFile{}, errors.New("创建临时文件失败")
 	}
