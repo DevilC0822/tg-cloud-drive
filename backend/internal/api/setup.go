@@ -130,7 +130,7 @@ func (s *Server) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg, err := store.New(s.db).GetSystemConfig(r.Context())
+	_, err := store.New(s.db).GetSystemConfig(r.Context())
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			s.setupInitialized.Store(false)
@@ -145,11 +145,7 @@ func (s *Server) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"initialized":  true,
-		"accessMethod": cfg.AccessMethod,
-		"tgApiId":      cfg.TGAPIID,
-		"tgApiHash":    cfg.TGAPIHash,
-		"tgApiBaseUrl": cfg.TGAPIBaseURL,
+		"initialized": true,
 	})
 }
 

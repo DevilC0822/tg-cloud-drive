@@ -148,6 +148,7 @@
   inset: 0;
   padding: 1px;
   border-radius: inherit;
+  pointer-events: none;
   background: linear-gradient(135deg, var(--tone-info-text), var(--tone-document-text), var(--tone-archive-text));
   -webkit-mask: linear-gradient(currentColor 0 0) content-box, linear-gradient(currentColor 0 0);
   mask: linear-gradient(currentColor 0 0) content-box, linear-gradient(currentColor 0 0);
