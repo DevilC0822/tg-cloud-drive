@@ -84,6 +84,9 @@ func retryTelegramCall[T any](ctx context.Context, policy telegramRetryPolicy, f
 			return value, nil
 		}
 		lastErr = err
+		if attempt == cfg.MaxAttempts-1 {
+			return zero, lastErr
+		}
 
 		delay := resolveTelegramRetryDelay(err, attempt, cfg)
 		if sleepErr := sleepWithContext(ctx, delay); sleepErr != nil {

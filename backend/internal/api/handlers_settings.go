@@ -9,13 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"tg-cloud-drive-api/internal/store"
 	"golang.org/x/crypto/bcrypt"
+	"tg-cloud-drive-api/internal/store"
 )
 
 type runtimeSettingsDTO struct {
 	UploadConcurrency                int    `json:"uploadConcurrency"`
 	DownloadConcurrency              int    `json:"downloadConcurrency"`
+	TelegramDeleteConcurrency        int    `json:"telegramDeleteConcurrency"`
 	ReservedDiskBytes                int64  `json:"reservedDiskBytes"`
 	UploadSessionTTLHours            int    `json:"uploadSessionTtlHours"`
 	UploadSessionCleanupIntervalMins int    `json:"uploadSessionCleanupIntervalMinutes"`
@@ -57,6 +58,7 @@ type serviceSwitchResultDTO struct {
 type runtimeSettingsPatchRequest struct {
 	UploadConcurrency                *int    `json:"uploadConcurrency"`
 	DownloadConcurrency              *int    `json:"downloadConcurrency"`
+	TelegramDeleteConcurrency        *int    `json:"telegramDeleteConcurrency"`
 	ReservedDiskBytes                *int64  `json:"reservedDiskBytes"`
 	UploadSessionTTLHours            *int    `json:"uploadSessionTtlHours"`
 	UploadSessionCleanupIntervalMins *int    `json:"uploadSessionCleanupIntervalMinutes"`
@@ -93,6 +95,7 @@ func hasRuntimePatchChanges(req *runtimeSettingsPatchRequest) bool {
 	}
 	return req.UploadConcurrency != nil ||
 		req.DownloadConcurrency != nil ||
+		req.TelegramDeleteConcurrency != nil ||
 		req.ReservedDiskBytes != nil ||
 		req.UploadSessionTTLHours != nil ||
 		req.UploadSessionCleanupIntervalMins != nil ||
@@ -205,6 +208,9 @@ func (s *Server) validateAndPatchRuntimeSettings(
 	if req.DownloadConcurrency != nil && (*req.DownloadConcurrency < 1 || *req.DownloadConcurrency > 32) {
 		return store.RuntimeSettings{}, http.StatusBadRequest, "bad_request", "并发下载范围应为 1~32", errors.New("invalid download concurrency")
 	}
+	if req.TelegramDeleteConcurrency != nil && (*req.TelegramDeleteConcurrency < 1 || *req.TelegramDeleteConcurrency > 32) {
+		return store.RuntimeSettings{}, http.StatusBadRequest, "bad_request", "删除并发范围应为 1~32", errors.New("invalid telegram delete concurrency")
+	}
 	if req.ReservedDiskBytes != nil && *req.ReservedDiskBytes < 0 {
 		return store.RuntimeSettings{}, http.StatusBadRequest, "bad_request", "预留硬盘空间不能为负数", errors.New("invalid reserved disk bytes")
 	}
@@ -300,6 +306,7 @@ func (s *Server) validateAndPatchRuntimeSettings(
 	next, err := store.New(s.db).UpdateRuntimeSettings(ctx, store.RuntimeSettingsPatch{
 		UploadConcurrency:                req.UploadConcurrency,
 		DownloadConcurrency:              req.DownloadConcurrency,
+		TelegramDeleteConcurrency:        req.TelegramDeleteConcurrency,
 		ReservedDiskBytes:                req.ReservedDiskBytes,
 		UploadSessionTTLHours:            req.UploadSessionTTLHours,
 		UploadSessionCleanupIntervalMins: req.UploadSessionCleanupIntervalMins,
@@ -627,6 +634,7 @@ func toRuntimeSettingsDTO(s store.RuntimeSettings, chunkSizeBytes int64) runtime
 	return runtimeSettingsDTO{
 		UploadConcurrency:                s.UploadConcurrency,
 		DownloadConcurrency:              s.DownloadConcurrency,
+		TelegramDeleteConcurrency:        s.TelegramDeleteConcurrency,
 		ReservedDiskBytes:                s.ReservedDiskBytes,
 		UploadSessionTTLHours:            s.UploadSessionTTLHours,
 		UploadSessionCleanupIntervalMins: s.UploadSessionCleanupIntervalMins,

@@ -11,8 +11,8 @@ import (
 )
 
 func (s *Store) ListSubtreeItems(ctx context.Context, prefix string) ([]Item, error) {
-	prefix = strings.TrimSpace(prefix)
-	if prefix == "" || !strings.HasPrefix(prefix, "/") {
+	filter, err := newPathPrefixFilter(prefix)
+	if err != nil {
 		return nil, ErrBadInput
 	}
 
@@ -20,10 +20,10 @@ func (s *Store) ListSubtreeItems(ctx context.Context, prefix string) ([]Item, er
 SELECT id, type, name, parent_id, path, size, mime_type, in_vault, starred, last_accessed_at,
        shared_code, shared_enabled, created_at, updated_at
 FROM items
-WHERE path = $1 OR path LIKE $1 || '/%'
+WHERE path = ANY($1) OR path LIKE ANY($2)
 ORDER BY path ASC, id ASC
 `
-	rows, err := s.db.Query(ctx, q, prefix)
+	rows, err := s.db.Query(ctx, q, filter.exact, filter.like)
 	if err != nil {
 		return nil, err
 	}
@@ -49,22 +49,24 @@ ORDER BY path ASC, id ASC
 type ChunkDeleteRef struct {
 	TGChatID    string
 	TGMessageID int64
+	CreatedAt   time.Time
+	ItemType    ItemType
 }
 
 func (s *Store) ListChunkDeleteRefsByPathPrefix(ctx context.Context, prefix string) ([]ChunkDeleteRef, error) {
-	prefix = strings.TrimSpace(prefix)
-	if prefix == "" || !strings.HasPrefix(prefix, "/") {
+	filter, err := newPathPrefixFilter(prefix)
+	if err != nil {
 		return nil, ErrBadInput
 	}
 
 	const q = `
-SELECT tc.tg_chat_id, tc.tg_message_id
+SELECT tc.tg_chat_id, tc.tg_message_id, tc.created_at, i.type
 FROM telegram_chunks tc
 JOIN items i ON i.id = tc.item_id
-WHERE i.path = $1 OR i.path LIKE $1 || '/%'
+WHERE i.path = ANY($1) OR i.path LIKE ANY($2)
 ORDER BY tc.tg_message_id ASC
 `
-	rows, err := s.db.Query(ctx, q, prefix)
+	rows, err := s.db.Query(ctx, q, filter.exact, filter.like)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +75,7 @@ ORDER BY tc.tg_message_id ASC
 	var out []ChunkDeleteRef
 	for rows.Next() {
 		var ref ChunkDeleteRef
-		if err := rows.Scan(&ref.TGChatID, &ref.TGMessageID); err != nil {
+		if err := rows.Scan(&ref.TGChatID, &ref.TGMessageID, &ref.CreatedAt, &ref.ItemType); err != nil {
 			return nil, err
 		}
 		out = append(out, ref)

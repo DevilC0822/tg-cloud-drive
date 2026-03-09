@@ -38,17 +38,19 @@ func assertUploadFolderPathsAvailableTx(
 	parentPath string,
 	manifest uploadFolderManifest,
 ) error {
+	rootPath := store.BuildChildPath(parentPath, manifest.RootName)
 	paths := collectUploadFolderTargetPaths(parentPath, manifest)
-	rows, err := tx.Query(ctx, `SELECT path FROM items WHERE path = ANY($1)`, paths)
+	conflicts, err := collectUploadFolderConflictPathsTx(ctx, tx, paths)
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
-
-	if rows.Next() {
+	if len(conflicts) == 0 {
+		return nil
+	}
+	if !shouldCleanupUploadFolderOrphans(rootPath, conflicts) {
 		return store.ErrConflict
 	}
-	return rows.Err()
+	return deleteUploadFolderOrphansTx(ctx, tx, rootPath)
 }
 
 func collectUploadFolderTargetPaths(parentPath string, manifest uploadFolderManifest) []string {

@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"tg-cloud-drive-api/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"tg-cloud-drive-api/internal/store"
 )
 
 func (s *Server) handleDeleteItemPermanently(w http.ResponseWriter, r *http.Request) {
@@ -47,28 +47,8 @@ func (s *Server) handleDeleteItemPermanently(w http.ResponseWriter, r *http.Requ
 	}
 
 	// 先尽力删除 Telegram 消息；删除失败记录到表中，但不阻塞本地永久删除（宽松模式）。
-	failedDeletes := make([]store.TelegramDeleteFailure, 0)
-	for _, ref := range refs {
-		if err := s.deleteMessageWithRetry(r.Context(), ref.TGChatID, ref.TGMessageID); err != nil {
-			errText := strings.TrimSpace(err.Error())
-			s.logger.Warn(
-				"delete telegram message failed, will continue local purge",
-				"error", errText,
-				"item_id", it.ID.String(),
-				"item_path", it.Path,
-				"message_id", ref.TGMessageID,
-			)
-			failedDeletes = append(failedDeletes, store.TelegramDeleteFailure{
-				ID:          uuid.New(),
-				ItemID:      &it.ID,
-				ItemPath:    it.Path,
-				TGChatID:    ref.TGChatID,
-				TGMessageID: ref.TGMessageID,
-				Error:       errText,
-				FailedAt:    time.Now(),
-			})
-		}
-	}
+	cleanupResult := s.cleanupTelegramMessages(r.Context(), it, refs)
+	failedDeletes := cleanupResult.failures
 
 	if len(failedDeletes) > 0 {
 		if err := st.UpsertTelegramDeleteFailures(r.Context(), failedDeletes); err != nil {
@@ -95,9 +75,10 @@ func (s *Server) handleDeleteItemPermanently(w http.ResponseWriter, r *http.Requ
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok": true,
 		"telegramCleanup": map[string]any{
-			"attempted": len(refs),
-			"deleted":   len(refs) - len(failedDeletes),
-			"failed":    len(failedDeletes),
+			"attempted": cleanupResult.stats.Attempted,
+			"deleted":   cleanupResult.stats.Deleted,
+			"replaced":  cleanupResult.stats.Replaced,
+			"failed":    cleanupResult.stats.Failed,
 			"errors":    failedDetails,
 		},
 	})

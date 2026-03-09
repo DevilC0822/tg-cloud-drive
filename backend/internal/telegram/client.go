@@ -700,9 +700,15 @@ func (c *Client) DeleteMessage(ctx context.Context, chatID string, messageID int
 		return err
 	}
 	if !out.OK {
+		if out.ErrorCode == 429 && out.Parameters.RetryAfter > 0 {
+			return RetryAfterError{After: time.Duration(out.Parameters.RetryAfter) * time.Second, Message: out.Description}
+		}
 		// 仅放过“已不存在”类错误，避免把“无权限删除”等真实失败误判为成功。
 		if out.ErrorCode == 400 && isIgnorableDeleteMessageError(out.Description) {
 			return nil
+		}
+		if out.ErrorCode == 400 && isNonDeletableDeleteMessageError(out.Description) {
+			return MessageCannotBeDeletedError{Message: out.Description}
 		}
 		return fmt.Errorf("deleteMessage 失败: %s", out.Description)
 	}
@@ -719,6 +725,14 @@ func isIgnorableDeleteMessageError(desc string) bool {
 		strings.Contains(desc, "message_id_invalid")
 }
 
+func isNonDeletableDeleteMessageError(desc string) bool {
+	desc = strings.ToLower(strings.TrimSpace(desc))
+	if desc == "" {
+		return false
+	}
+	return strings.Contains(desc, "message can't be deleted")
+}
+
 func (c *Client) DownloadURLFromFilePath(filePath string) string {
 	return c.fileURL(filePath)
 }
@@ -730,6 +744,14 @@ type RetryAfterError struct {
 
 func (e RetryAfterError) Error() string {
 	return fmt.Sprintf("触发 Telegram 限流，请在 %s 后重试：%s", e.After, e.Message)
+}
+
+type MessageCannotBeDeletedError struct {
+	Message string
+}
+
+func (e MessageCannotBeDeletedError) Error() string {
+	return fmt.Sprintf("Telegram 消息不可删除：%s", e.Message)
 }
 
 func (c *Client) SelfCheck(ctx context.Context, storageChatID string) error {

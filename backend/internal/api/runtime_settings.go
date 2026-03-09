@@ -25,6 +25,7 @@ func (s *Server) defaultRuntimeSettings() store.RuntimeSettings {
 	return store.RuntimeSettings{
 		UploadConcurrency:                s.cfg.UploadConcurrencyDefault,
 		DownloadConcurrency:              s.cfg.DownloadConcurrencyDefault,
+		TelegramDeleteConcurrency:        s.cfg.DeleteTelegramConcurrencyDefault,
 		ReservedDiskBytes:                s.cfg.ReservedDiskBytesDefault,
 		UploadSessionTTLHours:            ttlHours,
 		UploadSessionCleanupIntervalMins: cleanupIntervalMins,

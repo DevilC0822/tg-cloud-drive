@@ -147,8 +147,8 @@ func (s *Store) UpdateItemVault(ctx context.Context, id uuid.UUID, inVault bool,
 }
 
 func (s *Store) UpdateItemsVaultByPathPrefix(ctx context.Context, prefix string, inVault bool, now time.Time) (int64, error) {
-	trimmed := strings.TrimSpace(prefix)
-	if trimmed == "" || !strings.HasPrefix(trimmed, "/") {
+	filter, err := newPathPrefixFilter(prefix)
+	if err != nil {
 		return 0, ErrBadInput
 	}
 
@@ -156,11 +156,12 @@ func (s *Store) UpdateItemsVaultByPathPrefix(ctx context.Context, prefix string,
 		ctx,
 		`UPDATE items
 SET in_vault = $2, updated_at = $3
-WHERE (path = $1 OR path LIKE $1 || '/%')
+WHERE (path = ANY($1) OR path LIKE ANY($4))
   AND in_vault <> $2`,
-		trimmed,
+		filter.exact,
 		inVault,
 		now,
+		filter.like,
 	)
 	if err != nil {
 		return 0, err
@@ -308,10 +309,11 @@ WHERE path LIKE $1
 }
 
 func (s *Store) DeleteItemsByPathPrefix(ctx context.Context, prefix string) error {
-	if prefix == "" || prefix[0] != '/' {
+	filter, err := newPathPrefixFilter(prefix)
+	if err != nil {
 		return ErrBadInput
 	}
-	_, err := s.db.Exec(ctx, `DELETE FROM items WHERE path = $1 OR path LIKE $1 || '/%'`, prefix)
+	_, err = s.db.Exec(ctx, `DELETE FROM items WHERE path = ANY($1) OR path LIKE ANY($2)`, filter.exact, filter.like)
 	return err
 }
 

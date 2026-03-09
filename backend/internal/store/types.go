@@ -202,25 +202,6 @@ type TransferJob struct {
 	UpdatedAt      time.Time
 }
 
-type TransferHistory struct {
-	ID                           uuid.UUID
-	SourceTaskID                 string
-	Direction                    TransferDirection
-	FileID                       *uuid.UUID
-	FileName                     string
-	Size                         int64
-	Status                       TransferStatus
-	Error                        *string
-	UploadVideoFaststartApplied  *bool
-	UploadVideoFaststartFallback *bool
-	UploadVideoPreviewAttached   *bool
-	UploadVideoPreviewFallback   *bool
-	StartedAt                    time.Time
-	FinishedAt                   time.Time
-	CreatedAt                    time.Time
-	UpdatedAt                    time.Time
-}
-
 type TorrentSourceType string
 
 const (

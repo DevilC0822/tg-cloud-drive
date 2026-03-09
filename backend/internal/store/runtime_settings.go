@@ -12,6 +12,7 @@ import (
 type RuntimeSettings struct {
 	UploadConcurrency                int
 	DownloadConcurrency              int
+	TelegramDeleteConcurrency        int
 	ReservedDiskBytes                int64
 	UploadSessionTTLHours            int
 	UploadSessionCleanupIntervalMins int
@@ -31,6 +32,7 @@ type RuntimeSettings struct {
 type RuntimeSettingsPatch struct {
 	UploadConcurrency                *int
 	DownloadConcurrency              *int
+	TelegramDeleteConcurrency        *int
 	ReservedDiskBytes                *int64
 	UploadSessionTTLHours            *int
 	UploadSessionCleanupIntervalMins *int
@@ -52,6 +54,9 @@ func normalizeRuntimeDefaults(defaults *RuntimeSettings) {
 	}
 	if defaults.DownloadConcurrency <= 0 {
 		defaults.DownloadConcurrency = 1
+	}
+	if defaults.TelegramDeleteConcurrency <= 0 {
+		defaults.TelegramDeleteConcurrency = 12
 	}
 	if defaults.ReservedDiskBytes < 0 {
 		defaults.ReservedDiskBytes = 0
@@ -100,6 +105,9 @@ func normalizeRuntimeSettingsValue(out *RuntimeSettings, defaults RuntimeSetting
 	if out.DownloadConcurrency <= 0 {
 		out.DownloadConcurrency = defaults.DownloadConcurrency
 	}
+	if out.TelegramDeleteConcurrency <= 0 {
+		out.TelegramDeleteConcurrency = defaults.TelegramDeleteConcurrency
+	}
 	if out.ReservedDiskBytes < 0 {
 		out.ReservedDiskBytes = defaults.ReservedDiskBytes
 	}
@@ -145,6 +153,7 @@ func scanRuntimeSettingsRow(scanner interface {
 	return scanner.Scan(
 		&out.UploadConcurrency,
 		&out.DownloadConcurrency,
+		&out.TelegramDeleteConcurrency,
 		&out.ReservedDiskBytes,
 		&out.UploadSessionTTLHours,
 		&out.UploadSessionCleanupIntervalMins,
@@ -171,6 +180,7 @@ func (s *Store) GetRuntimeSettings(ctx context.Context, defaults RuntimeSettings
 		`SELECT
   upload_concurrency,
   download_concurrency,
+  telegram_delete_concurrency,
   reserved_disk_bytes,
   upload_session_ttl_hours,
   upload_session_cleanup_interval_minutes,
@@ -214,6 +224,7 @@ func (s *Store) UpdateRuntimeSettings(ctx context.Context, patch RuntimeSettings
 		`SELECT
   upload_concurrency,
   download_concurrency,
+  telegram_delete_concurrency,
   reserved_disk_bytes,
   upload_session_ttl_hours,
   upload_session_cleanup_interval_minutes,
@@ -246,6 +257,9 @@ FOR UPDATE`,
 	}
 	if patch.DownloadConcurrency != nil {
 		next.DownloadConcurrency = *patch.DownloadConcurrency
+	}
+	if patch.TelegramDeleteConcurrency != nil {
+		next.TelegramDeleteConcurrency = *patch.TelegramDeleteConcurrency
 	}
 	if patch.ReservedDiskBytes != nil {
 		next.ReservedDiskBytes = *patch.ReservedDiskBytes
@@ -294,23 +308,25 @@ FOR UPDATE`,
 		`UPDATE system_config
 SET upload_concurrency = $1,
     download_concurrency = $2,
-    reserved_disk_bytes = $3,
-    upload_session_ttl_hours = $4,
-    upload_session_cleanup_interval_minutes = $5,
-    thumbnail_cache_max_bytes = $6,
-    thumbnail_cache_ttl_hours = $7,
-    thumbnail_generate_concurrency = $8,
-    vault_password_hash = $9,
-    vault_session_ttl_minutes = $10,
-    torrent_qbt_password = $11,
-    torrent_source_delete_mode = $12,
-    torrent_source_delete_fixed_minutes = $13,
-    torrent_source_delete_random_min_minutes = $14,
-    torrent_source_delete_random_max_minutes = $15,
+    telegram_delete_concurrency = $3,
+    reserved_disk_bytes = $4,
+    upload_session_ttl_hours = $5,
+    upload_session_cleanup_interval_minutes = $6,
+    thumbnail_cache_max_bytes = $7,
+    thumbnail_cache_ttl_hours = $8,
+    thumbnail_generate_concurrency = $9,
+    vault_password_hash = $10,
+    vault_session_ttl_minutes = $11,
+    torrent_qbt_password = $12,
+    torrent_source_delete_mode = $13,
+    torrent_source_delete_fixed_minutes = $14,
+    torrent_source_delete_random_min_minutes = $15,
+    torrent_source_delete_random_max_minutes = $16,
     updated_at = now()
 WHERE singleton = TRUE`,
 		next.UploadConcurrency,
 		next.DownloadConcurrency,
+		next.TelegramDeleteConcurrency,
 		next.ReservedDiskBytes,
 		next.UploadSessionTTLHours,
 		next.UploadSessionCleanupIntervalMins,
@@ -334,6 +350,7 @@ WHERE singleton = TRUE`,
 		`SELECT
   upload_concurrency,
   download_concurrency,
+  telegram_delete_concurrency,
   reserved_disk_bytes,
   upload_session_ttl_hours,
   upload_session_cleanup_interval_minutes,

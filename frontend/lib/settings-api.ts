@@ -6,6 +6,7 @@ export type TorrentSourceDeleteMode = "never" | "immediate" | "fixed" | "random"
 export interface RuntimeSettings {
   uploadConcurrency: number
   downloadConcurrency: number
+  telegramDeleteConcurrency: number
   reservedDiskBytes: number
   uploadSessionTtlHours: number
   uploadSessionCleanupIntervalMinutes: number
@@ -25,6 +26,7 @@ export interface RuntimeSettings {
 export interface PatchRuntimeSettingsPayload {
   uploadConcurrency?: number
   downloadConcurrency?: number
+  telegramDeleteConcurrency?: number
   reservedDiskBytes?: number
   uploadSessionTtlHours?: number
   uploadSessionCleanupIntervalMinutes?: number

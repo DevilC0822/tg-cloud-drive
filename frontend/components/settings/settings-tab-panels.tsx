@@ -92,6 +92,9 @@ function TransferTab({ text, form, runtimeSettings, update }: RuntimeTabProps) {
       <SettingsRow label={text.transferDownloadConcurrency}>
         <Input value={form.downloadConcurrency} onChange={(event) => update("downloadConcurrency", event.target.value)} />
       </SettingsRow>
+      <SettingsRow label={text.transferDeleteConcurrency}>
+        <Input value={form.telegramDeleteConcurrency} onChange={(event) => update("telegramDeleteConcurrency", event.target.value)} />
+      </SettingsRow>
       <SettingsRow label={text.transferReservedDiskGb}>
         <Input value={form.reservedDiskGb} onChange={(event) => update("reservedDiskGb", event.target.value)} />
       </SettingsRow>

@@ -56,3 +56,22 @@ func (s *Server) editAnimationMessageByFileIDWithRetry(
 		return tgClient.EditAnimationMessageByFileID(ctx, chatID, messageID, fileID, caption, hasSpoiler)
 	})
 }
+
+func (s *Server) replaceMessageWithDeletedPlaceholderWithRetry(
+	ctx context.Context,
+	chatID string,
+	messageID int64,
+	usePhoto bool,
+	caption string,
+) error {
+	tgClient, err := s.requireTelegramClient()
+	if err != nil {
+		return err
+	}
+	return retryTelegramAction(ctx, func() error {
+		if usePhoto {
+			return tgClient.ReplaceMessageWithDeletedPhoto(ctx, chatID, messageID, caption)
+		}
+		return tgClient.ReplaceMessageWithDeletedDocument(ctx, chatID, messageID, caption)
+	})
+}

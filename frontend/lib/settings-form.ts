@@ -10,6 +10,7 @@ const MAX_DELETE_MINUTES = 10080
 export const DEFAULT_RUNTIME_SETTINGS: RuntimeSettings = {
   uploadConcurrency: 4,
   downloadConcurrency: 1,
+  telegramDeleteConcurrency: 12,
   reservedDiskBytes: 0,
   uploadSessionTtlHours: 24,
   uploadSessionCleanupIntervalMinutes: 30,
@@ -29,6 +30,7 @@ export const DEFAULT_RUNTIME_SETTINGS: RuntimeSettings = {
 export interface RuntimeFormState {
   uploadConcurrency: string
   downloadConcurrency: string
+  telegramDeleteConcurrency: string
   reservedDiskGb: string
   uploadSessionTtlHours: string
   uploadSessionCleanupMinutes: string
@@ -80,6 +82,7 @@ export function createRuntimeForm(settings: RuntimeSettings): RuntimeFormState {
   return {
     uploadConcurrency: String(settings.uploadConcurrency),
     downloadConcurrency: String(settings.downloadConcurrency),
+    telegramDeleteConcurrency: String(settings.telegramDeleteConcurrency),
     reservedDiskGb: toDiskGBText(settings.reservedDiskBytes),
     uploadSessionTtlHours: String(settings.uploadSessionTtlHours),
     uploadSessionCleanupMinutes: String(settings.uploadSessionCleanupIntervalMinutes),
@@ -155,6 +158,7 @@ export function buildRuntimePayload(form: RuntimeFormState, text: SettingsText):
   const payload: PatchRuntimeSettingsPayload = {
     uploadConcurrency: parsePositiveInteger(form.uploadConcurrency, text.transferUploadConcurrency, 1, 16, text),
     downloadConcurrency: parsePositiveInteger(form.downloadConcurrency, text.transferDownloadConcurrency, 1, 32, text),
+    telegramDeleteConcurrency: parsePositiveInteger(form.telegramDeleteConcurrency, text.transferDeleteConcurrency, 1, 32, text),
     reservedDiskBytes: Math.round(parseNonNegativeFloat(form.reservedDiskGb, text.transferReservedDiskGb, text) * BYTES_PER_GB),
     uploadSessionTtlHours: parsePositiveInteger(form.uploadSessionTtlHours, text.sessionsTtlHours, 1, 720, text),
     uploadSessionCleanupIntervalMinutes: parsePositiveInteger(form.uploadSessionCleanupMinutes, text.sessionsCleanupMinutes, 1, 1440, text),

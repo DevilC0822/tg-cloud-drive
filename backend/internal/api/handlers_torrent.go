@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"tg-cloud-drive-api/internal/store"
-	itorrent "tg-cloud-drive-api/internal/torrent"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"tg-cloud-drive-api/internal/store"
+	itorrent "tg-cloud-drive-api/internal/torrent"
 )
 
 type torrentTaskDTO struct {
@@ -85,6 +85,20 @@ type createTorrentTaskPayload struct {
 	SubmittedBy         string
 }
 
+func normalizeStringSlice(items []string) []string {
+	if len(items) == 0 {
+		return []string{}
+	}
+	return items
+}
+
+func normalizeTorrentTaskFileDTOs(files []torrentTaskFileDTO) []torrentTaskFileDTO {
+	if len(files) == 0 {
+		return []torrentTaskFileDTO{}
+	}
+	return files
+}
+
 func toTorrentTaskDTO(task store.TorrentTask, files []store.TorrentTaskFile) torrentTaskDTO {
 	var parentID *string
 	if task.TargetParentID != nil {
@@ -105,7 +119,7 @@ func toTorrentTaskDTO(task store.TorrentTask, files []store.TorrentTaskFile) tor
 		DownloadedBytes:     task.DownloadedBytes,
 		Progress:            task.Progress,
 		IsPrivate:           task.IsPrivate,
-		TrackerHosts:        task.TrackerHosts,
+		TrackerHosts:        normalizeStringSlice(task.TrackerHosts),
 		Status:              string(task.Status),
 		Error:               task.Error,
 		StartedAt:           task.StartedAt,
@@ -136,6 +150,7 @@ func toTorrentTaskDTO(task store.TorrentTask, files []store.TorrentTaskFile) tor
 			})
 		}
 	}
+	dto.Files = normalizeTorrentTaskFileDTOs(dto.Files)
 	return dto
 }
 
@@ -155,7 +170,7 @@ func toTorrentPreviewDTO(meta itorrent.MetaInfo) torrentPreviewDTO {
 		InfoHash:     meta.InfoHash,
 		TotalSize:    meta.TotalSize,
 		IsPrivate:    meta.IsPrivate,
-		TrackerHosts: meta.AnnounceHosts,
+		TrackerHosts: normalizeStringSlice(meta.AnnounceHosts),
 		Files:        files,
 	}
 }

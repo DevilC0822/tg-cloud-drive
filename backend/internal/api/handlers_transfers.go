@@ -1,15 +1,13 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 
-	"tg-cloud-drive-api/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"tg-cloud-drive-api/internal/store"
 )
 
 type transferHistoryDTO = transferJobViewDTO
@@ -88,161 +86,6 @@ func (s *Server) handleGetTransferHistory(w http.ResponseWriter, r *http.Request
 	})
 }
 
-func (s *Server) handleUpsertTransferHistory(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		SourceKind string `json:"sourceKind"`
-		SourceRef  string `json:"sourceRef"`
-		UnitKind   string `json:"unitKind"`
-		Name       string `json:"name"`
-		TotalSize  int64  `json:"totalSize"`
-		ItemCount  int    `json:"itemCount"`
-
-		CompletedCount int `json:"completedCount"`
-		ErrorCount     int `json:"errorCount"`
-		CanceledCount  int `json:"canceledCount"`
-
-		Status       string  `json:"status"`
-		LastError    *string `json:"lastError"`
-		StartedAt    string  `json:"startedAt"`
-		FinishedAt   string  `json:"finishedAt"`
-		Direction    string  `json:"direction"`
-		TargetItemID *string `json:"targetItemId"`
-
-		// legacy fields
-		SourceTaskID string  `json:"sourceTaskId"`
-		FileID       *string `json:"fileId"`
-		FileName     string  `json:"fileName"`
-		Size         int64   `json:"size"`
-		Error        *string `json:"error"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "请求体不是合法 JSON")
-		return
-	}
-
-	direction := store.TransferDirection(strings.ToLower(strings.TrimSpace(req.Direction)))
-	if direction != store.TransferDirectionUpload && direction != store.TransferDirectionDownload {
-		writeError(w, http.StatusBadRequest, "bad_request", "direction 仅支持 upload/download")
-		return
-	}
-
-	sourceRef := strings.TrimSpace(req.SourceRef)
-	if sourceRef == "" {
-		sourceRef = strings.TrimSpace(req.SourceTaskID)
-	}
-	if sourceRef == "" {
-		writeError(w, http.StatusBadRequest, "bad_request", "sourceRef 不能为空")
-		return
-	}
-
-	sourceKind := parseTransferSourceKind(strings.TrimSpace(req.SourceKind))
-	if sourceKind == "" {
-		sourceKind = inferLegacyTransferSourceKind(sourceRef)
-	}
-	if sourceKind == "" {
-		writeError(w, http.StatusBadRequest, "bad_request", "sourceKind 非法")
-		return
-	}
-
-	unitKind := parseTransferUnitKind(strings.TrimSpace(req.UnitKind))
-	if unitKind == "" {
-		unitKind = store.TransferUnitKindFile
-	}
-
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		name = strings.TrimSpace(req.FileName)
-	}
-	if name == "" {
-		writeError(w, http.StatusBadRequest, "bad_request", "name 不能为空")
-		return
-	}
-
-	totalSize := req.TotalSize
-	if totalSize <= 0 {
-		totalSize = req.Size
-	}
-	if totalSize < 0 {
-		writeError(w, http.StatusBadRequest, "bad_request", "totalSize 不能为负数")
-		return
-	}
-
-	itemCount := req.ItemCount
-	if itemCount <= 0 {
-		itemCount = 1
-	}
-	if itemCount < 1 {
-		itemCount = 1
-	}
-
-	startedAt, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(req.StartedAt))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "startedAt 时间格式非法")
-		return
-	}
-	finishedAt, err := time.Parse(time.RFC3339Nano, strings.TrimSpace(req.FinishedAt))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "finishedAt 时间格式非法")
-		return
-	}
-	if finishedAt.Before(startedAt) {
-		writeError(w, http.StatusBadRequest, "bad_request", "finishedAt 不能早于 startedAt")
-		return
-	}
-
-	status := parseTransferJobStatus(strings.TrimSpace(req.Status))
-	if status == "" {
-		writeError(w, http.StatusBadRequest, "bad_request", "status 非法")
-		return
-	}
-
-	completedCount, errorCount, canceledCount := normalizeTransferJobCounts(
-		req.CompletedCount,
-		req.ErrorCount,
-		req.CanceledCount,
-		itemCount,
-		status,
-	)
-	lastError := normalizeTransferError(req.LastError, req.Error)
-	targetItemID, parseErr := parseOptionalUUID(req.TargetItemID, req.FileID)
-	if parseErr != nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "targetItemId 非法")
-		return
-	}
-
-	now := time.Now()
-	job := store.TransferJob{
-		ID:             uuid.New(),
-		Direction:      direction,
-		SourceKind:     sourceKind,
-		SourceRef:      sourceRef,
-		UnitKind:       unitKind,
-		Name:           name,
-		TargetItemID:   targetItemID,
-		TotalSize:      totalSize,
-		ItemCount:      itemCount,
-		CompletedCount: completedCount,
-		ErrorCount:     errorCount,
-		CanceledCount:  canceledCount,
-		Status:         status,
-		LastError:      lastError,
-		StartedAt:      startedAt,
-		FinishedAt:     finishedAt,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-	}
-	saved, err := store.New(s.db).UpsertTransferJob(r.Context(), job)
-	if err != nil {
-		s.logger.Error("upsert transfer job failed", "error", err.Error())
-		writeError(w, http.StatusInternalServerError, "internal_error", "保存传输历史失败")
-		return
-	}
-	s.syncTransferJobEvent(r.Context(), saved)
-	writeJSON(w, http.StatusOK, map[string]any{
-		"item": toTransferHistoryDTO(saved),
-	})
-}
-
 func (s *Server) handleDeleteTransferHistoryItem(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(chi.URLParam(r, "id"))
 	if err != nil {
@@ -273,20 +116,6 @@ func parseTransferSourceKind(raw string) store.TransferSourceKind {
 		return store.TransferSourceKind(strings.ToLower(strings.TrimSpace(raw)))
 	default:
 		return ""
-	}
-}
-
-func inferLegacyTransferSourceKind(sourceRef string) store.TransferSourceKind {
-	ref := strings.ToLower(strings.TrimSpace(sourceRef))
-	switch {
-	case strings.HasPrefix(ref, "download:"):
-		return store.TransferSourceKindDownloadTask
-	case strings.HasPrefix(ref, "upload-session:"):
-		return store.TransferSourceKindUploadSession
-	case strings.HasPrefix(ref, "torrent:"):
-		return store.TransferSourceKindTorrentTask
-	default:
-		return store.TransferSourceKindDownloadTask
 	}
 }
 

@@ -142,7 +142,6 @@ func (s *Server) Router() http.Handler {
 			pr.Post("/vault/unlock", s.handleVaultUnlock)
 			pr.Post("/vault/lock", s.handleVaultLock)
 			pr.Post("/transfers/downloads", s.handleCreateDownloadTransfer)
-			pr.Post("/transfers/history", s.handleUpsertTransferHistory)
 			pr.Delete("/transfers/history/{id}", s.handleDeleteTransferHistoryItem)
 			pr.Post("/torrents/preview", s.handlePreviewTorrent)
 			pr.Post("/torrents/tasks", s.handleCreateTorrentTask)

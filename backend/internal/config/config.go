@@ -35,17 +35,18 @@ type Config struct {
 	CookieSecure bool
 	CookieMaxAge int // 秒
 
-	ChunkSizeBytes               int64
-	UploadConcurrencyDefault     int
-	DownloadConcurrencyDefault   int
-	ReservedDiskBytesDefault     int64
-	UploadSessionTTL             time.Duration
-	UploadSessionCleanupInterval time.Duration
-	ThumbnailCacheMaxBytes       int64
-	ThumbnailCacheTTL            time.Duration
-	ThumbnailGenerateConcurrency int
-	ThumbnailCacheDir            string
-	FFmpegBinary                 string
+	ChunkSizeBytes                   int64
+	UploadConcurrencyDefault         int
+	DownloadConcurrencyDefault       int
+	DeleteTelegramConcurrencyDefault int
+	ReservedDiskBytesDefault         int64
+	UploadSessionTTL                 time.Duration
+	UploadSessionCleanupInterval     time.Duration
+	ThumbnailCacheMaxBytes           int64
+	ThumbnailCacheTTL                time.Duration
+	ThumbnailGenerateConcurrency     int
+	ThumbnailCacheDir                string
+	FFmpegBinary                     string
 
 	BaseURL         string
 	FrontendOrigin  string
@@ -123,6 +124,7 @@ func Load() (Config, error) {
 	cfg.ChunkSizeBytes = int64FromEnv("CHUNK_SIZE_BYTES", 20*1024*1024)
 	cfg.UploadConcurrencyDefault = intFromEnv("UPLOAD_CONCURRENCY", 4)
 	cfg.DownloadConcurrencyDefault = intFromEnv("DOWNLOAD_CONCURRENCY", 2)
+	cfg.DeleteTelegramConcurrencyDefault = intFromEnv("DELETE_TELEGRAM_CONCURRENCY", 12)
 	cfg.ReservedDiskBytesDefault = int64FromEnv("RESERVED_DISK_BYTES", 2*1024*1024*1024)
 	cfg.UploadSessionTTL = time.Duration(intFromEnv("UPLOAD_SESSION_TTL_HOURS", 24)) * time.Hour
 	cfg.UploadSessionCleanupInterval = time.Duration(intFromEnv("UPLOAD_SESSION_CLEANUP_INTERVAL_MINUTES", 30)) * time.Minute
@@ -142,6 +144,9 @@ func Load() (Config, error) {
 	}
 	if cfg.DownloadConcurrencyDefault < 1 {
 		cfg.DownloadConcurrencyDefault = 1
+	}
+	if cfg.DeleteTelegramConcurrencyDefault < 1 {
+		cfg.DeleteTelegramConcurrencyDefault = 12
 	}
 	if cfg.ReservedDiskBytesDefault < 0 {
 		cfg.ReservedDiskBytesDefault = 0

@@ -612,26 +612,39 @@ export const transferMessages: Record<
   {
     title: string
     subtitle: string
+    jobsTab: string
+    torrentTab: string
     liveTitle: string
     liveSubtitle: string
     historyTitle: string
     historySubtitle: string
+    torrentArchiveTitle: string
+    torrentArchiveSubtitle: string
     detailTitle: string
     detailSubtitle: string
+    torrentDetailTitle: string
+    torrentDetailSubtitle: string
     streamConnected: string
     streamReconnecting: string
     streamError: string
     summaryActive: string
     summaryFailed: string
     summaryCompleted: string
+    torrentSummaryActive: string
+    torrentSummaryCompleted: string
+    torrentSummaryCleanup: string
     summaryActiveValue: (count: number) => string
     summaryFailedValue: (count: number) => string
     summaryCompletedValue: (count: number) => string
+    torrentSummaryActiveValue: (count: number) => string
+    torrentSummaryCompletedValue: (count: number) => string
+    torrentSummaryCleanupValue: (count: number) => string
     filtersDirection: string
     filtersStatus: string
     filtersSource: string
     filtersSearch: string
     filtersSearchPlaceholder: string
+    torrentFiltersStatus: string
     all: string
     directionUpload: string
     directionDownload: string
@@ -643,6 +656,8 @@ export const transferMessages: Record<
     sourceUploadBatch: string
     sourceTorrentTask: string
     sourceDownloadTask: string
+    torrentSourceUrl: string
+    torrentSourceFile: string
     phaseUploadingChunks: string
     phaseFinalizing: string
     phaseDownloading: string
@@ -651,13 +666,28 @@ export const transferMessages: Record<
     phaseAwaitingSelection: string
     phaseTorrentUploading: string
     phaseIdle: string
+    torrentStatusQueued: string
+    torrentStatusDownloading: string
+    torrentStatusAwaitingSelection: string
+    torrentStatusUploading: string
+    torrentStatusCompleted: string
+    torrentStatusError: string
+    torrentCleanupImmediate: string
+    torrentCleanupFixed: string
+    torrentCleanupRandom: string
+    torrentCleanupNever: string
+    torrentCleanupPending: string
+    torrentCleanupDone: string
     emptyLiveTitle: string
     emptyLiveDescription: string
     emptyHistoryTitle: string
     emptyHistoryDescription: string
+    emptyTorrentTitle: string
+    emptyTorrentDescription: string
     syncing: string
     openDetail: string
     deleteHistory: string
+    deleteTorrentTask: string
     loadMore: string
     retry: string
     sessions: string
@@ -671,6 +701,10 @@ export const transferMessages: Record<
     missingChunks: string
     selectedFiles: string
     trackerHosts: string
+    torrentCleanupState: string
+    torrentProgress: string
+    torrentFileOverview: string
+    torrentSourceUrlLabel: string
     lastError: string
     targetFile: string
     totalSize: string
@@ -678,8 +712,10 @@ export const transferMessages: Record<
     directoryCount: string
     activeFiles: string
     startedAt: string
+    createdAt: string
     updatedAt: string
     finishedAt: string
+    dueAt: string
     recentItems: string
     uploaded: string
     failed: string
@@ -695,26 +731,39 @@ export const transferMessages: Record<
   en: {
     title: "Transfers",
     subtitle: "Live queue, archive, and drill-down telemetry for uploads, downloads, and torrent jobs.",
+    jobsTab: "Transfer jobs",
+    torrentTab: "Torrent tasks",
     liveTitle: "Live Queue",
     liveSubtitle: "Streaming status from the server. Running jobs stay here until they settle.",
     historyTitle: "History Archive",
     historySubtitle: "Terminal jobs with server-side filters and detail drill-down.",
+    torrentArchiveTitle: "Torrent Ledger",
+    torrentArchiveSubtitle: "Persistent torrent records stay here even after transfer-job history is cleared.",
     detailTitle: "Transfer Detail",
     detailSubtitle: "Source-specific payload, progress context, and recent child items.",
+    torrentDetailTitle: "Torrent Task Detail",
+    torrentDetailSubtitle: "Raw torrent metadata, cleanup state, and selected file results.",
     streamConnected: "Live stream connected",
     streamReconnecting: "Reconnecting stream",
     streamError: "Stream decode error",
     summaryActive: "Running now",
     summaryFailed: "Failed jobs",
     summaryCompleted: "Completed 24h",
+    torrentSummaryActive: "Still moving",
+    torrentSummaryCompleted: "Task archive",
+    torrentSummaryCleanup: "Cleanup pending",
     summaryActiveValue: (count) => `${count} active`,
     summaryFailedValue: (count) => `${count} failed`,
     summaryCompletedValue: (count) => `${count} finished`,
+    torrentSummaryActiveValue: (count) => `${count} running`,
+    torrentSummaryCompletedValue: (count) => `${count} archived`,
+    torrentSummaryCleanupValue: (count) => `${count} pending`,
     filtersDirection: "Direction",
     filtersStatus: "Status",
     filtersSource: "Source",
     filtersSearch: "Search",
     filtersSearchPlaceholder: "Search by name or source ref",
+    torrentFiltersStatus: "Torrent status",
     all: "All",
     directionUpload: "Upload",
     directionDownload: "Download",
@@ -726,6 +775,8 @@ export const transferMessages: Record<
     sourceUploadBatch: "Batch upload",
     sourceTorrentTask: "Torrent task",
     sourceDownloadTask: "Download task",
+    torrentSourceUrl: "Remote URL",
+    torrentSourceFile: "Torrent file",
     phaseUploadingChunks: "Uploading chunks",
     phaseFinalizing: "Finalizing",
     phaseDownloading: "Downloading",
@@ -734,13 +785,28 @@ export const transferMessages: Record<
     phaseAwaitingSelection: "Awaiting selection",
     phaseTorrentUploading: "Torrent upload",
     phaseIdle: "Idle",
+    torrentStatusQueued: "Queued",
+    torrentStatusDownloading: "Downloading",
+    torrentStatusAwaitingSelection: "Awaiting selection",
+    torrentStatusUploading: "Uploading to Telegram",
+    torrentStatusCompleted: "Completed",
+    torrentStatusError: "Error",
+    torrentCleanupImmediate: "Cleanup immediately",
+    torrentCleanupFixed: "Cleanup on schedule",
+    torrentCleanupRandom: "Cleanup randomly",
+    torrentCleanupNever: "Keep local source",
+    torrentCleanupPending: "Cleanup pending",
+    torrentCleanupDone: "Cleanup done",
     emptyLiveTitle: "No active transfers",
     emptyLiveDescription: "New uploads, downloads, and torrent jobs will appear here in real time.",
     emptyHistoryTitle: "No archived transfers",
     emptyHistoryDescription: "Completed or failed jobs will land here once the server finalizes them.",
+    emptyTorrentTitle: "No torrent tasks",
+    emptyTorrentDescription: "Created torrent jobs will accumulate here for audit, cleanup, and deletion.",
     syncing: "Syncing",
     openDetail: "Details",
     deleteHistory: "Delete",
+    deleteTorrentTask: "Delete torrent task",
     loadMore: "Load",
     retry: "Retry",
     sessions: "Sessions",
@@ -754,6 +820,10 @@ export const transferMessages: Record<
     missingChunks: "Missing chunks",
     selectedFiles: "Selected files",
     trackerHosts: "Tracker hosts",
+    torrentCleanupState: "Cleanup state",
+    torrentProgress: "Torrent progress",
+    torrentFileOverview: "Selected file overview",
+    torrentSourceUrlLabel: "Source URL",
     lastError: "Last error",
     targetFile: "Target file",
     totalSize: "Total size",
@@ -761,8 +831,10 @@ export const transferMessages: Record<
     directoryCount: "Directories",
     activeFiles: "Active files",
     startedAt: "Started",
+    createdAt: "Created",
     updatedAt: "Updated",
     finishedAt: "Finished",
+    dueAt: "Due",
     recentItems: "Recent items",
     uploaded: "Uploaded",
     failed: "Failed",
@@ -777,26 +849,39 @@ export const transferMessages: Record<
   zh: {
     title: "传输",
     subtitle: "统一查看上传、下载和种子任务的实时进度、历史归档与明细。",
+    jobsTab: "传输作业",
+    torrentTab: "种子任务",
     liveTitle: "当前传输",
     liveSubtitle: "服务端实时推送的运行中作业，结束后自动移入历史归档。",
     historyTitle: "历史归档",
     historySubtitle: "已完成、失败或取消的传输记录，支持服务端筛选与详情展开。",
+    torrentArchiveTitle: "种子任务台账",
+    torrentArchiveSubtitle: "这里保留原始种子任务，用来查看文件明细、清理状态和删除历史任务。",
     detailTitle: "传输明细",
     detailSubtitle: "按来源类型展示会话、文件、分片和最近状态。",
+    torrentDetailTitle: "种子任务明细",
+    torrentDetailSubtitle: "查看原始种子任务、清理状态和所选文件结果。",
     streamConnected: "实时流已连接",
     streamReconnecting: "实时流重连中",
     streamError: "实时流解析失败",
     summaryActive: "当前运行",
     summaryFailed: "失败任务",
     summaryCompleted: "24 小时完成",
+    torrentSummaryActive: "仍在运行",
+    torrentSummaryCompleted: "已归档任务",
+    torrentSummaryCleanup: "待清理源文件",
     summaryActiveValue: (count) => `${count} 个运行中`,
     summaryFailedValue: (count) => `${count} 个失败`,
     summaryCompletedValue: (count) => `${count} 个已完成`,
+    torrentSummaryActiveValue: (count) => `${count} 个进行中`,
+    torrentSummaryCompletedValue: (count) => `${count} 个已归档`,
+    torrentSummaryCleanupValue: (count) => `${count} 个待处理`,
     filtersDirection: "方向",
     filtersStatus: "状态",
     filtersSource: "来源",
     filtersSearch: "搜索",
     filtersSearchPlaceholder: "按名称或来源标识搜索",
+    torrentFiltersStatus: "种子状态",
     all: "全部",
     directionUpload: "上传",
     directionDownload: "下载",
@@ -808,6 +893,8 @@ export const transferMessages: Record<
     sourceUploadBatch: "批量上传",
     sourceTorrentTask: "种子任务",
     sourceDownloadTask: "下载任务",
+    torrentSourceUrl: "远程 URL",
+    torrentSourceFile: "种子文件",
     phaseUploadingChunks: "分片上传中",
     phaseFinalizing: "收尾处理中",
     phaseDownloading: "下载中",
@@ -816,13 +903,28 @@ export const transferMessages: Record<
     phaseAwaitingSelection: "等待文件选择",
     phaseTorrentUploading: "种子上传中",
     phaseIdle: "空闲",
+    torrentStatusQueued: "排队中",
+    torrentStatusDownloading: "下载中",
+    torrentStatusAwaitingSelection: "等待选择",
+    torrentStatusUploading: "上传到 Telegram",
+    torrentStatusCompleted: "已完成",
+    torrentStatusError: "失败",
+    torrentCleanupImmediate: "立即清理",
+    torrentCleanupFixed: "定时清理",
+    torrentCleanupRandom: "随机清理",
+    torrentCleanupNever: "保留本地源文件",
+    torrentCleanupPending: "待清理",
+    torrentCleanupDone: "已清理",
     emptyLiveTitle: "暂无运行中的传输",
     emptyLiveDescription: "新的上传、下载或种子任务开始后，会实时出现在这里。",
     emptyHistoryTitle: "暂无历史记录",
     emptyHistoryDescription: "服务端完成归档后，已结束任务会出现在这里。",
+    emptyTorrentTitle: "暂无种子任务",
+    emptyTorrentDescription: "创建过的种子任务会保留在这里，便于查看明细和手动清理。",
     syncing: "同步中",
     openDetail: "查看明细",
     deleteHistory: "删除",
+    deleteTorrentTask: "删除种子任务",
     loadMore: "加载",
     retry: "重试",
     sessions: "会话",
@@ -836,6 +938,10 @@ export const transferMessages: Record<
     missingChunks: "缺失分片",
     selectedFiles: "已选文件",
     trackerHosts: "Tracker 主机",
+    torrentCleanupState: "清理状态",
+    torrentProgress: "任务进度",
+    torrentFileOverview: "所选文件概览",
+    torrentSourceUrlLabel: "来源 URL",
     lastError: "最近错误",
     targetFile: "目标文件",
     totalSize: "总大小",
@@ -843,8 +949,10 @@ export const transferMessages: Record<
     directoryCount: "目录数",
     activeFiles: "活动文件",
     startedAt: "开始时间",
+    createdAt: "创建时间",
     updatedAt: "最近更新",
     finishedAt: "结束时间",
+    dueAt: "计划时间",
     recentItems: "最近子项",
     uploaded: "已上传",
     failed: "失败",

@@ -107,7 +107,7 @@ func (s *Server) handleCreateUploadFolder(w http.ResponseWriter, r *http.Request
 		case errors.Is(err, store.ErrBadInput):
 			writeError(w, http.StatusBadRequest, "bad_request", "参数非法（请确认父目录存在且可用）")
 		case errors.Is(err, store.ErrConflict):
-			writeError(w, http.StatusConflict, "conflict", "目标位置存在同名文件或文件夹，目录上传已整体取消")
+			writeError(w, http.StatusConflict, "conflict", s.describeUploadFolderConflict(r.Context(), parentID, manifest))
 		default:
 			s.logger.Error("create upload folder batch failed", "error", err.Error())
 			writeError(w, http.StatusInternalServerError, "internal_error", "创建目录上传任务失败")

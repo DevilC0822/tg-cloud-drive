@@ -17,6 +17,7 @@ export interface SettingsText {
   saving: string
   transferUploadConcurrency: string
   transferDownloadConcurrency: string
+  transferDeleteConcurrency: string
   transferReservedDiskGb: string
   transferChunkSizeMb: string
   sessionsTtlHours: string
@@ -83,6 +84,7 @@ export const settingsMessages: Record<Locale, SettingsText> = {
     saving: "Saving...",
     transferUploadConcurrency: "Upload Concurrency",
     transferDownloadConcurrency: "Download Concurrency",
+    transferDeleteConcurrency: "Delete Concurrency",
     transferReservedDiskGb: "Reserved Disk (GB)",
     transferChunkSizeMb: "Chunk Size (MB, read-only)",
     sessionsTtlHours: "Upload Session TTL (hours)",
@@ -147,6 +149,7 @@ export const settingsMessages: Record<Locale, SettingsText> = {
     saving: "保存中...",
     transferUploadConcurrency: "上传并发",
     transferDownloadConcurrency: "下载并发",
+    transferDeleteConcurrency: "删除并发",
     transferReservedDiskGb: "预留磁盘空间（GB）",
     transferChunkSizeMb: "分片大小（MB，只读）",
     sessionsTtlHours: "上传会话 TTL（小时）",
