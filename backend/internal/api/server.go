@@ -137,6 +137,7 @@ func (s *Server) Router() http.Handler {
 			pr.Get("/transfers/stream", s.handleTransferStream)
 			pr.Get("/transfers/{id}/entries", s.handleGetTransferEntries)
 			pr.Get("/transfers/{id}", s.handleGetTransferDetail)
+			pr.Delete("/transfers/{id}", s.handleDeleteActiveTransfer)
 			pr.Post("/folders", s.handleCreateFolder)
 			pr.Patch("/settings", s.handlePatchSettings)
 			pr.Post("/vault/unlock", s.handleVaultUnlock)

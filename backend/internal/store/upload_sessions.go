@@ -78,6 +78,17 @@ WHERE id = $1
 	return out, nil
 }
 
+func (s *Store) DeleteUploadSessionByID(ctx context.Context, id uuid.UUID) error {
+	ct, err := s.db.Exec(ctx, `DELETE FROM upload_sessions WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (s *Store) TouchUploadSession(ctx context.Context, id uuid.UUID, now time.Time) error {
 	ct, err := s.db.Exec(ctx, `UPDATE upload_sessions SET updated_at = $2 WHERE id = $1`, id, now)
 	if err != nil {

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion"
-import { ArrowRight, Sparkles } from "lucide-react"
+import { ArrowRight, Sparkles, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -25,6 +25,7 @@ interface LiveTransferCardProps {
   item: TransferJobSummary
   text: (typeof transferMessages)["en"]
   onOpenDetail: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 function ProgressRail({ percent }: { percent: number }) {
@@ -48,7 +49,7 @@ function ProgressRail({ percent }: { percent: number }) {
   )
 }
 
-export function LiveTransferCard({ item, text, onOpenDetail }: LiveTransferCardProps) {
+export function LiveTransferCard({ item, text, onOpenDetail, onDelete }: LiveTransferCardProps) {
   const DirectionIcon = getTransferDirectionIcon(item.direction)
   const SourceIcon = getTransferSourceIcon(item.sourceKind)
   const infoTone = themeToneClasses.info
@@ -128,10 +129,15 @@ export function LiveTransferCard({ item, text, onOpenDetail }: LiveTransferCardP
               </motion.div>
               <div className="text-[13px] font-medium text-muted-foreground">{getTransferProgressLabel(item)}</div>
             </div>
-            <Button variant="ghost" size="sm" className="hidden h-8 rounded-full bg-primary/5 hover:bg-primary/10 lg:flex group-hover:bg-primary/20" onClick={() => onOpenDetail(item.id)}>
-              {text.openDetail}
-              <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="hidden h-8 rounded-full bg-primary/5 hover:bg-primary/10 lg:flex group-hover:bg-primary/20" onClick={() => onOpenDetail(item.id)}>
+                {text.openDetail}
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive" onClick={() => onDelete(item.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 

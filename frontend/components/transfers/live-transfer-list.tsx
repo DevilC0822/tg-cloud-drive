@@ -12,9 +12,10 @@ interface LiveTransferListProps {
   refreshing: boolean
   text: (typeof transferMessages)["en"]
   onOpenDetail: (id: string) => void
+  onDelete: (id: string) => void
 }
 
-export function LiveTransferList({ items, initialLoading, refreshing, text, onOpenDetail }: LiveTransferListProps) {
+export function LiveTransferList({ items, initialLoading, refreshing, text, onOpenDetail, onDelete }: LiveTransferListProps) {
   return (
     <section className="space-y-6">
       <div className="flex items-end justify-between gap-4">
@@ -38,7 +39,7 @@ export function LiveTransferList({ items, initialLoading, refreshing, text, onOp
         <div className="grid gap-4">
           <AnimatePresence mode="popLayout" initial={false}>
             {items.map((item) => (
-              <LiveTransferCard key={item.id} item={item} text={text} onOpenDetail={onOpenDetail} />
+              <LiveTransferCard key={item.id} item={item} text={text} onOpenDetail={onOpenDetail} onDelete={onDelete} />
             ))}
           </AnimatePresence>
         </div>

@@ -60,12 +60,14 @@ function JobsTab({
   transfers,
   text,
   onOpenDetail,
-  onDelete,
+  onDeleteActive,
+  onDeleteHistory,
 }: {
   transfers: ReturnType<typeof useTransfers>
   text: TransferText
   onOpenDetail: (id: string) => void
-  onDelete: (id: string) => void
+  onDeleteActive: (id: string) => void
+  onDeleteHistory: (id: string) => void
 }) {
   return (
     <TabsContent value="jobs" className="space-y-8">
@@ -75,6 +77,7 @@ function JobsTab({
         refreshing={transfers.activeRefreshing}
         text={text}
         onOpenDetail={onOpenDetail}
+        onDelete={onDeleteActive}
       />
 
       <HistoryTransferList
@@ -88,7 +91,7 @@ function JobsTab({
         onChangePage={transfers.changePage}
         onChangePageSize={transfers.changePageSize}
         onOpenDetail={onOpenDetail}
-        onDelete={onDelete}
+        onDelete={onDeleteHistory}
       />
     </TabsContent>
   )
@@ -194,6 +197,14 @@ export default function TransfersPage() {
     }
   }
 
+  const deleteActive = async (transferId: string) => {
+    try {
+      await transfers.removeActiveItem(transferId)
+    } catch (error) {
+      showErrorToast(text.deleteHistory, error)
+    }
+  }
+
   const openTorrentDetail = async (taskId: string) => {
     try {
       await torrentTasks.openDetail(taskId)
@@ -244,7 +255,13 @@ export default function TransfersPage() {
           <motion.div variants={ITEM_VARIANTS}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-6">
               <TabsHeader text={text} />
-              <JobsTab transfers={transfers} text={text} onOpenDetail={(id) => void openDetail(id)} onDelete={(id) => void deleteHistory(id)} />
+              <JobsTab
+                transfers={transfers}
+                text={text}
+                onOpenDetail={(id) => void openDetail(id)}
+                onDeleteActive={(id) => void deleteActive(id)}
+                onDeleteHistory={(id) => void deleteHistory(id)}
+              />
               <TorrentTab
                 torrentTasks={torrentTasks}
                 text={text}

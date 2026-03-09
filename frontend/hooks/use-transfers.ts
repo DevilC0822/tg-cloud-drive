@@ -13,6 +13,7 @@ import {
 } from "@/stores/transfer-atoms"
 import {
   connectTransferStream,
+  deleteActiveTransfer,
   deleteTransferHistoryItem,
   fetchTransferDetail,
   fetchTransferHistory,
@@ -174,6 +175,12 @@ export function useTransfers() {
     await reloadHistory()
   }, [reloadHistory, setHistoryTransfers])
 
+  const removeActiveItem = useCallback(async (transferId: string) => {
+    await deleteActiveTransfer(transferId)
+    setActiveTransfers((prev) => removeTransfer(prev, transferId))
+    setDetail((prev) => (prev.open && prev.id === transferId ? { ...prev, open: false } : prev))
+  }, [setActiveTransfers, setDetail])
+
   const handleStreamEvent = useCallback((event: TransferStreamEvent) => {
     if (event.type === "active_snapshot") {
       setActiveTransfers(sortTransfers(event.items ?? []))
@@ -242,5 +249,6 @@ export function useTransfers() {
     changePage,
     changePageSize,
     removeHistoryItem,
+    removeActiveItem,
   }
 }

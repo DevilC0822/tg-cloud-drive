@@ -248,6 +248,25 @@ export async function deleteTransferHistoryItem(transferId: string) {
     method: "DELETE",
   })
 }
+
+export async function deleteActiveTransfer(transferId: string) {
+  return apiFetchJson<{
+    ok: boolean
+    telegramCleanup?: {
+      attempted: number
+      deleted: number
+      replaced: number
+      failed: number
+      errors?: Array<{
+        chatId: string
+        messageId: number
+        error: string
+      }>
+    }
+  }>(`/api/transfers/${encodeURIComponent(transferId)}`, {
+    method: "DELETE",
+  })
+}
 export async function startDownloadTransfer(itemId: string) {
   return apiFetchJson<StartDownloadTransferResponse>("/api/transfers/downloads", {
     method: "POST",
