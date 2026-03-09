@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -54,11 +55,15 @@ ORDER BY path ASC
 }
 
 func BuildChildPath(parentPath string, name string) string {
-	parentPath = trimPath(parentPath)
-	if parentPath == "" || parentPath == "/" {
-		return "/" + trimPath(name)
+	childName := trimPath(name)
+	parentPrefix := normalizePathPrefix(parentPath)
+	if childName == "" {
+		return parentPrefix
 	}
-	return parentPath + "/" + trimPath(name)
+	if parentPrefix == "" || parentPrefix == "/" {
+		return "/" + childName
+	}
+	return parentPrefix + "/" + childName
 }
 
 func trimPath(value string) string {
@@ -69,6 +74,74 @@ func trimPath(value string) string {
 		value = value[:len(value)-1]
 	}
 	return value
+}
+
+type pathPrefixFilter struct {
+	exact []string
+	like  []string
+}
+
+func newPathPrefixFilter(prefix string) (pathPrefixFilter, error) {
+	exact, err := pathPrefixVariants(prefix)
+	if err != nil {
+		return pathPrefixFilter{}, err
+	}
+	return pathPrefixFilter{
+		exact: exact,
+		like:  buildPathLikePatterns(exact),
+	}, nil
+}
+
+func pathPrefixVariants(prefix string) ([]string, error) {
+	normalized := normalizePathPrefix(prefix)
+	if normalized == "" {
+		return nil, ErrBadInput
+	}
+	if normalized == "/" {
+		return []string{"/"}, nil
+	}
+	variants := []string{normalized, trimPath(normalized)}
+	return uniqueStrings(variants), nil
+}
+
+func normalizePathPrefix(prefix string) string {
+	trimmed := strings.TrimSpace(prefix)
+	if trimmed == "" {
+		return ""
+	}
+	cleaned := trimPath(trimmed)
+	if cleaned == "" {
+		return "/"
+	}
+	return "/" + cleaned
+}
+
+func buildPathLikePatterns(prefixes []string) []string {
+	patterns := make([]string, 0, len(prefixes))
+	for _, prefix := range prefixes {
+		if prefix == "/" {
+			patterns = append(patterns, "/%")
+			continue
+		}
+		patterns = append(patterns, prefix+"/%")
+	}
+	return uniqueStrings(patterns)
+}
+
+func uniqueStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{}, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	return out
 }
 
 func UUIDPointer(value uuid.UUID) *uuid.UUID {
