@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useAtomValue } from "jotai"
 import { motion } from "framer-motion"
 import { I18nFade } from "@/components/i18n-fade"
 import { useI18n } from "@/components/i18n-provider"
@@ -13,7 +14,9 @@ import { useTorrentTaskHistory } from "@/hooks/use-torrent-task-history"
 import { useTransfers } from "@/hooks/use-transfers"
 import { useToast } from "@/hooks/use-toast"
 import { transferMessages } from "@/lib/i18n"
+import { mergeActiveTransfersWithUploadTasks, type TransferJobListItem } from "@/lib/transfer-live-items"
 import type { transferMessages as transferMessageType } from "@/lib/i18n"
+import { uploadTasksAtom } from "@/stores/upload-atoms"
 
 const CONTAINER_VARIANTS = {
   hidden: { opacity: 0 },
@@ -58,12 +61,14 @@ function TabsHeader({ text }: { text: TransferText }) {
 
 function JobsTab({
   transfers,
+  liveTransfers,
   text,
   onOpenDetail,
   onDeleteActive,
   onDeleteHistory,
 }: {
   transfers: ReturnType<typeof useTransfers>
+  liveTransfers: TransferJobListItem[]
   text: TransferText
   onOpenDetail: (id: string) => void
   onDeleteActive: (id: string) => void
@@ -72,7 +77,7 @@ function JobsTab({
   return (
     <TabsContent value="jobs" className="space-y-8">
       <LiveTransferList
-        items={transfers.activeTransfers}
+        items={liveTransfers}
         initialLoading={transfers.activeInitialLoading}
         refreshing={transfers.activeRefreshing}
         text={text}
@@ -172,6 +177,8 @@ export default function TransfersPage() {
   const { toast } = useToast()
   const transfers = useTransfers()
   const torrentTasks = useTorrentTaskHistory()
+  const uploadTasks = useAtomValue(uploadTasksAtom)
+  const liveTransfers = mergeActiveTransfersWithUploadTasks(transfers.activeTransfers, uploadTasks)
 
   const showErrorToast = (title: string, error: unknown) => {
     toast({
@@ -257,6 +264,7 @@ export default function TransfersPage() {
               <TabsHeader text={text} />
               <JobsTab
                 transfers={transfers}
+                liveTransfers={liveTransfers}
                 text={text}
                 onOpenDetail={(id) => void openDetail(id)}
                 onDeleteActive={(id) => void deleteActive(id)}

@@ -45,6 +45,8 @@ type Server struct {
 	transferSubscriberSeq atomic.Uint64
 	downloadProgressMu    sync.RWMutex
 	downloadProgress      map[uuid.UUID]downloadTransferProgress
+	uploadRuntimeMu       sync.RWMutex
+	uploadRuntime         map[uuid.UUID]uploadTransferRuntimeState
 
 	chunkUploadMu       sync.Mutex
 	chunkUploadInFlight map[string]struct{}
@@ -87,6 +89,7 @@ func NewServer(deps ServerDeps) (*Server, error) {
 		filePathCache:       map[string]cachedFilePath{},
 		transferSubscribers: map[uint64]chan transferStreamEvent{},
 		downloadProgress:    map[uuid.UUID]downloadTransferProgress{},
+		uploadRuntime:       map[uuid.UUID]uploadTransferRuntimeState{},
 		thumbGenerating:     map[string]chan struct{}{},
 		chunkUploadInFlight: map[string]struct{}{},
 	}

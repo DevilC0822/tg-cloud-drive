@@ -272,7 +272,13 @@ func parseUploadSessionChunkIndex(name string, totalChunks int) (int, bool) {
 	return idx, true
 }
 
-func (s *Server) mergeLocalSessionChunks(session store.UploadSession) (string, error) {
+type mergeLocalSessionChunksOptions struct {
+	session    store.UploadSession
+	onProgress func(current int64)
+}
+
+func (s *Server) mergeLocalSessionChunks(options mergeLocalSessionChunksOptions) (string, error) {
+	session := options.session
 	sessionDir := s.uploadSessionDir(session.ID)
 	if err := os.MkdirAll(sessionDir, 0o755); err != nil {
 		return "", fmt.Errorf("创建会话目录失败: %w", err)
@@ -298,7 +304,8 @@ func (s *Server) mergeLocalSessionChunks(session store.UploadSession) (string, e
 		if openErr != nil {
 			return "", fmt.Errorf("读取上传分片失败（index=%d）: %w", idx, openErr)
 		}
-		written, copyErr := io.Copy(merged, chunkFile)
+		reader := newMergeChunkProgressReader(chunkFile, totalWritten, options.onProgress)
+		written, copyErr := io.Copy(merged, reader)
 		_ = chunkFile.Close()
 		if copyErr != nil {
 			return "", fmt.Errorf("合并上传分片失败（index=%d）: %w", idx, copyErr)
@@ -324,6 +331,33 @@ func (s *Server) mergeLocalSessionChunks(session store.UploadSession) (string, e
 
 	cleanup = false
 	return mergedPath, nil
+}
+
+func newMergeChunkProgressReader(source io.Reader, baseBytes int64, onProgress func(current int64)) io.Reader {
+	if onProgress == nil {
+		return source
+	}
+	return &mergeChunkProgressReader{
+		source:     source,
+		baseBytes:  baseBytes,
+		onProgress: onProgress,
+	}
+}
+
+type mergeChunkProgressReader struct {
+	source     io.Reader
+	baseBytes  int64
+	readBytes  int64
+	onProgress func(current int64)
+}
+
+func (r *mergeChunkProgressReader) Read(p []byte) (int, error) {
+	n, err := r.source.Read(p)
+	if n > 0 {
+		r.readBytes += int64(n)
+		r.onProgress(r.baseBytes + r.readBytes)
+	}
+	return n, err
 }
 
 func (s *Server) clearLocalUploadSession(sessionID uuid.UUID) error {

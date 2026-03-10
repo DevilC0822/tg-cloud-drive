@@ -12,7 +12,6 @@ import {
   createUploadTaskCallbacks,
   DEFAULT_UPLOAD_CONCURRENCY,
   normalizeUploadConcurrency,
-  toUploadErrorMessage,
 } from "@/lib/upload-task-utils"
 import {
   uploadFileToExistingSession,
@@ -98,7 +97,13 @@ export function useUpload(options: UseUploadOptions = {}) {
       if (!task.file) {
         return null
       }
-      updateTask(task.id, (prev) => ({ ...prev, status: "uploading", error: undefined, targetParentId: parentId }))
+      updateTask(task.id, (prev) => ({
+        ...prev,
+        status: "uploading",
+        error: undefined,
+        targetParentId: parentId,
+        currentSpeedBytesPerSecond: 0,
+      }))
 
       try {
         const callbacks = createUploadTaskCallbacks(updateTask, task.id)
@@ -111,6 +116,8 @@ export function useUpload(options: UseUploadOptions = {}) {
           progress: 100,
           uploadedChunkCount: completed.session.totalChunks,
           totalChunkCount: completed.session.totalChunks,
+          transferredBytes: prev.totalBytes,
+          currentSpeedBytesPerSecond: 0,
           finishedAt: Date.now(),
         }))
         options.onUploaded?.()
@@ -120,6 +127,7 @@ export function useUpload(options: UseUploadOptions = {}) {
           ...prev,
           status: "error",
           error: err instanceof Error ? err.message : "Upload failed",
+          currentSpeedBytesPerSecond: 0,
           finishedAt: Date.now(),
         }))
         return null
@@ -146,6 +154,7 @@ export function useUpload(options: UseUploadOptions = {}) {
           ...prev,
           status: "error",
           error: error instanceof Error ? error.message : "Folder upload failed",
+          currentSpeedBytesPerSecond: 0,
           finishedAt: Date.now(),
         }))
         throw error

@@ -6,14 +6,20 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TransferFolderTree } from "@/components/transfers/transfer-folder-tree"
+import { TransferPhaseStepper } from "@/components/transfers/transfer-phase-stepper"
 import { useIsMobile } from "@/hooks/use-mobile"
 import type { TransferJobDetail, TransferUploadSessionItem } from "@/lib/transfers-api"
 import type { transferMessages } from "@/lib/i18n"
 import { formatFileSize, formatRelativeTime } from "@/lib/files"
 import { semanticToneClasses } from "@/lib/palette"
 import {
+  formatTransferPhaseElapsed,
   getTransferDirectionLabel,
+  getTransferPhaseDetailLabel,
   getTransferPhaseLabel,
+  getTransferPhaseProgressLabel,
+  getTransferPhaseProgressMode,
+  getTransferPhaseProgressPercent,
   getTransferProgressLabel,
   getTransferSourceLabel,
   getTransferStatusLabel,
@@ -29,14 +35,19 @@ interface TransferDetailSheetProps {
   onOpenChange: (open: boolean) => void
 }
 
-function DetailProgress({ percent }: { percent: number }) {
+function DetailProgress({ percent, indeterminate }: { percent: number | null; indeterminate?: boolean }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-[0.24em] text-muted-foreground">progress</span>
-        <span className="font-mono text-sm text-foreground">{percent}%</span>
+        <span className="font-mono text-sm text-foreground">{indeterminate || percent == null ? "—" : `${percent}%`}</span>
       </div>
-      <Progress value={percent} className="h-2.5 bg-primary/12" />
+      <div className="relative">
+        <Progress value={indeterminate ? 36 : percent ?? 0} className="h-2.5 bg-primary/12" />
+        {indeterminate ? (
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-[42%] animate-pulse rounded-full bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -63,6 +74,12 @@ function SessionRow({ item }: { item: TransferUploadSessionItem }) {
 function DetailBody({ detail, text }: { detail: TransferJobDetail; text: (typeof transferMessages)["en"] }) {
   const item = detail.item
   const errorTone = semanticToneClasses.error
+  const phaseDetailLabel = getTransferPhaseDetailLabel(item.phaseDetail, text)
+  const phaseMode = getTransferPhaseProgressMode(item)
+  const phasePercent = getTransferPhaseProgressPercent(item)
+  const phaseProgressLabel = getTransferPhaseProgressLabel(item, text)
+  const phaseElapsed = formatTransferPhaseElapsed(item.phaseStartedAt)
+  const showStepper = item.sourceKind === "upload_session" && (item.phaseSteps?.length ?? 0) > 1
 
   return (
     <ScrollArea className="h-full">
@@ -84,16 +101,33 @@ function DetailBody({ detail, text }: { detail: TransferJobDetail; text: (typeof
           </div>
 
           <h3 className="mt-3 text-xl font-semibold text-foreground">{item.name}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{getTransferProgressLabel(item)}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{phaseProgressLabel}</p>
           <div className="mt-4">
-            <DetailProgress percent={item.progress.percent} />
+            <DetailProgress percent={phasePercent} indeterminate={phaseMode === "indeterminate"} />
           </div>
+
+          {showStepper ? (
+            <div className="mt-4">
+              <TransferPhaseStepper
+                steps={item.phaseSteps}
+                currentStep={item.phaseDetail}
+                status={item.status}
+                text={text}
+              />
+            </div>
+          ) : null}
 
           <div className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
             <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.totalSize}: {item.totalSize > 0 ? formatFileSize(item.totalSize) : "—"}</div>
             <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.itemCount}: {item.itemCount}</div>
             <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.startedAt}: {formatRelativeTime(item.startedAt)}</div>
             <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.updatedAt}: {formatRelativeTime(item.updatedAt)}</div>
+            {phaseDetailLabel ? (
+              <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.currentStage}: {phaseDetailLabel}</div>
+            ) : null}
+            {phaseMode === "indeterminate" && item.phaseStartedAt ? (
+              <div className="rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5">{text.stageElapsed}: {phaseElapsed}</div>
+            ) : null}
           </div>
 
           <div className="mt-4 rounded-2xl border border-border/50 bg-background/30 px-3 py-2.5 text-sm text-muted-foreground">

@@ -573,8 +573,12 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		})
 		return
 	}
+	defer s.clearUploadTransferRuntimeBySession(context.Background(), session)
 
-	uploaded, err := s.listUploadedChunkIndicesBySession(r.Context(), session)
+	opCtx, opCancel := newUploadSessionOperationContext(r.Context())
+	defer opCancel()
+
+	uploaded, err := s.listUploadedChunkIndicesBySession(opCtx, session)
 	if err != nil {
 		s.logger.Error("list uploaded chunks failed", "error", err.Error())
 		writeError(w, http.StatusInternalServerError, "internal_error", "查询上传进度失败")
@@ -584,9 +588,9 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 	missing := missingChunkIndices(session.TotalChunks, uploaded)
 	if len(missing) > 0 {
 		errText := fmt.Sprintf("仍有 %d 个分片未上传", len(missing))
-		s.markUploadSessionFailed(r.Context(), session, errText)
+		s.markUploadSessionFailed(opCtx, session, errText)
 		s.recordUploadSessionTransferHistory(
-			context.Background(),
+			opCtx,
 			session,
 			nil,
 			store.TransferStatusError,
@@ -599,12 +603,12 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 	}
 
 	method := normalizeUploadAccessMethod(session.AccessMethod)
-	uploadMode, err := s.resolveUploadSessionMode(r.Context(), session)
+	uploadMode, err := s.resolveUploadSessionMode(opCtx, session)
 	if err != nil {
 		s.logger.Error("resolve upload session mode failed", "error", err.Error(), "session_id", session.ID.String())
-		s.markUploadSessionFailed(r.Context(), session, "计算上传策略失败")
+		s.markUploadSessionFailed(opCtx, session, "计算上传策略失败")
 		s.recordUploadSessionTransferHistory(
-			context.Background(),
+			opCtx,
 			session,
 			nil,
 			store.TransferStatusError,
@@ -623,12 +627,27 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 	)
 
 	if useLocalMergedUpload {
-		mergedPath, mergeErr := s.mergeLocalSessionChunks(session)
+		mergeReporter := newUploadPhaseProgressReporter(
+			s,
+			opCtx,
+			session,
+			transferPhaseDetailAssemblingFile,
+			transferPhaseProgressModeDeterminate,
+			session.FileSize,
+			"bytes",
+		)
+		mergeReporter.Reset()
+		mergedPath, mergeErr := s.mergeLocalSessionChunks(mergeLocalSessionChunksOptions{
+			session: session,
+			onProgress: func(current int64) {
+				mergeReporter.Update(current)
+			},
+		})
 		if mergeErr != nil {
 			s.logger.Error("merge local staged upload chunks failed", "error", mergeErr.Error(), "session_id", session.ID.String())
-			s.markUploadSessionFailed(r.Context(), session, "分片合并失败")
+			s.markUploadSessionFailed(opCtx, session, "分片合并失败")
 			s.recordUploadSessionTransferHistory(
-				context.Background(),
+				opCtx,
 				session,
 				nil,
 				store.TransferStatusError,
@@ -639,6 +658,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 			writeError(w, http.StatusInternalServerError, "internal_error", "分片合并失败")
 			return
 		}
+		mergeReporter.Complete()
 		defer os.Remove(mergedPath)
 
 		caption := fmt.Sprintf("tgcd:%s", session.ItemID.String())
@@ -647,8 +667,15 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 			sendErr error
 		)
 		if method == setupAccessMethodSelfHosted {
+			s.syncUploadTransferRuntimeStateBySession(opCtx, session, uploadTransferRuntimeState{
+				PhaseDetail:     transferPhaseDetailUploadingToTelegram,
+				ProgressCurrent: 0,
+				ProgressTotal:   session.FileSize,
+				ProgressUnit:    "bytes",
+				ProgressMode:    transferPhaseProgressModeIndeterminate,
+			})
 			msg, uploadProcess, sendErr = s.sendMediaFromLocalPathWithRetry(
-				r.Context(),
+				opCtx,
 				s.cfg.TGStorageChatID,
 				session.FileName,
 				mergedPath,
@@ -656,20 +683,36 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 				caption,
 			)
 		} else {
-			msg, uploadProcess, sendErr = s.sendMediaFromPathWithRetry(
-				r.Context(),
+			uploadReporter := newUploadPhaseProgressReporter(
+				s,
+				opCtx,
+				session,
+				transferPhaseDetailUploadingToTelegram,
+				transferPhaseProgressModeDeterminate,
+				session.FileSize,
+				"bytes",
+			)
+			uploadReporter.Reset()
+			msg, uploadProcess, sendErr = s.sendMediaFromPathWithRetryAndProgress(
+				opCtx,
 				s.cfg.TGStorageChatID,
 				session.FileName,
 				mergedPath,
 				strOrEmpty(session.MimeType),
 				caption,
+				func(current int64, _ int64, speedBytesPerSecond int64) {
+					uploadReporter.UpdateWithSpeed(current, speedBytesPerSecond)
+				},
 			)
+			if sendErr == nil {
+				uploadReporter.Complete()
+			}
 		}
 		if sendErr != nil {
 			s.logger.Error("send local staged merged file failed", "error", sendErr.Error(), "session_id", session.ID.String())
-			s.markUploadSessionFailed(r.Context(), session, "上传到 Telegram 失败")
+			s.markUploadSessionFailed(opCtx, session, "上传到 Telegram 失败")
 			s.recordUploadSessionTransferHistory(
-				context.Background(),
+				opCtx,
 				session,
 				nil,
 				store.TransferStatusError,
@@ -680,7 +723,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 			writeError(w, http.StatusBadGateway, "bad_gateway", "上传到 Telegram 失败")
 			return
 		}
-		resolvedDoc, docErr := s.resolveMessageDocument(r.Context(), msg)
+		resolvedDoc, docErr := s.resolveMessageDocument(opCtx, msg)
 		if docErr != nil {
 			s.logger.Error(
 				"sendDocument(local_path) missing file_id",
@@ -689,11 +732,11 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 				"error", docErr.Error(),
 			)
 			if msg.MessageID > 0 {
-				_ = s.deleteMessageWithRetry(r.Context(), s.cfg.TGStorageChatID, msg.MessageID)
+				_ = s.deleteMessageWithRetry(opCtx, s.cfg.TGStorageChatID, msg.MessageID)
 			}
-			s.markUploadSessionFailed(r.Context(), session, "上传结果异常（缺少文件标识）")
+			s.markUploadSessionFailed(opCtx, session, "上传结果异常（缺少文件标识）")
 			s.recordUploadSessionTransferHistory(
-				context.Background(),
+				opCtx,
 				session,
 				nil,
 				store.TransferStatusError,
@@ -725,7 +768,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		actualSize = resolveStoredSizeByTelegramSize(0, int64(mergedChunk.ChunkSize))
 	}
 	if !useLocalMergedUpload {
-		uploadedChunks, listErr := st.ListChunks(r.Context(), session.ItemID)
+		uploadedChunks, listErr := st.ListChunks(opCtx, session.ItemID)
 		if listErr != nil {
 			s.logger.Error("list chunks failed", "error", listErr.Error(), "session_id", session.ID.String())
 			writeError(w, http.StatusInternalServerError, "internal_error", "查询上传分片失败")
@@ -735,7 +778,14 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 	}
 
 	now := time.Now()
-	item, finalizeErr := st.FinalizeUploadSession(r.Context(), store.FinalizeUploadSessionInput{
+	s.syncUploadTransferRuntimeStateBySession(opCtx, session, uploadTransferRuntimeState{
+		PhaseDetail:     transferPhaseDetailFinalizingRecord,
+		ProgressCurrent: 0,
+		ProgressTotal:   1,
+		ProgressUnit:    "items",
+		ProgressMode:    transferPhaseProgressModeDiscrete,
+	})
+	item, finalizeErr := st.FinalizeUploadSession(opCtx, store.FinalizeUploadSessionInput{
 		SessionID:      session.ID,
 		ItemID:         session.ItemID,
 		ItemSize:       actualSize,
@@ -744,14 +794,14 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		Chunk:          mergedChunk,
 	})
 	if errors.Is(finalizeErr, store.ErrConflict) && useLocalMergedUpload && mergedMessageID > 0 {
-		_ = s.deleteMessageWithRetry(r.Context(), s.cfg.TGStorageChatID, mergedMessageID)
+		_ = s.deleteMessageWithRetry(opCtx, s.cfg.TGStorageChatID, mergedMessageID)
 		mergedChunk = nil
-		uploadedChunks, listErr := st.ListChunks(r.Context(), session.ItemID)
+		uploadedChunks, listErr := st.ListChunks(opCtx, session.ItemID)
 		if listErr != nil {
 			s.logger.Error("list chunks failed after merged chunk conflict", "error", listErr.Error(), "session_id", session.ID.String())
-			s.markUploadSessionFailed(r.Context(), session, "查询上传分片失败")
+			s.markUploadSessionFailed(opCtx, session, "查询上传分片失败")
 			s.recordUploadSessionTransferHistory(
-				context.Background(),
+				opCtx,
 				session,
 				nil,
 				store.TransferStatusError,
@@ -763,7 +813,7 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		actualSize = resolveUploadedChunkTotalSize(uploadedChunks, session.FileSize)
-		item, finalizeErr = st.FinalizeUploadSession(r.Context(), store.FinalizeUploadSessionInput{
+		item, finalizeErr = st.FinalizeUploadSession(opCtx, store.FinalizeUploadSessionInput{
 			SessionID:      session.ID,
 			ItemID:         session.ItemID,
 			ItemSize:       actualSize,
@@ -774,9 +824,9 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 	}
 	if finalizeErr != nil {
 		s.logger.Error("finalize upload session failed", "error", finalizeErr.Error(), "session_id", session.ID.String())
-		s.markUploadSessionFailed(r.Context(), session, "完成上传失败")
+		s.markUploadSessionFailed(opCtx, session, "完成上传失败")
 		s.recordUploadSessionTransferHistory(
-			context.Background(),
+			opCtx,
 			session,
 			nil,
 			store.TransferStatusError,
@@ -793,10 +843,10 @@ func (s *Server) handleCompleteUploadSession(w http.ResponseWriter, r *http.Requ
 		}
 	}
 	if session.TransferBatchID != nil {
-		_ = st.SetUploadFolderEntryStatusBySessionID(r.Context(), session.ID, store.UploadFolderEntryStatusCompleted, nil, time.Now())
+		_ = st.SetUploadFolderEntryStatusBySessionID(opCtx, session.ID, store.UploadFolderEntryStatusCompleted, nil, time.Now())
 	}
 	s.recordUploadSessionTransferHistory(
-		context.Background(),
+		opCtx,
 		session,
 		&item.ID,
 		store.TransferStatusCompleted,

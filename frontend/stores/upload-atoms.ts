@@ -23,6 +23,8 @@ export interface UploadTask {
   rootItemId?: string
   uploadedChunkCount?: number
   totalChunkCount?: number
+  transferredBytes?: number
+  currentSpeedBytesPerSecond?: number
   completedItems?: number
   totalItems?: number
 }

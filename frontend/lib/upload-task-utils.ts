@@ -33,6 +33,8 @@ export function createUploadTask(file: File): UploadTask {
     status: "pending",
     startedAt: now,
     updatedAt: now,
+    transferredBytes: 0,
+    currentSpeedBytesPerSecond: 0,
   }
 }
 
@@ -47,6 +49,8 @@ export function createFolderUploadTask(folder: LocalFolderManifest): UploadTask 
     status: "pending",
     startedAt: now,
     updatedAt: now,
+    transferredBytes: 0,
+    currentSpeedBytesPerSecond: 0,
     completedItems: 0,
     totalItems: folder.files.length,
   }
@@ -64,26 +68,78 @@ export function toUploadErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
 
+function resolveTransferredBytesFromChunks(uploadedChunks: number[], chunkSize: number, totalBytes: number) {
+  return uploadedChunks.reduce((sum, chunkIndex) => {
+    const from = chunkIndex * chunkSize
+    const to = Math.min(totalBytes, from + chunkSize)
+    return sum + Math.max(0, to - from)
+  }, 0)
+}
+
+function resolveTaskProgressPercent(transferredBytes: number, totalBytes: number, totalChunks?: number, uploadedCount?: number) {
+  if (totalBytes > 0) {
+    return Math.min(99, Math.round((transferredBytes / totalBytes) * 100))
+  }
+  if (totalChunks && totalChunks > 0 && uploadedCount != null) {
+    return Math.min(99, Math.round((uploadedCount / totalChunks) * 100))
+  }
+  return 0
+}
+
 export function createUploadTaskCallbacks(updateTask: UpdateUploadTask, taskId: string) {
   return {
-    onSessionResolved: (created: { session: { id: string; totalChunks: number; uploadedChunks: number[] }; transferJobId?: string | null }) => {
+    onSessionResolved: (created: {
+      session: { id: string; chunkSize: number; totalChunks: number; uploadedChunks: number[] }
+      transferJobId?: string | null
+    }) => {
       const uploadedCount = created.session.uploadedChunks?.length ?? 0
-      updateTask(taskId, (prev) => ({
-        ...prev,
-        uploadSessionId: created.session.id,
-        transferJobId: created.transferJobId ?? prev.transferJobId,
-        uploadedChunkCount: uploadedCount,
-        totalChunkCount: created.session.totalChunks,
-        progress: Math.round((uploadedCount / Math.max(1, created.session.totalChunks)) * 100),
-      }))
+      updateTask(taskId, (prev) => {
+        const transferredBytes = resolveTransferredBytesFromChunks(
+          created.session.uploadedChunks ?? [],
+          created.session.chunkSize,
+          prev.totalBytes,
+        )
+
+        return {
+          ...prev,
+          uploadSessionId: created.session.id,
+          transferJobId: created.transferJobId ?? prev.transferJobId,
+          uploadedChunkCount: uploadedCount,
+          totalChunkCount: created.session.totalChunks,
+          transferredBytes,
+          currentSpeedBytesPerSecond: 0,
+          progress: resolveTaskProgressPercent(
+            transferredBytes,
+            prev.totalBytes,
+            created.session.totalChunks,
+            uploadedCount,
+          ),
+        }
+      })
     },
-    onChunkProgress: ({ uploadedCount, totalChunks }: { uploadedCount: number; totalChunks: number }) => {
-      const percent = totalChunks > 0 ? Math.min(99, Math.round((uploadedCount / totalChunks) * 100)) : 0
+    onChunkProgress: ({
+      uploadedCount,
+      totalChunks,
+      uploadedBytes,
+      speedBytesPerSecond,
+    }: {
+      uploadedCount: number
+      totalChunks: number
+      uploadedBytes: number
+      speedBytesPerSecond: number
+    }) => {
       updateTask(taskId, (prev) => ({
         ...prev,
         uploadedChunkCount: uploadedCount,
         totalChunkCount: totalChunks,
-        progress: percent,
+        transferredBytes: Math.min(prev.totalBytes, uploadedBytes),
+        currentSpeedBytesPerSecond: Math.max(0, speedBytesPerSecond),
+        progress: resolveTaskProgressPercent(
+          Math.min(prev.totalBytes, uploadedBytes),
+          prev.totalBytes,
+          totalChunks,
+          uploadedCount,
+        ),
       }))
     },
   }

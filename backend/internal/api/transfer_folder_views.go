@@ -86,6 +86,17 @@ func (s *Server) buildFolderUploadBatchTransferJobView(
 	dto.UpdatedAt = maxTransferTime(stats.UpdatedAt, dto.UpdatedAt)
 	dto.Progress = progressFromCounts(stats.UploadedSize, maxInt64(stats.TotalSize, 1), "bytes", job.Status == store.TransferJobStatusCompleted)
 	dto.Phase = resolveUploadBatchPhase(dto.Progress, job.Status)
+	sessions, sessionErr := store.New(s.db).ListUploadSessionsByBatch(ctx, batchID)
+	if sessionErr != nil {
+		return transferJobViewDTO{}, true, sessionErr
+	}
+	phaseView := s.resolveUploadBatchPhaseView(ctx, sessions)
+	dto.Phase = resolveTransferPhaseFromUploadDetail(phaseView.Detail, dto.Phase)
+	dto.PhaseDetail = phaseView.Detail
+	dto.PhaseProgress = phaseView.Progress
+	dto.PhaseProgressMode = phaseView.ProgressMode
+	dto.PhaseSpeedBPS = phaseView.SpeedBytesPerSec
+	dto.PhaseStartedAt = phaseView.StartedAt
 	dto.PreviewItems = preview
 	return dto, true, nil
 }

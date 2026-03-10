@@ -9,14 +9,14 @@ import {
   finalizeUploadSession,
   uploadFileChunksToExistingSession,
 } from "@/lib/upload-runner"
+import { createFolderProgressTracker, type FolderProgressTracker } from "@/lib/upload-folder-progress"
+import { buildFolderFileLookup, createFolderUploadState } from "@/lib/upload-folder-state"
 import type { UploadTask } from "@/stores/upload-atoms"
 import {
   resolveWorkerCount,
   toUploadErrorMessage,
   type UpdateUploadTask,
 } from "@/lib/upload-task-utils"
-
-const IN_PROGRESS_MAX_PERCENT = 99
 
 interface ExecuteFolderUploadOptions {
   folder: LocalFolderManifest
@@ -38,11 +38,6 @@ interface FolderUploadResult {
   readonly completedItems: number
   readonly failedItems: number
   readonly firstError: string
-}
-
-interface FolderProgressTracker {
-  applyFolderProgress: (relativePath: string, nextBytes: number) => void
-  getUploadedBytes: () => number
 }
 
 export async function executeFolderUpload(options: ExecuteFolderUploadOptions) {
@@ -79,6 +74,7 @@ function markFolderTaskUploading(options: {
     status: "uploading",
     error: undefined,
     targetParentId: parentId,
+    currentSpeedBytesPerSecond: 0,
   }))
 }
 
@@ -119,10 +115,6 @@ function markFolderTaskCreated(options: {
   }))
 }
 
-function buildFolderFileLookup(folder: LocalFolderManifest) {
-  return new Map(folder.files.map((item) => [item.relativePath, item.file]))
-}
-
 async function runFolderUploadLoop(options: {
   folder: LocalFolderManifest
   taskId: string
@@ -137,7 +129,9 @@ async function runFolderUploadLoop(options: {
     folder,
     taskId,
     updateTask,
-    created,
+    batchId: created.batchId,
+    rootItemId: created.rootItemId,
+    transferJobId: created.transferJobId,
     getCompletedItems: state.getCompletedItems,
   })
 
@@ -162,71 +156,6 @@ async function runFolderUploadLoop(options: {
     completedItems: state.getCompletedItems(),
     failedItems: state.getFailedItems(),
     firstError: state.getFirstError(),
-  }
-}
-
-function createFolderProgressTracker(options: {
-  folder: LocalFolderManifest
-  taskId: string
-  updateTask: UpdateUploadTask
-  created: FolderUploadCreated
-  getCompletedItems: () => number
-}): FolderProgressTracker {
-  const { folder, taskId, updateTask, created, getCompletedItems } = options
-  const uploadedBytesByPath = new Map<string, number>()
-  let uploadedBytes = 0
-
-  const applyFolderProgress = (relativePath: string, nextBytes: number) => {
-    const previous = uploadedBytesByPath.get(relativePath) ?? 0
-    const clamped = Math.max(previous, nextBytes)
-    if (clamped <= previous) return
-    uploadedBytesByPath.set(relativePath, clamped)
-    uploadedBytes += clamped - previous
-
-    const progressPercent =
-      folder.totalSize > 0
-        ? Math.min(
-            IN_PROGRESS_MAX_PERCENT,
-            Math.round((uploadedBytes / folder.totalSize) * 100),
-          )
-        : IN_PROGRESS_MAX_PERCENT
-
-    updateTask(taskId, (prev) => ({
-      ...prev,
-      transferJobId: created.transferJobId ?? prev.transferJobId,
-      transferBatchId: created.batchId,
-      rootItemId: created.rootItemId,
-      completedItems: getCompletedItems(),
-      totalItems: folder.files.length,
-      progress: progressPercent,
-    }))
-  }
-
-  return { applyFolderProgress, getUploadedBytes: () => uploadedBytes }
-}
-
-function createFolderUploadState() {
-  let completedItems = 0
-  let failedItems = 0
-  let firstError = ""
-
-  const markCompleted = () => {
-    completedItems += 1
-  }
-
-  const markFailed = (message: string) => {
-    failedItems += 1
-    if (!firstError) {
-      firstError = message
-    }
-  }
-
-  return {
-    markCompleted,
-    markFailed,
-    getCompletedItems: () => completedItems,
-    getFailedItems: () => failedItems,
-    getFirstError: () => firstError,
   }
 }
 
@@ -293,6 +222,7 @@ async function processFolderWorkItemAtIndex(options: {
       totalItems: folder.files.length,
     }))
   } catch (error) {
+    progress.clearFileProgress(item.relativePath)
     recordFolderItemFailure({
       state,
       taskId,
@@ -313,13 +243,12 @@ async function uploadAndFinalizeFolderItem(options: {
     file,
     sessionId: item.sessionId,
     callbacks: {
-      onChunkProgress: ({ uploadedCount }) => {
-        const nextBytes = Math.min(file.size, uploadedCount * item.chunkSize)
-        progress.applyFolderProgress(item.relativePath, nextBytes)
+      onChunkProgress: ({ uploadedBytes, speedBytesPerSecond }) => {
+        progress.applyFolderProgress(item.relativePath, uploadedBytes, speedBytesPerSecond)
       },
     },
   })
-  progress.applyFolderProgress(item.relativePath, file.size)
+  progress.applyFolderProgress(item.relativePath, file.size, 0)
   await finalizeUploadSession(item.sessionId)
 }
 
@@ -360,6 +289,8 @@ function finishFolderTask(options: {
         ? result.firstError || `${result.failedItems} items failed`
         : undefined,
     progress: progressPercent,
+    transferredBytes: result.failedItems > 0 ? result.uploadedBytes : folder.totalSize,
+    currentSpeedBytesPerSecond: 0,
     completedItems: result.completedItems,
     totalItems: folder.files.length,
     finishedAt: Date.now(),

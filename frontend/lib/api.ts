@@ -1,4 +1,4 @@
-interface ApiErrorPayload {
+export interface ApiErrorPayload {
   error?: string
   message?: string
   details?: unknown

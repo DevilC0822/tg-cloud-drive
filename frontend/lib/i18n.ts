@@ -666,6 +666,11 @@ export const transferMessages: Record<
     phaseAwaitingSelection: string
     phaseTorrentUploading: string
     phaseIdle: string
+    phaseDetailLocalChunkUploading: string
+    phaseDetailChunkProcessing: string
+    phaseDetailAssemblingFile: string
+    phaseDetailUploadingToTelegram: string
+    phaseDetailFinalizingRecord: string
     torrentStatusQueued: string
     torrentStatusDownloading: string
     torrentStatusAwaitingSelection: string
@@ -708,6 +713,9 @@ export const transferMessages: Record<
     lastError: string
     targetFile: string
     totalSize: string
+    currentStage: string
+    stageElapsed: string
+    currentSpeed: string
     itemCount: string
     directoryCount: string
     activeFiles: string
@@ -785,6 +793,11 @@ export const transferMessages: Record<
     phaseAwaitingSelection: "Awaiting selection",
     phaseTorrentUploading: "Torrent upload",
     phaseIdle: "Idle",
+    phaseDetailLocalChunkUploading: "Local chunk upload",
+    phaseDetailChunkProcessing: "Chunk processing",
+    phaseDetailAssemblingFile: "Assembling file",
+    phaseDetailUploadingToTelegram: "Uploading to Telegram",
+    phaseDetailFinalizingRecord: "Writing metadata",
     torrentStatusQueued: "Queued",
     torrentStatusDownloading: "Downloading",
     torrentStatusAwaitingSelection: "Awaiting selection",
@@ -827,6 +840,9 @@ export const transferMessages: Record<
     lastError: "Last error",
     targetFile: "Target file",
     totalSize: "Total size",
+    currentStage: "Current stage",
+    stageElapsed: "Stage elapsed",
+    currentSpeed: "Stage speed",
     itemCount: "Item count",
     directoryCount: "Directories",
     activeFiles: "Active files",
@@ -903,6 +919,11 @@ export const transferMessages: Record<
     phaseAwaitingSelection: "等待文件选择",
     phaseTorrentUploading: "种子上传中",
     phaseIdle: "空闲",
+    phaseDetailLocalChunkUploading: "本地分片上传中",
+    phaseDetailChunkProcessing: "分片上传处理中",
+    phaseDetailAssemblingFile: "文件组装中",
+    phaseDetailUploadingToTelegram: "上传到 Telegram",
+    phaseDetailFinalizingRecord: "写入元数据中",
     torrentStatusQueued: "排队中",
     torrentStatusDownloading: "下载中",
     torrentStatusAwaitingSelection: "等待选择",
@@ -945,6 +966,9 @@ export const transferMessages: Record<
     lastError: "最近错误",
     targetFile: "目标文件",
     totalSize: "总大小",
+    currentStage: "当前阶段",
+    stageElapsed: "当前阶段已耗时",
+    currentSpeed: "当前阶段速度",
     itemCount: "项目数",
     directoryCount: "目录数",
     activeFiles: "活动文件",

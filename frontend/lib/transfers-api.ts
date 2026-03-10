@@ -1,4 +1,8 @@
 import { apiFetchJson } from "@/lib/api"
+import {
+  normalizeTransferJobDetail,
+  normalizeTransferJobSummary,
+} from "@/lib/transfer-normalizers"
 
 export type TransferDirection = "upload" | "download"
 export type TransferSourceKind = "upload_session" | "upload_batch" | "torrent_task" | "download_task"
@@ -14,6 +18,7 @@ export type TransferPhase =
   | ""
 
 export type TransferStreamStatus = "connected" | "reconnecting" | "error"
+export type TransferPhaseProgressMode = "determinate" | "indeterminate" | "discrete"
 
 export interface TransferProgress {
   percent: number
@@ -54,6 +59,12 @@ export interface TransferJobSummary {
   directoryCount?: number
   activeCount?: number
   phase: TransferPhase
+  phaseDetail?: string | null
+  phaseSteps?: string[] | null
+  phaseProgress?: TransferProgress | null
+  phaseProgressMode?: TransferPhaseProgressMode | null
+  phaseSpeedBytesPerSecond?: number | null
+  phaseStartedAt?: string | null
   progress: TransferProgress
   previewItems: TransferPreviewItem[]
 }
@@ -221,7 +232,7 @@ export async function fetchTransferHistory(query: TransferHistoryQuery) {
 
   const request = apiFetchJson<TransferHistoryResponse>(path)
     .then((response) => ({
-      items: response.items ?? [],
+      items: (response.items ?? []).map(normalizeTransferJobSummary),
       pagination: response.pagination,
     }))
     .finally(() => {
@@ -232,7 +243,8 @@ export async function fetchTransferHistory(query: TransferHistoryQuery) {
   return request
 }
 export async function fetchTransferDetail(transferId: string) {
-  return apiFetchJson<TransferJobDetail>(`/api/transfers/${encodeURIComponent(transferId)}`)
+  const response = await apiFetchJson<TransferJobDetail>(`/api/transfers/${encodeURIComponent(transferId)}`)
+  return normalizeTransferJobDetail(response)
 }
 export async function fetchTransferEntries(transferId: string, parentPath = "") {
   const params = new URLSearchParams()
@@ -268,11 +280,15 @@ export async function deleteActiveTransfer(transferId: string) {
   })
 }
 export async function startDownloadTransfer(itemId: string) {
-  return apiFetchJson<StartDownloadTransferResponse>("/api/transfers/downloads", {
+  const response = await apiFetchJson<StartDownloadTransferResponse>("/api/transfers/downloads", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ itemId }),
   })
+  return {
+    ...response,
+    job: normalizeTransferJobSummary(response.job),
+  }
 }
 
 export { connectTransferStream } from "./transfers-stream"

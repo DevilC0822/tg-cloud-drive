@@ -8,9 +8,19 @@ import {
   type UploadSession,
 } from "@/lib/uploads-api"
 
+const SPEED_SAMPLE_WINDOW_MS = 250
+
+interface UploadChunkProgressPayload {
+  uploadedCount: number
+  totalChunks: number
+  uploadedBytes: number
+  totalBytes: number
+  speedBytesPerSecond: number
+}
+
 interface UploadRunnerCallbacks {
   onSessionResolved?: (payload: { session: UploadSession; transferJobId?: string | null }) => void
-  onChunkProgress?: (payload: { uploadedCount: number; totalChunks: number }) => void
+  onChunkProgress?: (payload: UploadChunkProgressPayload) => void
 }
 
 interface UploadExistingSessionInput {
@@ -84,15 +94,61 @@ export async function uploadFileToNewSession(input: UploadNewSessionInput): Prom
   }
 }
 
+function emitChunkProgress(callbacks: UploadRunnerCallbacks | undefined, payload: UploadChunkProgressPayload) {
+  callbacks?.onChunkProgress?.(payload)
+}
+
+function getChunkByteSize(fileSize: number, chunkSize: number, chunkIndex: number) {
+  const from = chunkIndex * chunkSize
+  const to = Math.min(fileSize, from + chunkSize)
+  return Math.max(0, to - from)
+}
+
+function countUploadedBytes(uploadedChunks: Iterable<number>, session: UploadSession, fileSize: number) {
+  let uploadedBytes = 0
+  for (const chunkIndex of uploadedChunks) {
+    uploadedBytes += getChunkByteSize(fileSize, session.chunkSize, chunkIndex)
+  }
+  return uploadedBytes
+}
+
+function createChunkSpeedSampler() {
+  let lastLoadedBytes = 0
+  let lastSampleAt = globalThis.performance?.now?.() ?? Date.now()
+  let lastSpeedBytesPerSecond = 0
+
+  return (loadedBytes: number) => {
+    const now = globalThis.performance?.now?.() ?? Date.now()
+    const elapsedMs = now - lastSampleAt
+    if (elapsedMs < SPEED_SAMPLE_WINDOW_MS || loadedBytes < lastLoadedBytes) {
+      return lastSpeedBytesPerSecond
+    }
+
+    const deltaBytes = loadedBytes - lastLoadedBytes
+    lastLoadedBytes = loadedBytes
+    lastSampleAt = now
+    if (deltaBytes <= 0) {
+      return lastSpeedBytesPerSecond
+    }
+
+    lastSpeedBytesPerSecond = (deltaBytes * 1000) / elapsedMs
+    return lastSpeedBytesPerSecond
+  }
+}
+
 async function uploadFileChunksToResolvedSession(
   file: File,
   session: UploadSession,
   callbacks?: UploadRunnerCallbacks,
 ): Promise<UploadProcess | undefined> {
   const uploadedSet = new Set(session.uploadedChunks || [])
-  callbacks?.onChunkProgress?.({
+  let uploadedBytes = countUploadedBytes(uploadedSet, session, file.size)
+  emitChunkProgress(callbacks, {
     uploadedCount: uploadedSet.size,
     totalChunks: session.totalChunks,
+    uploadedBytes,
+    totalBytes: file.size,
+    speedBytesPerSecond: 0,
   })
 
   let latestProcess: UploadProcess | undefined
@@ -104,17 +160,40 @@ async function uploadFileChunksToResolvedSession(
     const from = chunkIndex * session.chunkSize
     const to = Math.min(file.size, from + session.chunkSize)
     const chunk = file.slice(from, to)
-    const uploaded = await uploadSessionChunk(session.id, chunkIndex, chunk, file.name)
+    const chunkBaseBytes = uploadedBytes
+    const sampleChunkSpeed = createChunkSpeedSampler()
+    const uploaded = await uploadSessionChunk(session.id, chunkIndex, chunk, file.name, {
+      onUploadProgress: ({ loadedBytes }) => {
+        emitChunkProgress(callbacks, {
+          uploadedCount: uploadedSet.size,
+          totalChunks: session.totalChunks,
+          uploadedBytes: Math.min(file.size, chunkBaseBytes + loadedBytes),
+          totalBytes: file.size,
+          speedBytesPerSecond: sampleChunkSpeed(loadedBytes),
+        })
+      },
+    })
     if (uploaded.uploadProcess) {
       latestProcess = uploaded.uploadProcess
     }
 
     uploadedSet.add(chunkIndex)
-    callbacks?.onChunkProgress?.({
+    uploadedBytes = Math.min(file.size, chunkBaseBytes + chunk.size)
+    emitChunkProgress(callbacks, {
       uploadedCount: Math.max(uploadedSet.size, uploaded.progress.uploadedCount),
       totalChunks: uploaded.progress.totalChunks,
+      uploadedBytes,
+      totalBytes: file.size,
+      speedBytesPerSecond: 0,
     })
   }
 
+  emitChunkProgress(callbacks, {
+    uploadedCount: uploadedSet.size,
+    totalChunks: session.totalChunks,
+    uploadedBytes,
+    totalBytes: file.size,
+    speedBytesPerSecond: 0,
+  })
   return latestProcess
 }

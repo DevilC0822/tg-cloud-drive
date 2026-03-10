@@ -3,6 +3,7 @@ import type {
   TransferStreamEvent,
   TransferStreamStatus,
 } from "@/lib/transfers-api"
+import { normalizeTransferStreamEvent } from "@/lib/transfer-normalizers"
 
 type TransferStreamHandlers = {
   onEvent: (event: TransferStreamEvent) => void
@@ -58,7 +59,7 @@ function ensureTransferStream() {
 
   source.onmessage = (message) => {
     try {
-      const event = JSON.parse(message.data) as TransferStreamEvent
+      const event = normalizeTransferStreamEvent(JSON.parse(message.data) as TransferStreamEvent)
       transferActiveSnapshot = patchActiveSnapshot(transferActiveSnapshot, event)
       for (const subscriber of transferStreamSubscribers) {
         subscriber.onEvent(event)

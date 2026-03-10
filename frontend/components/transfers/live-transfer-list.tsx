@@ -3,11 +3,11 @@ import { AnimatePresence, motion } from "framer-motion"
 import { LiveTransferCard } from "@/components/transfers/live-transfer-card"
 import { TransferEmptyState } from "@/components/transfers/transfer-empty-state"
 import { TransferSkeleton } from "@/components/transfers/transfer-skeleton"
-import type { TransferJobSummary } from "@/lib/transfers-api"
+import type { TransferJobListItem } from "@/lib/transfer-live-items"
 import type { transferMessages } from "@/lib/i18n"
 
 interface LiveTransferListProps {
-  items: TransferJobSummary[]
+  items: TransferJobListItem[]
   initialLoading: boolean
   refreshing: boolean
   text: (typeof transferMessages)["en"]

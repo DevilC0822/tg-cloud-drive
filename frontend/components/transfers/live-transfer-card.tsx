@@ -3,17 +3,24 @@ import { ArrowRight, Sparkles, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import type { TransferJobSummary } from "@/lib/transfers-api"
+import { TransferPhaseStepper } from "@/components/transfers/transfer-phase-stepper"
+import type { TransferJobListItem } from "@/lib/transfer-live-items"
 import type { transferMessages } from "@/lib/i18n"
 import { semanticToneClasses, themeToneClasses } from "@/lib/palette"
 import { cn } from "@/lib/utils"
 import { formatFileSize } from "@/lib/files"
 import {
+  formatTransferPhaseElapsed,
   getTransferCountsLabel,
   getTransferDirectionIcon,
   getTransferDirectionLabel,
   getTransferPhaseLabel,
-  getTransferProgressLabel,
+  getTransferPhaseDetailLabel,
+  getTransferPhaseProgressLabel,
+  getTransferPhaseProgressMode,
+  getTransferPhaseProgressPercent,
+  getTransferPhaseProgressTone,
+  getTransferSpeedLabel,
   getTransferSourceIcon,
   getTransferSourceLabel,
   getTransferStartedLabel,
@@ -22,28 +29,38 @@ import {
 } from "@/components/transfers/transfer-presenters"
 
 interface LiveTransferCardProps {
-  item: TransferJobSummary
+  item: TransferJobListItem
   text: (typeof transferMessages)["en"]
   onOpenDetail: (id: string) => void
   onDelete: (id: string) => void
 }
 
-function ProgressRail({ percent }: { percent: number }) {
+function ProgressRail({
+  percent,
+  phaseDetail,
+  indeterminate,
+}: {
+  percent: number | null
+  phaseDetail?: string | null
+  indeterminate?: boolean
+}) {
+  const tone = getTransferPhaseProgressTone(phaseDetail)
+  const railValue = indeterminate ? 36 : Math.max(0, percent ?? 0)
   return (
     <div className="relative">
-      <Progress value={percent} className="h-2.5 bg-primary/12" />
+      <Progress value={railValue} className={cn("h-2.5", tone.track)} indicatorClassName={tone.indicator} />
       <motion.div
-        className="pointer-events-none absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-transparent via-[var(--surface-sheen)] to-transparent opacity-70"
+        className={cn("pointer-events-none absolute inset-y-0 left-0 rounded-full bg-gradient-to-r opacity-70", tone.sheen)}
         animate={{ 
-          x: ["-100%", "200%"],
-          opacity: [0.3, 0.7, 0.3]
+          x: ["-100%", indeterminate ? "280%" : "200%"],
+          opacity: indeterminate ? [0.45, 0.9, 0.45] : [0.3, 0.7, 0.3]
         }}
         transition={{ 
-          duration: 2, 
+          duration: indeterminate ? 1.3 : 2, 
           repeat: Infinity, 
           ease: "linear" 
         }}
-        style={{ width: "30%" }}
+        style={{ width: indeterminate ? "42%" : "30%" }}
       />
     </div>
   )
@@ -53,6 +70,21 @@ export function LiveTransferCard({ item, text, onOpenDetail, onDelete }: LiveTra
   const DirectionIcon = getTransferDirectionIcon(item.direction)
   const SourceIcon = getTransferSourceIcon(item.sourceKind)
   const infoTone = themeToneClasses.info
+  const phaseDetailLabel = getTransferPhaseDetailLabel(item.phaseDetail, text)
+  const phaseMode = getTransferPhaseProgressMode(item)
+  const phasePercent = getTransferPhaseProgressPercent(item)
+  const phaseProgressLabel = getTransferPhaseProgressLabel(item, text)
+  const phaseElapsed = formatTransferPhaseElapsed(item.phaseStartedAt)
+  const showSpeed = phaseMode === "determinate" && (item.phaseSpeedBytesPerSecond ?? item.liveMetrics?.currentSpeedBytesPerSecond ?? 0) > 0
+  const showElapsed = phaseMode === "indeterminate" && item.phaseStartedAt
+  const showStepper = item.sourceKind === "upload_session" && (item.phaseSteps?.length ?? 0) > 1
+  const infoColumns = showSpeed && phaseDetailLabel && showElapsed
+    ? "lg:grid-cols-5"
+    : showSpeed && phaseDetailLabel
+      ? "lg:grid-cols-4"
+      : (phaseDetailLabel && showElapsed) || showSpeed || phaseDetailLabel
+        ? "lg:grid-cols-3"
+        : "lg:grid-cols-2"
 
   return (
     <motion.article
@@ -120,14 +152,24 @@ export function LiveTransferCard({ item, text, onOpenDetail, onDelete }: LiveTra
 
           <div className="flex items-center gap-4 lg:shrink-0 lg:flex-col lg:items-end lg:gap-1">
             <div className="text-right">
-              <motion.div 
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="font-mono text-3xl font-bold tracking-tighter text-foreground"
-              >
-                {item.progress.percent}%
-              </motion.div>
-              <div className="text-[13px] font-medium text-muted-foreground">{getTransferProgressLabel(item)}</div>
+              {phasePercent == null ? (
+                <motion.div
+                  animate={{ opacity: [0.65, 1, 0.65] }}
+                  transition={{ duration: 1.4, repeat: Infinity }}
+                  className="text-lg font-semibold tracking-tight text-foreground"
+                >
+                  {text.statusRunning}
+                </motion.div>
+              ) : (
+                <motion.div 
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="font-mono text-3xl font-bold tracking-tighter text-foreground"
+                >
+                  {phasePercent}%
+                </motion.div>
+              )}
+              <div className="text-[13px] font-medium text-muted-foreground">{phaseProgressLabel}</div>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" className="hidden h-8 rounded-full bg-primary/5 hover:bg-primary/10 lg:flex group-hover:bg-primary/20" onClick={() => onOpenDetail(item.id)}>
@@ -141,9 +183,19 @@ export function LiveTransferCard({ item, text, onOpenDetail, onDelete }: LiveTra
           </div>
         </div>
 
-        <ProgressRail percent={item.progress.percent} />
+        <ProgressRail percent={phasePercent} phaseDetail={item.phaseDetail} indeterminate={phasePercent == null} />
 
-        <div className="grid gap-3 text-sm font-medium lg:grid-cols-2">
+        {showStepper ? (
+          <TransferPhaseStepper
+            steps={item.phaseSteps}
+            currentStep={item.phaseDetail}
+            status={item.status}
+            text={text}
+            compact
+          />
+        ) : null}
+
+        <div className={cn("grid gap-3 text-sm font-medium", infoColumns)}>
           <motion.div 
             whileHover={{ x: 3 }}
             className="flex items-center gap-2 rounded-2xl border border-border/50 bg-secondary/30 px-4 py-3 text-foreground/90 group-hover:bg-secondary/40 transition-colors"
@@ -158,6 +210,33 @@ export function LiveTransferCard({ item, text, onOpenDetail, onDelete }: LiveTra
             <span className="text-muted-foreground">{text.totalSize}:</span>
             {item.totalSize > 0 ? formatFileSize(item.totalSize) : "—"}
           </motion.div>
+          {phaseDetailLabel ? (
+            <motion.div
+              whileHover={{ x: 3 }}
+              className="flex items-center gap-2 rounded-2xl border border-border/50 bg-secondary/30 px-4 py-3 text-foreground/90 group-hover:bg-secondary/40 transition-colors"
+            >
+              <span className="text-muted-foreground">{text.currentStage}:</span>
+              {phaseDetailLabel}
+            </motion.div>
+          ) : null}
+          {showElapsed ? (
+            <motion.div
+              whileHover={{ x: 3 }}
+              className="flex items-center gap-2 rounded-2xl border border-border/50 bg-secondary/30 px-4 py-3 text-foreground/90 group-hover:bg-secondary/40 transition-colors"
+            >
+              <span className="text-muted-foreground">{text.stageElapsed}:</span>
+              {phaseElapsed}
+            </motion.div>
+          ) : null}
+          {showSpeed ? (
+            <motion.div
+              whileHover={{ x: 3 }}
+              className="flex items-center gap-2 rounded-2xl border border-border/50 bg-secondary/30 px-4 py-3 text-foreground/90 group-hover:bg-secondary/40 transition-colors"
+            >
+              <span className="text-muted-foreground">{text.currentSpeed}:</span>
+              {getTransferSpeedLabel(item)}
+            </motion.div>
+          ) : null}
         </div>
 
         {item.previewItems.length > 0 ? (

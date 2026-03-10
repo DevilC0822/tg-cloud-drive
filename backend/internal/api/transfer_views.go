@@ -10,13 +10,18 @@ import (
 )
 
 const (
-	transferPhaseUploadingChunks    = "uploading_chunks"
-	transferPhaseFinalizing         = "finalizing"
-	transferPhaseDownloading        = "downloading"
-	transferPhaseQueued             = "queued"
-	transferPhaseTorrentDownloading = "torrent_downloading"
-	transferPhaseAwaitingSelection  = "awaiting_selection"
-	transferPhaseTorrentUploading   = "torrent_uploading"
+	transferPhaseUploadingChunks           = "uploading_chunks"
+	transferPhaseFinalizing                = "finalizing"
+	transferPhaseDownloading               = "downloading"
+	transferPhaseQueued                    = "queued"
+	transferPhaseTorrentDownloading        = "torrent_downloading"
+	transferPhaseAwaitingSelection         = "awaiting_selection"
+	transferPhaseTorrentUploading          = "torrent_uploading"
+	transferPhaseDetailLocalChunkUploading = "local_chunk_uploading"
+	transferPhaseDetailChunkProcessing     = "chunk_processing"
+	transferPhaseDetailAssemblingFile      = "assembling_file"
+	transferPhaseDetailUploadingToTelegram = "uploading_to_telegram"
+	transferPhaseDetailFinalizingRecord    = "finalizing_record"
 )
 
 type transferProgressDTO struct {
@@ -36,30 +41,36 @@ type transferPreviewItemDTO struct {
 }
 
 type transferJobViewDTO struct {
-	ID             string                   `json:"id"`
-	Direction      string                   `json:"direction"`
-	SourceKind     string                   `json:"sourceKind"`
-	SourceRef      string                   `json:"sourceRef"`
-	UnitKind       string                   `json:"unitKind"`
-	Name           string                   `json:"name"`
-	TargetItemID   *string                  `json:"targetItemId"`
-	TotalSize      int64                    `json:"totalSize"`
-	ItemCount      int                      `json:"itemCount"`
-	CompletedCount int                      `json:"completedCount"`
-	ErrorCount     int                      `json:"errorCount"`
-	CanceledCount  int                      `json:"canceledCount"`
-	Status         string                   `json:"status"`
-	LastError      *string                  `json:"lastError"`
-	StartedAt      time.Time                `json:"startedAt"`
-	FinishedAt     time.Time                `json:"finishedAt"`
-	CreatedAt      time.Time                `json:"createdAt"`
-	UpdatedAt      time.Time                `json:"updatedAt"`
-	BatchMode      string                   `json:"batchMode,omitempty"`
-	DirectoryCount int                      `json:"directoryCount,omitempty"`
-	ActiveCount    int                      `json:"activeCount,omitempty"`
-	Phase          string                   `json:"phase"`
-	Progress       transferProgressDTO      `json:"progress"`
-	PreviewItems   []transferPreviewItemDTO `json:"previewItems,omitempty"`
+	ID                string                   `json:"id"`
+	Direction         string                   `json:"direction"`
+	SourceKind        string                   `json:"sourceKind"`
+	SourceRef         string                   `json:"sourceRef"`
+	UnitKind          string                   `json:"unitKind"`
+	Name              string                   `json:"name"`
+	TargetItemID      *string                  `json:"targetItemId"`
+	TotalSize         int64                    `json:"totalSize"`
+	ItemCount         int                      `json:"itemCount"`
+	CompletedCount    int                      `json:"completedCount"`
+	ErrorCount        int                      `json:"errorCount"`
+	CanceledCount     int                      `json:"canceledCount"`
+	Status            string                   `json:"status"`
+	LastError         *string                  `json:"lastError"`
+	StartedAt         time.Time                `json:"startedAt"`
+	FinishedAt        time.Time                `json:"finishedAt"`
+	CreatedAt         time.Time                `json:"createdAt"`
+	UpdatedAt         time.Time                `json:"updatedAt"`
+	BatchMode         string                   `json:"batchMode,omitempty"`
+	DirectoryCount    int                      `json:"directoryCount,omitempty"`
+	ActiveCount       int                      `json:"activeCount,omitempty"`
+	Phase             string                   `json:"phase"`
+	PhaseDetail       string                   `json:"phaseDetail,omitempty"`
+	PhaseSteps        []string                 `json:"phaseSteps,omitempty"`
+	PhaseProgress     *transferProgressDTO     `json:"phaseProgress,omitempty"`
+	PhaseProgressMode string                   `json:"phaseProgressMode,omitempty"`
+	PhaseSpeedBPS     int64                    `json:"phaseSpeedBytesPerSecond,omitempty"`
+	PhaseStartedAt    *time.Time               `json:"phaseStartedAt,omitempty"`
+	Progress          transferProgressDTO      `json:"progress"`
+	PreviewItems      []transferPreviewItemDTO `json:"previewItems,omitempty"`
 }
 
 type transferUploadSessionItemDTO struct {
@@ -186,6 +197,13 @@ func (s *Server) buildUploadSessionTransferJobView(
 		return dto, nil
 	}
 	dto.Phase = resolveUploadSessionPhase(job.Status, uploadedCount, session.TotalChunks)
+	phaseView := s.resolveUploadSessionPhaseView(ctx, session, dto.Phase, uploadedCount)
+	dto.PhaseDetail = phaseView.Detail
+	dto.PhaseSteps = phaseView.Steps
+	dto.PhaseProgress = phaseView.Progress
+	dto.PhaseProgressMode = phaseView.ProgressMode
+	dto.PhaseSpeedBPS = phaseView.SpeedBytesPerSec
+	dto.PhaseStartedAt = phaseView.StartedAt
 	dto.Progress = progressFromCounts(int64(uploadedCount), int64(session.TotalChunks), "chunks", job.Status == store.TransferJobStatusCompleted)
 	dto.CompletedCount = completedCountFromStatus(job.Status)
 	dto.ErrorCount = errorCountFromStatus(job.Status)
@@ -211,6 +229,13 @@ func (s *Server) buildUploadBatchTransferJobView(
 	}
 	dto.Progress, dto.PreviewItems = s.resolveUploadBatchProgress(ctx, sessions, job.Status)
 	dto.Phase = resolveUploadBatchPhase(dto.Progress, job.Status)
+	phaseView := s.resolveUploadBatchPhaseView(ctx, sessions)
+	dto.Phase = resolveTransferPhaseFromUploadDetail(phaseView.Detail, dto.Phase)
+	dto.PhaseDetail = phaseView.Detail
+	dto.PhaseProgress = phaseView.Progress
+	dto.PhaseProgressMode = phaseView.ProgressMode
+	dto.PhaseSpeedBPS = phaseView.SpeedBytesPerSec
+	dto.PhaseStartedAt = phaseView.StartedAt
 	progress := summarizeUploadBatchSessions(sessions)
 	dto.CompletedCount = progress.Completed
 	dto.ErrorCount = progress.Failed

@@ -112,6 +112,7 @@ async function uploadFileBatchChunkAtIndex(options: {
     status: "uploading",
     error: undefined,
     targetParentId: payload.parentId,
+    currentSpeedBytesPerSecond: 0,
   }))
 
   try {
@@ -133,6 +134,7 @@ async function uploadFileBatchChunkAtIndex(options: {
       ...prev,
       status: "error",
       error: toUploadErrorMessage(error, "Upload failed"),
+      currentSpeedBytesPerSecond: 0,
       finishedAt: Date.now(),
     }))
     return null
@@ -163,6 +165,8 @@ async function finalizeFileBatchUploads(options: {
           progress: 100,
           uploadedChunkCount: current.totalChunks,
           totalChunkCount: current.totalChunks,
+          transferredBytes: prev.totalBytes,
+          currentSpeedBytesPerSecond: 0,
           finishedAt: Date.now(),
         }))
         onUploaded?.()
@@ -171,6 +175,7 @@ async function finalizeFileBatchUploads(options: {
           ...prev,
           status: "error",
           error: toUploadErrorMessage(error, "Upload failed"),
+          currentSpeedBytesPerSecond: 0,
           finishedAt: Date.now(),
         }))
       }
